@@ -1,29 +1,52 @@
-# Widgets
+# eY Widgets
 
-Personal embeddable widgets for Notion and home dashboards.
+Reusable HTML, CSS and JavaScript widgets for Notion, GitHub Pages and home dashboards.
 
-## Clock widget
+## Live URLs
 
-Path:
+After publishing with GitHub Pages:
+
+- Clock: `https://sksahadatali.github.io/widgets/clock/`
+- Date: `https://sksahadatali.github.io/widgets/date/`
+- Dashboard: `https://sksahadatali.github.io/widgets/dashboard/`
+
+## URL configuration
+
+Clock examples:
+
+- `clock/?theme=dark`
+- `clock/?theme=light`
+- `clock/?theme=flat`
+- `clock/?seconds=true`
+
+Date examples:
+
+- `date/?theme=dark`
+- `date/?theme=light`
+- `date/?theme=flat`
+
+## Structure
 
 ```text
-clock/index.html
+assets/
+  css/theme.css
+  js/widget-utils.js
+clock/
+  index.html
+  script.js
+date/
+  index.html
+  script.js
+dashboard/
+  index.html
 ```
 
-After GitHub Pages is enabled, the clock widget should be available at:
+## GitHub Pages
 
-```text
-https://sksahadatali.github.io/widgets/clock/
-```
+Repository settings:
 
-## GitHub Pages setup
+- Source: Deploy from a branch
+- Branch: main
+- Folder: / root
 
-1. Create a public GitHub repository called `widgets`.
-2. Upload these files and folders.
-3. Go to **Settings → Pages**.
-4. Set:
-   - Source: **Deploy from a branch**
-   - Branch: **main**
-   - Folder: **/(root)**
-5. Save.
-6. Open the published URL and embed it in Notion using `/embed`.
+Then embed individual widget URLs into Notion using `/embed`.

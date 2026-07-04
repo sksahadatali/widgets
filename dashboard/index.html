@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>eY Dashboard</title>
+  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <style>
+    body {
+      align-items: flex-start;
+      min-height: 100vh;
+      background: #0f172a;
+      padding: 24px;
+    }
+    .page { width: 100%; max-width: 1180px; }
+    .banner { margin-bottom: 18px; }
+    .banner h1 { margin: 0; font-size: clamp(28px, 5vw, 56px); letter-spacing: -0.05em; }
+    .banner p { margin: 8px 0 0; color: var(--text-muted); font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="banner">
+      <h1>Home Command Centre</h1>
+      <p>Reusable eY widgets for Notion and your smart home display.</p>
+    </section>
+
+    <section class="ey-grid">
+      <iframe class="ey-dashboard-card" src="../clock/?theme=dark"></iframe>
+      <iframe class="ey-dashboard-card" src="../date/?theme=dark"></iframe>
+    </section>
+  </div>
+</body>
+</html>

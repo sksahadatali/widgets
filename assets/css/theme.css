@@ -1,0 +1,100 @@
+:root {
+  --bg: transparent;
+  --card-bg: rgba(17, 24, 39, 0.92);
+  --card-border: rgba(255, 255, 255, 0.10);
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --accent: #38bdf8;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  --radius: 22px;
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--text-main);
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.ey-widget {
+  width: 100%;
+  max-width: 520px;
+  min-height: 170px;
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  overflow: hidden;
+}
+
+.ey-kicker {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.ey-title {
+  font-size: 20px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.ey-main {
+  font-size: clamp(44px, 12vw, 82px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.ey-sub {
+  margin-top: 14px;
+  font-size: clamp(16px, 3.5vw, 24px);
+  color: var(--text-muted);
+}
+
+.ey-grid {
+  width: 100%;
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.ey-dashboard-card {
+  height: 230px;
+  border: 0;
+  border-radius: var(--radius);
+  width: 100%;
+  background: transparent;
+}
+
+body[data-theme="light"] {
+  --card-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(17, 24, 39, 0.12);
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --accent: #0369a1;
+  --shadow: 0 18px 45px rgba(17, 24, 39, 0.12);
+}
+
+body[data-theme="flat"] {
+  --card-bg: transparent;
+  --card-border: transparent;
+  --shadow: none;
+}
