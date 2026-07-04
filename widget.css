@@ -1,0 +1,7 @@
+:root { --text:#f8fafc; --muted:#a7b0bf; --gold:#f5c86b; --green:#4ade80; --blue:#38bdf8; --purple:#c084fc; }
+*{box-sizing:border-box} html,body{margin:0;height:100%;background:transparent;font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.widget{height:118px;display:flex;align-items:center;gap:18px;padding:18px 22px;background:rgba(8,15,28,.55)}
+.icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:34px;border:1px solid rgba(255,255,255,.18)}
+.icon.gold{color:var(--gold)} .icon.green{color:var(--green)} .icon.blue{color:var(--blue)} .icon.purple{color:var(--purple)}
+.label{font-size:13px;font-weight:700;letter-spacing:.4px;color:#e5e7eb;text-transform:uppercase;margin-bottom:7px}
+.main{font-size:18px;line-height:1.1}.sub{font-size:14px;color:var(--muted);margin-top:6px}.highlight{color:var(--gold)}.good{color:var(--green)}.link{color:var(--blue)}
