@@ -26,7 +26,7 @@ function renderWidgets() {
 
             return `
                 <section class="widget-card" id="${widget.id}">
-                    <div class="widget-icon">${widget.icon}</div>
+                    <div class="widget-icon">${IconManager.get(widget.icon)}</div>
                     <div class="widget-content">
                         <div class="widget-title">${widget.title}</div>
                         <div class="${valueClass}">${widget.value}</div>
@@ -69,15 +69,22 @@ function updateStatusBar() {
  * Initialise dashboard.
  */
 function initDashboard() {
-    applyTheme();
+    ErrorHandler.safeRun("Initialise Dashboard", function () {
+        applyTheme();
 
-    document.getElementById("dashboard-title").textContent = dashboardConfig.title;
-    document.getElementById("dashboard-subtitle").textContent = dashboardConfig.subtitle;
+        document.getElementById("dashboard-title").textContent =
+            dashboardConfig.title;
 
-    renderWidgets();
-    updateStatusBar();
+        document.getElementById("dashboard-subtitle").textContent =
+            dashboardConfig.subtitle;
 
-    setInterval(updateStatusBar, 1000);
+        renderWidgets();
+        updateStatusBar();
+
+        setInterval(updateStatusBar, 1000);
+
+        Logger.debug("Dashboard version", AppVersion);
+    });
 }
 
 initDashboard();
