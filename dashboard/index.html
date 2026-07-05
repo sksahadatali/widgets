@@ -3,32 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>eY Dashboard</title>
+  <title>Home Command Centre</title>
   <link rel="stylesheet" href="../assets/css/theme.css" />
-  <style>
-    body {
-      align-items: flex-start;
-      min-height: 100vh;
-      background: #0f172a;
-      padding: 24px;
-    }
-    .page { width: 100%; max-width: 1180px; }
-    .banner { margin-bottom: 18px; }
-    .banner h1 { margin: 0; font-size: clamp(28px, 5vw, 56px); letter-spacing: -0.05em; }
-    .banner p { margin: 8px 0 0; color: var(--text-muted); font-size: 18px; }
-  </style>
+  <link rel="stylesheet" href="../assets/css/dashboard.css" />
 </head>
 <body>
-  <div class="page">
-    <section class="banner">
-      <h1>Home Command Centre</h1>
-      <p>Reusable eY widgets for Notion and your smart home display.</p>
-    </section>
+  <main class="ey-dashboard">
+    <header class="ey-hero">
+      <h1 id="dashboardTitle" class="ey-title"></h1>
+      <p id="dashboardSubtitle" class="ey-subtitle"></p>
+    </header>
 
-    <section class="ey-grid">
-      <iframe class="ey-dashboard-card" src="../clock/?theme=dark"></iframe>
-      <iframe class="ey-dashboard-card" src="../date/?theme=dark"></iframe>
+    <section class="ey-panel">
+      <div id="widgetGrid" class="ey-widget-grid"></div>
+      <div id="statusBar" class="ey-status"></div>
     </section>
-  </div>
+  </main>
+
+  <script src="../assets/js/icons.js"></script>
+  <script src="../assets/js/widget-renderer.js"></script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

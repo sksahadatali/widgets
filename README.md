@@ -1,52 +1,11 @@
-# eY Widgets
+# eY Widgets v3
 
-Reusable HTML, CSS and JavaScript widgets for Notion, GitHub Pages and home dashboards.
+Framework-driven dashboard for Notion embeds.
 
-## Live URLs
+## Test URLs
 
-After publishing with GitHub Pages:
+- `/dashboard/`
 
-- Clock: `https://sksahadatali.github.io/widgets/clock/`
-- Date: `https://sksahadatali.github.io/widgets/date/`
-- Dashboard: `https://sksahadatali.github.io/widgets/dashboard/`
+## Edit dashboard content
 
-## URL configuration
-
-Clock examples:
-
-- `clock/?theme=dark`
-- `clock/?theme=light`
-- `clock/?theme=flat`
-- `clock/?seconds=true`
-
-Date examples:
-
-- `date/?theme=dark`
-- `date/?theme=light`
-- `date/?theme=flat`
-
-## Structure
-
-```text
-assets/
-  css/theme.css
-  js/widget-utils.js
-clock/
-  index.html
-  script.js
-date/
-  index.html
-  script.js
-dashboard/
-  index.html
-```
-
-## GitHub Pages
-
-Repository settings:
-
-- Source: Deploy from a branch
-- Branch: main
-- Folder: / root
-
-Then embed individual widget URLs into Notion using `/embed`.
+Update `dashboard/config.js` only. The dashboard layout is rendered automatically by `dashboard/script.js` using shared files under `assets/`.
