@@ -1,24 +1,17 @@
-function renderIcon(name) {
-  return eyIcons[name] || eyIcons.calendar;
-}
+window.eyWidgetRenderer = {
+  renderWidget(widget) {
+    return `
+      <article class="ey-widget" data-widget-type="${widget.type || ""}">
+        <div class="ey-widget-icon">${widget.icon || "◇"}</div>
+        <div class="ey-widget-title">${widget.title || ""}</div>
+        <div class="ey-widget-value" id="${widget.valueId || ""}">${widget.value || ""}</div>
+        <div class="ey-widget-detail" id="${widget.detailId || ""}">${widget.detail || ""}</div>
+      </article>
+    `;
+  },
 
-function renderWidgets(widgets) {
-  const grid = document.getElementById('widgetGrid');
-  grid.innerHTML = widgets.map(w => `
-    <article class="ey-widget">
-      <div class="ey-icon">${renderIcon(w.icon)}</div>
-      <div>
-        <div class="ey-label">${w.title}</div>
-        <div class="ey-value ${w.tone || ''}">${w.value}</div>
-        <div class="ey-detail">${w.detail || ''}</div>
-      </div>
-    </article>
-  `).join('');
-}
-
-function renderStatus(items) {
-  const status = document.getElementById('statusBar');
-  status.innerHTML = items.map(i => `
-    <span class="ey-status-item">${i.icon || ''} ${i.strong ? `<strong>${i.strong}</strong>` : ''} ${i.text || ''}</span>
-  `).join('');
-}
+  renderDashboard(targetId, config) {
+    const target = document.getElementById(targetId);
+    target.innerHTML = config.widgets.map(this.renderWidget).join("");
+  }
+};

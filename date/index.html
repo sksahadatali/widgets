@@ -1,19 +1,30 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>eY Date Widget</title>
-  <link rel="stylesheet" href="../assets/css/theme.css" />
+  <meta charset="utf-8">
+  <title>Date Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../assets/css/theme.css">
 </head>
 <body>
-  <main class="ey-widget">
-    <div class="ey-kicker">eY Date</div>
-    <div id="day" class="ey-main">--</div>
-    <div id="fullDate" class="ey-sub">Loading date...</div>
+  <main class="ey-shell">
+    <section class="ey-widget ey-fullscreen-card">
+      <div>
+        <div class="ey-large-date" id="day">Loading</div>
+        <div class="ey-large-time" id="date">--</div>
+      </div>
+    </section>
   </main>
-
-  <script src="../assets/js/widget-utils.js"></script>
-  <script src="script.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/live-clock.js"></script>
+  <script>
+    function updateDateWidget() {
+      const now = window.eyClock.now();
+      document.getElementById("day").textContent = now.day;
+      document.getElementById("date").textContent = now.date.replace(now.day + ", ", "");
+    }
+    updateDateWidget();
+    setInterval(updateDateWidget, window.eyConfig.refresh.dateMs);
+  </script>
 </body>
 </html>

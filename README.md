@@ -1,11 +1,22 @@
-# eY Widgets v3
+# eY Widgets
 
-Framework-driven dashboard for Notion embeds.
+Configurable widgets for Notion dashboards and future smart home dashboards.
+
+## v4
+
+This version adds the live data framework:
+
+- Live clock
+- Live date
+- Service structure for prayer times
+- Service structure for currency
+- Service structure for weather
+- Config-driven dashboard rendering
 
 ## Test URLs
 
-- `/dashboard/`
-
-## Edit dashboard content
-
-Update `dashboard/config.js` only. The dashboard layout is rendered automatically by `dashboard/script.js` using shared files under `assets/`.
+```text
+https://sksahadatali.github.io/widgets/dashboard/
+https://sksahadatali.github.io/widgets/clock/
+https://sksahadatali.github.io/widgets/date/
+```

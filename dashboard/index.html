@@ -1,28 +1,35 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Home Command Centre</title>
-  <link rel="stylesheet" href="../assets/css/theme.css" />
-  <link rel="stylesheet" href="../assets/css/dashboard.css" />
+  <meta charset="utf-8">
+  <title>eY Widgets Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../assets/css/theme.css">
 </head>
 <body>
-  <main class="ey-dashboard">
-    <header class="ey-hero">
-      <h1 id="dashboardTitle" class="ey-title"></h1>
-      <p id="dashboardSubtitle" class="ey-subtitle"></p>
-    </header>
+  <main class="ey-shell">
+    <section class="ey-banner">
+      <h1 class="ey-title" id="dashboard-title">Home Command Centre</h1>
+      <div class="ey-subtitle" id="dashboard-subtitle">Loading dashboard</div>
+    </section>
 
-    <section class="ey-panel">
-      <div id="widgetGrid" class="ey-widget-grid"></div>
-      <div id="statusBar" class="ey-status"></div>
+    <section class="ey-grid" id="dashboard-widgets"></section>
+
+    <section class="ey-status">
+      <span><strong id="status-time">--:--</strong></span>
+      <span id="status-date">Loading date</span>
+      <span>Location: <strong>Leighton Buzzard</strong></span>
     </section>
   </main>
 
-  <script src="../assets/js/icons.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/live-clock.js"></script>
+  <script src="../assets/js/api-client.js"></script>
+  <script src="../assets/js/weather-service.js"></script>
+  <script src="../assets/js/currency-service.js"></script>
+  <script src="../assets/js/prayer-service.js"></script>
   <script src="../assets/js/widget-renderer.js"></script>
-  <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script src="./config.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
