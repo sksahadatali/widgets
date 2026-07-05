@@ -1,3 +1,20 @@
+/**
+ * eY Widgets
+ * File    : dashboard.js
+ * Purpose : Render dashboard widgets and live status bar
+ */
+
+/**
+ * Apply dashboard theme from config.js.
+ */
+function applyTheme() {
+    document.body.className = "";
+    document.body.classList.add(`theme-${dashboardConfig.theme}`);
+}
+
+/**
+ * Render widgets from dashboardConfig.
+ */
 function renderWidgets() {
     const widgetStrip = document.getElementById("widget-strip");
 
@@ -21,6 +38,9 @@ function renderWidgets() {
         .join("");
 }
 
+/**
+ * Update time, date and status bar values.
+ */
 function updateStatusBar() {
     const now = new Date();
 
@@ -45,12 +65,14 @@ function updateStatusBar() {
         dashboardConfig.status.location;
 }
 
+/**
+ * Initialise dashboard.
+ */
 function initDashboard() {
-    document.getElementById("dashboard-title").textContent =
-        dashboardConfig.title;
+    applyTheme();
 
-    document.getElementById("dashboard-subtitle").textContent =
-        dashboardConfig.subtitle;
+    document.getElementById("dashboard-title").textContent = dashboardConfig.title;
+    document.getElementById("dashboard-subtitle").textContent = dashboardConfig.subtitle;
 
     renderWidgets();
     updateStatusBar();
