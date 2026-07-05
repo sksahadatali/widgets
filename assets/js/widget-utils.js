@@ -1,1 +1,0 @@
-const EY={params:new URLSearchParams(location.search),get(k,d){return this.params.get(k)||d},fmtDate(d=new Date()){return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})},fmtTime(d=new Date()){return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}};

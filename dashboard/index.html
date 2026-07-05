@@ -1,35 +1,92 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>eY Widgets Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="../assets/css/theme.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>eY Widgets - Home Command Centre</title>
+
+    <link rel="stylesheet" href="../assets/css/theme.css">
+    <link rel="stylesheet" href="dashboard.css">
+
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <main class="ey-shell">
-    <section class="ey-banner">
-      <h1 class="ey-title" id="dashboard-title">Home Command Centre</h1>
-      <div class="ey-subtitle" id="dashboard-subtitle">Loading dashboard</div>
-    </section>
 
-    <section class="ey-grid" id="dashboard-widgets"></section>
+<div class="dashboard-container">
 
-    <section class="ey-status">
-      <span><strong id="status-time">--:--</strong></span>
-      <span id="status-date">Loading date</span>
-      <span>Location: <strong>Leighton Buzzard</strong></span>
-    </section>
-  </main>
+    <!-- ========================= -->
+    <!-- Header                    -->
+    <!-- ========================= -->
 
-  <script src="../assets/js/config.js"></script>
-  <script src="../assets/js/live-clock.js"></script>
-  <script src="../assets/js/api-client.js"></script>
-  <script src="../assets/js/weather-service.js"></script>
-  <script src="../assets/js/currency-service.js"></script>
-  <script src="../assets/js/prayer-service.js"></script>
-  <script src="../assets/js/widget-renderer.js"></script>
-  <script src="./config.js"></script>
-  <script src="./script.js"></script>
+    <header class="dashboard-header">
+
+        <h1 id="dashboard-title">
+            Home Command Centre
+        </h1>
+
+        <p id="dashboard-subtitle">
+            Family • Property • Business • Finance • Focus
+        </p>
+
+    </header>
+
+
+    <!-- ========================= -->
+    <!-- Widget Strip              -->
+    <!-- ========================= -->
+
+    <main id="widget-strip">
+
+        <!-- Rendered by dashboard.js -->
+
+    </main>
+
+
+    <!-- ========================= -->
+    <!-- Status Bar                -->
+    <!-- ========================= -->
+
+    <footer id="status-bar">
+
+        <!-- Live Clock -->
+        <div class="status-item">
+            <span id="status-time">--:--</span>
+        </div>
+
+        <!-- Date -->
+        <div class="status-item">
+            <span id="status-date">Loading...</span>
+        </div>
+
+        <!-- Daily Message -->
+        <div class="status-item">
+            <span id="status-message">
+                Tie your camel and trust in Allah.
+            </span>
+        </div>
+
+        <!-- Location -->
+        <div class="status-item">
+            <span id="status-location">
+                Leighton Buzzard, UK
+            </span>
+        </div>
+
+    </footer>
+
+</div>
+
+
+<!-- Configuration -->
+<script src="config.js"></script>
+
+<!-- Dashboard Logic -->
+<script src="dashboard.js"></script>
+
 </body>
 </html>

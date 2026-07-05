@@ -1,54 +1,55 @@
-window.dashboardConfig = {
-  title: "Home Command Centre",
-  subtitle: "Family • Property • Business • Finance • Focus",
-  widgets: [
-    {
-      type: "weather",
-      icon: "☀️",
-      title: "Weather",
-      value: "Loading",
-      detail: "Leighton Buzzard",
-      valueId: "weather-value",
-      detailId: "weather-detail"
-    },
-    {
-      type: "event",
-      icon: "📅",
-      title: "Next Event",
-      value: "Family",
-      detail: "Calendar integration next"
-    },
-    {
-      type: "property",
-      icon: "🏠",
-      title: "Property Alert",
-      value: "2 New",
-      detail: "Liverpool watchlist"
-    },
-    {
-      type: "business",
-      icon: "🛍️",
-      title: "AYANOH",
-      value: "Tasks",
-      detail: "Supplier / Shopify tracker"
-    },
-    {
-      type: "currency",
-      icon: "💷",
-      title: "GBP/MAD",
-      value: "Loading",
-      detail: "Exchange rate",
-      valueId: "gbp-mad-value",
-      detailId: "gbp-mad-detail"
-    },
-    {
-      type: "prayer",
-      icon: "🕌",
-      title: "Next Prayer",
-      value: "Loading",
-      detail: "Daily calculation",
-      valueId: "prayer-value",
-      detailId: "prayer-detail"
+const dashboardConfig = {
+    title: "Home Command Centre",
+    subtitle: "Family • Property • Business • Finance • Focus",
+
+    widgets: [
+        {
+            id: "weather",
+            icon: "☀️",
+            title: "Weather",
+            value: "24°C",
+            detail: "Partly Cloudy"
+        },
+        {
+            id: "next-event",
+            icon: "📅",
+            title: "Next Event",
+            value: "Kumon - Rehan",
+            detail: "5:30 PM Today"
+        },
+        {
+            id: "property-alert",
+            icon: "🏠",
+            title: "Property Alert",
+            value: "2 New Listings",
+            detail: "Liverpool",
+            variant: "success"
+        },
+        {
+            id: "ayanoh",
+            icon: "🛍️",
+            title: "AYANOH",
+            value: "Supplier Quote",
+            detail: "Due Tomorrow"
+        },
+        {
+            id: "currency",
+            icon: "£",
+            title: "GBP / MAD",
+            value: "12.45 ↑",
+            detail: "Updated 10:30 AM"
+        },
+        {
+            id: "prayer",
+            icon: "🕌",
+            title: "Next Prayer",
+            value: "Asr",
+            detail: "4:58 PM"
+        }
+    ],
+
+    status: {
+        message: "Tie your camel and trust in Allah.",
+        location: "Leighton Buzzard, UK"
     }
-  ]
 };
