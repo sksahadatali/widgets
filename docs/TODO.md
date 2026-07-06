@@ -1,22 +1,15 @@
-# eY Widgets TODO
+# Phase 1 - Foundation
+- [x] Dashboard layout
+- [x] Theme engine
+- [x] Widget renderer
+- [x] Icon manager
+- [x] Logger
+- [x] Error handler
+- [x] Version manager
+- [x] Documentation
 
-## Sprint 1
-- [ ] Dashboard layout
-- [ ] Widget renderer
-- [ ] Theme
-- [ ] Live clock
-
-## Sprint 2
-- [ ] Weather API
-- [ ] Prayer API
-- [ ] Currency API
-
-## Sprint 3
-- [ ] Calendar
-- [ ] Property
-- [ ] AYANOH
-
-## Future
-- [ ] Home Assistant
-- [ ] Dashboard Builder
-- [ ] Mobile App
+# Phase 2 - Live Services
+- [ ] Weather
+- [ ] Prayer Times
+- [ ] Currency
+- [ ] Google Calendar
