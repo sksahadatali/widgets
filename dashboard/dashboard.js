@@ -1,3 +1,20 @@
+/**
+ * eY Widgets
+ * File    : dashboard.js
+ * Purpose : Render dashboard widgets and live status bar
+ */
+
+/**
+ * Apply dashboard theme from config.js.
+ */
+function applyTheme() {
+    document.body.className = "";
+    document.body.classList.add(`theme-${dashboardConfig.theme}`);
+}
+
+/**
+ * Render widgets from dashboardConfig.
+ */
 function renderWidgets() {
     const widgetStrip = document.getElementById("widget-strip");
 
@@ -9,7 +26,7 @@ function renderWidgets() {
 
             return `
                 <section class="widget-card" id="${widget.id}">
-                    <div class="widget-icon">${widget.icon}</div>
+                    <div class="widget-icon">${IconManager.get(widget.icon)}</div>
                     <div class="widget-content">
                         <div class="widget-title">${widget.title}</div>
                         <div class="${valueClass}">${widget.value}</div>
@@ -21,6 +38,9 @@ function renderWidgets() {
         .join("");
 }
 
+/**
+ * Update time, date and status bar values.
+ */
 function updateStatusBar() {
     const now = new Date();
 
@@ -45,17 +65,21 @@ function updateStatusBar() {
         dashboardConfig.status.location;
 }
 
+/**
+ * Initialise dashboard.
+ */
 function initDashboard() {
-    document.getElementById("dashboard-title").textContent =
-        dashboardConfig.title;
+    ErrorHandler.safeRun("Initialise Dashboard", function () {
+        ThemeManager.applyTheme();
 
-    document.getElementById("dashboard-subtitle").textContent =
-        dashboardConfig.subtitle;
+        document.getElementById("dashboard-title").textContent = dashboardConfig.title;
+        document.getElementById("dashboard-subtitle").textContent = dashboardConfig.subtitle;
 
-    renderWidgets();
-    updateStatusBar();
+        WidgetRenderer.renderWidgets();
+        StatusBar.start();
 
-    setInterval(updateStatusBar, 1000);
+        Logger.debug("Dashboard version", AppVersion);
+    });
 }
 
 initDashboard();
