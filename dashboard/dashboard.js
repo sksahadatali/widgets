@@ -70,18 +70,13 @@ function updateStatusBar() {
  */
 function initDashboard() {
     ErrorHandler.safeRun("Initialise Dashboard", function () {
-        applyTheme();
+        ThemeManager.applyTheme();
 
-        document.getElementById("dashboard-title").textContent =
-            dashboardConfig.title;
+        document.getElementById("dashboard-title").textContent = dashboardConfig.title;
+        document.getElementById("dashboard-subtitle").textContent = dashboardConfig.subtitle;
 
-        document.getElementById("dashboard-subtitle").textContent =
-            dashboardConfig.subtitle;
-
-        renderWidgets();
-        updateStatusBar();
-
-        setInterval(updateStatusBar, 1000);
+        WidgetRenderer.renderWidgets();
+        StatusBar.start();
 
         Logger.debug("Dashboard version", AppVersion);
     });

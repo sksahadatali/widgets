@@ -81,11 +81,18 @@
 
 </div>
 
-<!-- Icon Manager -->
-<script src="../assets/js/icon-manager.js"></script>
-
-<!-- Configuration -->
+<!-- Configuration must load first -->
 <script src="config.js"></script>
+
+<!-- Shared framework utilities -->
+<script src="../src/core/app-version.js"></script>
+<script src="../src/core/logger.js"></script>
+<script src="../src/core/error-handler.js"></script>
+<script src="../src/core/icon-manager.js"></script>
+
+<script src="../src/core/theme-manager.js"></script>
+<script src="../src/core/widget-renderer.js"></script>
+<script src="../src/core/status-bar.js"></script>
 
 <!-- Dashboard Logic -->
 <script src="dashboard.js"></script>
