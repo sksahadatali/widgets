@@ -27,22 +27,27 @@ const WidgetRenderer = {
      * Render a single widget card.
      */
     renderWidget(widget) {
-        const valueClass = widget.variant === "success"
-            ? "widget-value success"
-            : "widget-value";
+    const valueClass = widget.variant === "success"
+        ? "widget-value success"
+        : "widget-value";
 
-        return `
-            <section class="widget-card" id="${widget.id}">
-                <div class="widget-icon">
-                    ${IconManager.get(widget.icon)}
-                </div>
+    const metaHtml = widget.meta
+        ? `<div class="widget-meta">${widget.meta}</div>`
+        : "";
 
-                <div class="widget-content">
-                    <div class="widget-title">${widget.title}</div>
-                    <div class="${valueClass}">${widget.value}</div>
-                    <div class="widget-detail">${widget.detail}</div>
-                </div>
-            </section>
-        `;
-    }
+    return `
+        <section class="widget-card" id="${widget.id}">
+            <div class="widget-icon">
+                ${IconManager.get(widget.icon)}
+            </div>
+
+            <div class="widget-content">
+                <div class="widget-title">${widget.title}</div>
+                <div class="${valueClass}">${widget.value}</div>
+                <div class="widget-detail">${widget.detail}</div>
+                ${metaHtml}
+            </div>
+        </section>
+    `;
+}
 };

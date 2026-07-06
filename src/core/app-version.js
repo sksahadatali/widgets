@@ -5,8 +5,10 @@
  */
 
 const AppVersion = {
-    name: "eY Widgets",
+    frameworkName: "eY Widgets",
+    productName: "Home Command Centre",
     version: "0.1.0",
-    stage: "foundation",
-    updated: "2026-07-05"
+    codename: "Foundation",
+    stage: "Development",
+    updated: "2026-07-06"
 };

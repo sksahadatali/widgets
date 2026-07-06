@@ -1,14 +1,29 @@
 # Changelog
 
-## v0.1.0
+## v0.1.0 - Foundation (2026-07-06)
 
-- Initial project
-- Dashboard layout
-- Theme engine
-- Icon manager
-- Widget renderer
+### Added
+- Initial dashboard
+- Theme Manager
+- Widget Renderer
+- Icon Manager
+- Logger
+- Error Handler
+- Version Manager
+- Dashboard configuration
+- Responsive layout
+- Project documentation
 
-## v0.2.0
+## v0.2.0 - Live Services
 
-- Weather Service
-- Prayer Service
+### Added
+- Live Weather Service using Open-Meteo
+- Dynamic weather icon mapping
+- Weather widget refresh interval
+- Weather error handling
+
+Prayer Service
+
+Currency Service
+
+Improved Theme Manager

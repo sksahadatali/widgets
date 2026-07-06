@@ -17,7 +17,14 @@ const IconManager = {
 
         const icons = {
 
-            "weather.sun": "☀️",
+			"weather.sun": "☀️",
+			"weather.partlyCloudy": "⛅",
+			"weather.cloud": "☁️",
+			"weather.fog": "🌫️",
+			"weather.rain": "🌧️",
+			"weather.snow": "❄️",
+			"weather.thunderstorm": "⛈️",
+			"weather.unknown": "❓",
 
             "calendar.event": "📅",
 
@@ -27,7 +34,12 @@ const IconManager = {
 
             "finance.currency": "💷",
 
-            "prayer.mosque": "🕌"
+            "prayer.mosque": "🕌",
+            "prayer.fajr": "🌅",
+            "prayer.dhuhr": "☀️",
+            "prayer.asr": "🌤️",
+            "prayer.maghrib": "🌇",
+            "prayer.isha": "🌙"
 
         };
 
