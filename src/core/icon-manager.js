@@ -34,7 +34,12 @@ const IconManager = {
 
             "finance.currency": "💷",
 
-            "prayer.mosque": "🕌"
+            "prayer.mosque": "🕌",
+            "prayer.fajr": "🌅",
+            "prayer.dhuhr": "☀️",
+            "prayer.asr": "🌤️",
+            "prayer.maghrib": "🌇",
+            "prayer.isha": "🌙"
 
         };
 

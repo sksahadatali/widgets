@@ -17,7 +17,7 @@ const dashboardConfig = {
         { id: "property-alert", icon: "property.house", title: "Property Alert", value: "2 New Listings", detail: "Liverpool", variant: "success" },
         { id: "ayanoh", icon: "business.shop", title: "AYANOH", value: "Supplier Quote", detail: "Due Tomorrow" },
         { id: "currency", icon: "finance.currency", title: "GBP / MAD", value: "12.45 ↑", detail: "Updated 10:30 AM" },
-        { id: "prayer", icon: "prayer.mosque", title: "Next Prayer", value: "Asr", detail: "4:58 PM" }
+        { id: "prayer", icon: "prayer.mosque", title: "Next Prayer", value: "Loading...", detail: "Fetching prayer time", meta: "" }
     ],
 
     weather: {
@@ -27,6 +27,15 @@ const dashboardConfig = {
     refreshMinutes: 30
 	},
 	
+    prayer: {
+        latitude: 51.9172,
+        longitude: -0.6603,
+        method: 2, // ISNA for now. We can adjust later.
+        school: 1, // Hanafi Asr calculation
+        timezone: "Europe/London",
+        refreshMinutes: 60
+    },
+
 	status: {
         message: "Tie your camel and trust in Allah.",
         location: "Leighton Buzzard, UK"

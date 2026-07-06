@@ -85,6 +85,13 @@ function initDashboard() {
             dashboardConfig.weather.refreshMinutes * 60 * 1000
         );
 
+        updatePrayerWidget();
+
+        setInterval(
+            updatePrayerWidget,
+            dashboardConfig.prayer.refreshMinutes * 60 * 1000
+        );
+
         Logger.debug("Dashboard version", AppVersion);
     });
 }
@@ -114,6 +121,29 @@ async function updateWeatherWidget() {
         weatherWidget.detail = "Update failed";
         weatherWidget.meta = "";
     }
+
+    WidgetRenderer.renderWidgets();
+}
+
+async function updatePrayerWidget() {
+    const prayerWidget = dashboardConfig.widgets.find(widget => widget.id === "prayer");
+
+    if (!prayerWidget) {
+        Logger.warn("Prayer widget not found in config");
+        return;
+    }
+
+    prayerWidget.value = "Loading...";
+    prayerWidget.detail = "Fetching prayer time";
+    prayerWidget.meta = "";
+    WidgetRenderer.renderWidgets();
+
+    const prayer = await PrayerService.getNextPrayer();
+
+    prayerWidget.icon = prayer.icon;
+    prayerWidget.value = prayer.name;
+    prayerWidget.detail = prayer.time;
+    prayerWidget.meta = prayer.meta;
 
     WidgetRenderer.renderWidgets();
 }

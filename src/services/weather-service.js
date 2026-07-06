@@ -18,13 +18,7 @@ const WeatherService = {
         try {
             Logger.debug("Fetching weather", url);
 
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error(`Weather API failed: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await ApiClient.get(url);
             const weatherCode = data.current.weather_code;
 
             return {
