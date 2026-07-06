@@ -17,7 +17,14 @@ const IconManager = {
 
         const icons = {
 
-            "weather.sun": "☀️",
+			"weather.sun": "☀️",
+			"weather.partlyCloudy": "⛅",
+			"weather.cloud": "☁️",
+			"weather.fog": "🌫️",
+			"weather.rain": "🌧️",
+			"weather.snow": "❄️",
+			"weather.thunderstorm": "⛈️",
+			"weather.unknown": "❓",
 
             "calendar.event": "📅",
 

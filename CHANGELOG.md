@@ -14,11 +14,13 @@
 - Responsive layout
 - Project documentation
 
-v0.2.0
+## v0.2.0 - Live Services
 
-Added:
-
-Weather Service
+### Added
+- Live Weather Service using Open-Meteo
+- Dynamic weather icon mapping
+- Weather widget refresh interval
+- Weather error handling
 
 Prayer Service
 

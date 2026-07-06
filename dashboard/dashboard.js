@@ -78,8 +78,44 @@ function initDashboard() {
         WidgetRenderer.renderWidgets();
         StatusBar.start();
 
+        updateWeatherWidget();
+
+        setInterval(
+            updateWeatherWidget,
+            dashboardConfig.weather.refreshMinutes * 60 * 1000
+        );
+
         Logger.debug("Dashboard version", AppVersion);
     });
+}
+
+async function updateWeatherWidget() {
+    const weatherWidget = dashboardConfig.widgets.find(widget => widget.id === "weather");
+
+    if (!weatherWidget) {
+        Logger.warn("Weather widget not found in config");
+        return;
+    }
+
+    weatherWidget.value = "Loading...";
+    weatherWidget.detail = "Fetching weather";
+    WidgetRenderer.renderWidgets();
+
+    const weather = await WeatherService.getCurrentWeather();
+
+    weatherWidget.icon = weather.icon;
+
+    if (weather.success) {
+        weatherWidget.value = `${weather.temperature}°C`;
+        weatherWidget.detail = weather.condition;
+        weatherWidget.meta = `Updated ${weather.updatedAt}`;
+    } else {
+        weatherWidget.value = "Unavailable";
+        weatherWidget.detail = "Update failed";
+        weatherWidget.meta = "";
+    }
+
+    WidgetRenderer.renderWidgets();
 }
 
 initDashboard();

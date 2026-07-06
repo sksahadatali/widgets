@@ -153,6 +153,13 @@ body {
     color: var(--muted);
 }
 
+.widget-meta {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0.8;
+}
+
 #status-bar {
     display: flex;
     justify-content: center;

@@ -20,7 +20,14 @@ const dashboardConfig = {
         { id: "prayer", icon: "prayer.mosque", title: "Next Prayer", value: "Asr", detail: "4:58 PM" }
     ],
 
-    status: {
+    weather: {
+    latitude: 51.9172,
+    longitude: -0.6603,
+    locationName: "Leighton Buzzard",
+    refreshMinutes: 30
+	},
+	
+	status: {
         message: "Tie your camel and trust in Allah.",
         location: "Leighton Buzzard, UK"
     }
