@@ -92,6 +92,20 @@ function initDashboard() {
             dashboardConfig.prayer.refreshMinutes * 60 * 1000
         );
 
+        updateCurrencyWidget();
+
+        setInterval(
+            updateCurrencyWidget,
+            dashboardConfig.currency.refreshMinutes * 60 * 1000
+        );
+
+        updateCalendarWidget();
+
+        setInterval(
+            updateCalendarWidget,
+            dashboardConfig.calendar.refreshMinutes * 60 * 1000
+        );
+
         Logger.debug("Dashboard version", AppVersion);
     });
 }
@@ -170,9 +184,33 @@ async function updateCurrencyWidget() {
     widget.value = currency.value;
     widget.detail = currency.detail;
     widget.meta = currency.meta;
+    widget.variant = currency.variant;
 
     WidgetRenderer.renderWidgets();
 
+}
+
+async function updateCalendarWidget() {
+    const widget = dashboardConfig.widgets.find(w => w.id === "next-event");
+
+    if (!widget) {
+        Logger.warn("Calendar widget not found in config");
+        return;
+    }
+
+    widget.value = "Loading...";
+    widget.detail = "Fetching event";
+    widget.meta = "";
+    WidgetRenderer.renderWidgets();
+
+    const event = await CalendarService.getNextEvent();
+
+    widget.icon = event.icon;
+    widget.value = event.value;
+    widget.detail = event.detail;
+    widget.meta = event.meta;
+
+    WidgetRenderer.renderWidgets();
 }
 
 initDashboard();
