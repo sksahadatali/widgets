@@ -17,12 +17,13 @@
 ## v0.2.0 - Live Services
 
 ### Added
-- Live Weather Service using Open-Meteo
-- Dynamic weather icon mapping
-- Weather widget refresh interval
-- Weather error handling
-
-Prayer Service
+- Live Weather Service
+- Live Prayer Time Service
+- Shared API Client
+- Dynamic weather icons
+- Dynamic prayer icons
+- Prayer countdown
+- Improved widget rendering
 
 Currency Service
 

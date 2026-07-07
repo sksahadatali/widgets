@@ -35,6 +35,11 @@ const dashboardConfig = {
         timezone: "Europe/London",
         refreshMinutes: 60
     },
+    currency: {
+        from: "GBP",
+        to: "MAD",
+        refreshMinutes: 60
+    },
 
 	status: {
         message: "Tie your camel and trust in Allah.",

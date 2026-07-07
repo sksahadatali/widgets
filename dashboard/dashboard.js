@@ -148,4 +148,31 @@ async function updatePrayerWidget() {
     WidgetRenderer.renderWidgets();
 }
 
+async function updateCurrencyWidget() {
+
+    const widget =
+        dashboardConfig.widgets.find(
+            w => w.id === "currency"
+        );
+
+    if (!widget) return;
+
+    widget.value = "Loading...";
+    widget.detail = "Fetching rate";
+    widget.meta = "";
+
+    WidgetRenderer.renderWidgets();
+
+    const currency =
+        await CurrencyService.getExchangeRate();
+
+    widget.icon = currency.icon;
+    widget.value = currency.value;
+    widget.detail = currency.detail;
+    widget.meta = currency.meta;
+
+    WidgetRenderer.renderWidgets();
+
+}
+
 initDashboard();
