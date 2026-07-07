@@ -25,6 +25,9 @@
 - Prayer countdown
 - Improved widget rendering
 
-Currency Service
+- Live Currency Service
+- Shared exchange rate API integration
+- Currency trend indicators (↑ ↓ →)
+- Exchange rate persistence using localStorage
 
 Improved Theme Manager

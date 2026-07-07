@@ -41,6 +41,11 @@ const dashboardConfig = {
         refreshMinutes: 60
     },
 
+    calendar: {
+        endpoint: "https://script.google.com/macros/s/AKfycbz2U7L58NPsWI8linbcs8NN9rKlbQ2NFKwKLEtqWxqIhiSI2YWwN2Wy9d32zokiEIHSHA/exec",
+        refreshMinutes: 15
+    },
+
 	status: {
         message: "Tie your camel and trust in Allah.",
         location: "Leighton Buzzard, UK"
