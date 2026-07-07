@@ -27,9 +27,15 @@ const WidgetRenderer = {
      * Render a single widget card.
      */
     renderWidget(widget) {
-    const valueClass = widget.variant === "success"
-        ? "widget-value success"
-        : "widget-value";
+        let valueClass = "widget-value";
+
+        if (widget.variant === "success") {
+            valueClass += " success";
+        }
+        
+        if (widget.variant === "danger") {
+            valueClass += " danger";
+        }
 
     const metaHtml = widget.meta
         ? `<div class="widget-meta">${widget.meta}</div>`

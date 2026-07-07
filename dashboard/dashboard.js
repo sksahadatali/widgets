@@ -92,6 +92,13 @@ function initDashboard() {
             dashboardConfig.prayer.refreshMinutes * 60 * 1000
         );
 
+        updateCurrencyWidget();
+
+        setInterval(
+            updateCurrencyWidget,
+            dashboardConfig.currency.refreshMinutes * 60 * 1000
+        );
+
         Logger.debug("Dashboard version", AppVersion);
     });
 }
@@ -170,6 +177,7 @@ async function updateCurrencyWidget() {
     widget.value = currency.value;
     widget.detail = currency.detail;
     widget.meta = currency.meta;
+    widget.variant = currency.variant;
 
     WidgetRenderer.renderWidgets();
 
