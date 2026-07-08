@@ -1,16 +1,38 @@
-# eY Widgets
+## Project Status
 
-eY Widgets is a lightweight JavaScript framework for building reusable dashboard widgets.
+### Milestone 1 — Framework ✅
 
-## Features
+- Widget Framework
+- Theme Engine
+- API Client
+- Service Layer
 
-- Configuration driven
-- Theme support
-- Widget renderer
-- Services
-- Notion integration
-- AI ready
+### Milestone 2 — Live Services ✅
 
-## Example Application
+- Weather
+- Prayer
+- Currency
+- Calendar
 
-This repository includes the Home Command Centre as the reference implementation.
+### Milestone 3 — Product Foundation ✅
+
+- Vision
+- PRD
+- Information Architecture
+- User Flows
+- Feature Matrix
+
+### Milestone 4 — UX Design 🚧
+
+- Home Wireframe ✅
+- Home Mock-up
+- Design System
+- Component Library
+
+### Milestone 5 — eY OS v1.0
+
+- Home
+- Daily
+- Personal
+- RAEN
+- AYANOH
