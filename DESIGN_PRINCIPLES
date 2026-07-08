@@ -1,0 +1,219 @@
+# eY OS Design Principles
+
+---
+
+# Philosophy
+
+Design should reduce thinking, not increase it.
+
+The interface exists to help users make decisions quickly.
+
+Every screen should feel calm, focused and intentional.
+
+---
+
+# Principle 1
+
+Purpose before Layout.
+
+Never ask:
+
+"Where should this widget go?"
+
+Always ask:
+
+"What problem does this solve?"
+
+---
+
+# Principle 2
+
+Action over Information.
+
+Information without action creates noise.
+
+Every widget should help the user decide something.
+
+---
+
+# Principle 3
+
+The Five Second Rule.
+
+A user should understand:
+
+• What needs attention.
+
+• What has changed.
+
+• What happens next.
+
+within five seconds of opening Home.
+
+---
+
+# Principle 4
+
+Progressive Disclosure.
+
+Home shows summaries.
+
+Details belong inside modules.
+
+---
+
+# Principle 5
+
+One Responsibility.
+
+Every widget has one responsibility.
+
+Avoid combining unrelated information.
+
+---
+
+# Principle 6
+
+Calm Interface.
+
+Avoid clutter.
+
+Avoid unnecessary colours.
+
+Avoid unnecessary animations.
+
+Whitespace is valuable.
+
+---
+
+# Principle 7
+
+Consistency.
+
+Cards.
+
+Buttons.
+
+Typography.
+
+Spacing.
+
+Icons.
+
+Interaction.
+
+Everything follows one design system.
+
+---
+
+# Principle 8
+
+AI Assists.
+
+AI should:
+
+Summarise.
+
+Recommend.
+
+Prioritise.
+
+Never overwhelm.
+
+---
+
+# Principle 9
+
+Information Hierarchy.
+
+Everything belongs to one of four categories.
+
+ACTION
+
+Tasks
+
+Shopping
+
+Inbox
+
+TIME
+
+Calendar
+
+Travel
+
+Reminders
+
+Quick Status
+
+KNOWLEDGE
+
+Documents
+
+Property
+
+Research
+
+Notes
+
+INTELLIGENCE
+
+AI Brief
+
+News
+
+Recommendations
+
+Insights
+
+---
+
+# Principle 10
+
+Home is Sacred.
+
+The Home page is not another dashboard.
+
+It is the decision centre.
+
+If information does not help answer:
+
+"What should I focus on today?"
+
+it probably does not belong on Home.
+
+---
+
+# Principle 11
+
+Design Once.
+
+Build Once.
+
+Think Twice.
+
+Code Once.
+
+---
+
+# Principle 12
+
+Framework First.
+
+If functionality is reusable:
+
+Build it inside eY Widgets.
+
+If functionality is application specific:
+
+Build it inside eY OS.
+
+---
+
+# Design Goal
+
+Beautiful enough to enjoy.
+
+Simple enough to understand.
+
+Powerful enough to replace dozens of daily apps.
