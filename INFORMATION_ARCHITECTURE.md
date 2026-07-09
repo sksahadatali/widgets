@@ -12,6 +12,7 @@ eY OS
 │   └── News
 
 ├── 👤 Personal
+│   ├── Dashboard
 │   ├── Faith
 │   ├── Family
 │   ├── Health
