@@ -30,4 +30,10 @@
 - Currency trend indicators (↑ ↓ →)
 - Exchange rate persistence using localStorage
 
+# 2026-07-14
+
+- Fixed Sidebar spacing
+- Updated Header typography
+- Changed card radius from 12px to 16px
+
 Improved Theme Manager

@@ -1,4 +1,19 @@
+# eY OS
+
+**A personal operating system that brings together the information that matters, simplifies everyday life, and helps make better decisions.**
+
+### Principles
+
+- Inform
+- Simplify
+- Decide
+- Act
+
 ## Project Status
+
+## Design System
+
+The Design System (Foundations + Components) is considered frozen unless a product decision is recorded in PRODUCT_DECISIONS.md.
 
 ### Milestone 1 — Framework ✅
 

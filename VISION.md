@@ -4,11 +4,7 @@
 
 ## Vision
 
-eY OS is a modern Personal Operating System designed to bring together every important aspect of life into a single, intelligent workspace.
-
-Rather than opening multiple applications throughout the day, eY OS provides one place to view information, manage tasks, make decisions, and stay focused on what matters most.
-
-The goal is simple:
+eY OS is a personal operating system that brings together the information that matters, simplifies everyday life, helps make better decisions, and ultimately acts on your behalf. It is designed to become the first application opened each morning and the central place from which life and business are managed.
 
 > **Reduce friction. Increase clarity. Help people make better decisions every day.**
 
@@ -85,6 +81,22 @@ Whenever practical, data should remain under the user's control.
 Artificial Intelligence should enhance decision making, not replace it.
 
 AI should recommend, summarise and prioritise while leaving the final decision to the user.
+
+## Our Philosophy
+
+Traditional dashboards present information.
+
+eY OS delivers understanding.
+
+Users should not have to interpret dozens of widgets every morning.
+
+Instead, eY OS analyses information across every module and produces a concise executive briefing, allowing users to understand their day in under 30 seconds.
+
+Every widget exists to support, validate and expand upon the AI Morning Brief.
+
+The Morning Brief is the product.
+
+Everything else supports it.
 
 ---
 

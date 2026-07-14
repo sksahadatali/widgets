@@ -11,14 +11,17 @@ Primary navigation is:
 - AYANOH
 - Settings
 
-Reason:
+Reason: Reflects how the user thinks rather than how the software is implemented.
+Status: Accepted
+Date:   2026-07-08
 
-Reflects how the user thinks rather than how the software is implemented.
+## ADR-001: Product Folder Structure
 
-Status:
+Status: Accepted
+Date: 2026-07-09
 
-Accepted
+Decision: Use the current `product/` folder structure with Branding, Research, Wireframes, Mockups, and UX/Design System.
 
-Date:
+Reason: Separates product disciplines clearly while remaining simple and scalable.
 
-2026-07-08
+Consequence: This structure will not change unless a clear architectural issue is identified.
