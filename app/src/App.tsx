@@ -1,15 +1,12 @@
-import Sidebar from './components/layout/Sidebar'
-import './styles/sidebar.css'
+import Sidebar from './components/layout/Sidebar/Sidebar'
+import Home from './pages/Home'
+
 
 function App() {
   return (
     <div className="app-shell">
       <Sidebar />
-
-      <main className="app-content">
-        <h1>eY OS</h1>
-        <p>React foundation is working.</p>
-      </main>
+      <Home />
     </div>
   )
 }

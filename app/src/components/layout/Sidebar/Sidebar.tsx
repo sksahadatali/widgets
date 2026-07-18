@@ -1,3 +1,5 @@
+import './Sidebar.css'
+
 const navigationItems = [
   { label: 'Home', active: true },
   { label: 'Daily' },

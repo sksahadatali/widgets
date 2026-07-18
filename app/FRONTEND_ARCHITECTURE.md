@@ -34,6 +34,76 @@ It never becomes the design tool.
 
 8. Keep folders organised by responsibility.
 
+
+---
+
+# Architecture Decisions 
+
+## ADR-001 – React Application Location
+Status: Approved
+
+Decision:
+The React application resides under the `app/` folder.
+
+Reason:
+eY OS is the overall product, while the React application is only the presentation layer.
+
+---
+
+## ADR-002 – Component Folder Structure
+Status: Approved
+
+Decision:
+Each component has its own folder containing its implementation and styles.
+
+Example:
+
+Sidebar/
+├── Sidebar.tsx
+└── Sidebar.css
+
+Reason:
+Improves scalability and keeps related files together.
+
+---
+
+## ADR-003 – UI Components
+Status: Approved
+
+Decision:
+Reusable visual components are stored under:
+
+components/ui
+
+Reason:
+The name "ui" clearly represents reusable interface building blocks.
+
+---
+
+## ADR-004 – Design Source of Truth
+Status: Approved
+
+Decision:
+Canva is the authoritative design source.
+
+Reason:
+React implements the approved design rather than becoming the design tool.
+
+---
+
+## ADR-005 – CSS Ownership
+Status: Approved
+
+Decision:
+Each component owns its own CSS file.
+
+Global styles remain in:
+
+styles/
+
+Reason:
+Improves maintainability and reduces coupling.
+
 ---
 
 # Folder Structure
@@ -101,18 +171,18 @@ Examples
 
 ---
 
-## components/common
+## components/ui
 
-Reusable UI elements.
+Reusable UI building blocks shared across the application.
 
 Examples
 
-- Button
-- Badge
 - Avatar
+- SearchBox
+- IconButton
+- Badge
 - Card
 - Divider
-- Icon
 
 ---
 
@@ -231,3 +301,10 @@ A feature is complete when:
 ---
 
 End of document
+
+# Version History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 1.0 | Jul 2026 | Initial frontend architecture |
+| 1.1 | Jul 2026 | Introduced Architecture Decisions (ADR), component-per-folder standard, renamed `common` to `ui` |

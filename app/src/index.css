@@ -33,7 +33,13 @@ input {
   min-height: 100vh;
 }
 
-.app-content {
+.home-page {
   flex: 1;
-  padding: 32px;
+  min-width: 0;
+  min-height: 100vh;
+  background: #131c31;
+}
+
+.home-page__content {
+  padding: 0 32px 32px;
 }
