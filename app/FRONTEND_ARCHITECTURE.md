@@ -35,6 +35,36 @@ It never becomes the design tool.
 8. Keep folders organised by responsibility.
 
 
+# Architecture Decisions
+
+## ADR-001 – React Application Location
+
+Status: Approved
+
+Decision:
+
+The React application resides under the `app/` folder.
+
+Reason:
+
+eY OS is the overall product, while the React application is its presentation layer.
+
+---
+
+## ADR-002 – Component Folder Structure
+
+Status: Approved
+
+Decision:
+
+Each component has its own folder containing its implementation and styles.
+
+Example:
+
+```text
+Sidebar/
+├── Sidebar.tsx
+└── Sidebar.css
 ---
 
 # Architecture Decisions 
