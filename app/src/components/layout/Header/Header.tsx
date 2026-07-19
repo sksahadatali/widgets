@@ -3,6 +3,8 @@ import { Bell, CalendarDays, Clock3 } from 'lucide-react';
 import SearchBox from '../../ui/SearchBox/SearchBox';
 import IconButton from '../../ui/IconButton/IconButton';
 
+import Avatar from '../../ui/Avatar/Avatar';
+
 import {
   getGreeting,
   getCurrentDate,
@@ -26,16 +28,20 @@ function Header() {
         <SearchBox placeholder="Search eY OS..." />
 
         <div className="header__date-time">
-          <CalendarDays size={18} strokeWidth={2} />
+          <CalendarDays size={18} />
           <span>{currentDate}</span>
 
-          <Clock3 size={18} strokeWidth={2} />
+          <Clock3 size={18} />
           <span>{currentTime}</span>
         </div>
 
         <IconButton
           icon={Bell}
           ariaLabel="Notifications"
+        />
+
+        <Avatar
+          name="Sahadat Ali"
         />
       </div>
     </header>
