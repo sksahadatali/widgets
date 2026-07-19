@@ -1,0 +1,42 @@
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    width: 42px;
+    height: 42px;
+  
+    border: 1px solid #2b364b;
+    border-radius: 12px;
+  
+    background: #182237;
+    color: #cbd5e1;
+  
+    cursor: pointer;
+  
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.15s ease;
+  }
+  
+  .icon-button:hover:not(:disabled) {
+    background: #24314a;
+    border-color: #3b4c68;
+    color: #ffffff;
+  }
+  
+  .icon-button:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+  
+  .icon-button:focus-visible {
+    outline: 2px solid #d6b46a;
+    outline-offset: 2px;
+  }
+  
+  .icon-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
