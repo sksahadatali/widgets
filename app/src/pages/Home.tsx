@@ -1,16 +1,20 @@
-import Header from '../components/layout/Header/Header'
-import TodaysBrief from '../components/modules/TodaysBrief/TodaysBrief'
+import TodaysBrief from '../components/modules/TodaysBrief/TodaysBrief';
+import TodaysFocus from '../components/modules/TodaysFocus/TodaysFocus';
+
+import './Home.css';
 
 function Home() {
   return (
-    <main className="home-page">
-      <Header />
-
-      <div className="home-page__content">
+    <main className="home">
+      <div className="home__brief">
         <TodaysBrief />
       </div>
+
+      <div className="home__focus">
+        <TodaysFocus />
+      </div>
     </main>
-  )
+  );
 }
 
-export default Home
+export default Home;

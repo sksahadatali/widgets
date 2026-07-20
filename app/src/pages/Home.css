@@ -1,0 +1,26 @@
+.home {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+
+  padding: 0 32px 32px;
+}
+
+.home__brief {
+  grid-column: span 8;
+}
+
+.home__focus {
+  grid-column: span 4;
+}
+
+@media (max-width: 1200px) {
+  .home {
+    grid-template-columns: 1fr;
+  }
+
+  .home__brief,
+  .home__focus {
+    grid-column: auto;
+  }
+}

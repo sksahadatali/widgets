@@ -1,41 +1,47 @@
 .todays-brief {
-    width: min(850px, 100%);
-    min-height: 220px;
-    padding: 24px;
-    border: 1px solid #2b364b;
-    border-radius: 16px;
-    background: #1a2438;
-  }
-  
-  .todays-brief__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  
-  .todays-brief h2 {
-    margin: 0;
-    color: #d6b46a;
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .todays-brief__top span {
-    color: #94a3b8;
-    font-size: 12px;
-  }
-  
-  .todays-brief h3 {
-    margin: 12px 0 0;
-    color: #f8fafc;
-    font-size: 28px;
-    font-weight: 600;
-  }
-  
-  .todays-brief p {
-    max-width: 700px;
-    margin: 16px 0 0;
-    color: #e2e8f0;
-    font-size: 16px;
-    line-height: 1.5;
-  }
+  width: 100%;
+  max-width: 1100px;
+  min-height: 220px;
+  padding: 24px;
+}
+
+.todays-brief__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.todays-brief__title {
+  color: #f4bd4f;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.todays-brief__updated {
+  color: #9fb0c8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.todays-brief__content {
+  margin-top: 12px;
+}
+
+.todays-brief__content h2 {
+  margin: 0;
+
+  color: #f8fafc;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.todays-brief__content p {
+  margin: 14px 0 0;
+
+  color: #f1f5f9;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
