@@ -5,25 +5,6 @@
   padding: 24px;
 }
 
-.todays-brief__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.todays-brief__title {
-  color: #f4bd4f;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.todays-brief__updated {
-  color: #9fb0c8;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
 .todays-brief__content {
   margin-top: 12px;
 }

@@ -1,0 +1,12 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+server/.env
+
+# Dependencies
+node_modules/
+
+# Builds
+dist/

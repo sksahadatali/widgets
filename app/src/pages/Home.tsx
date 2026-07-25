@@ -1,5 +1,6 @@
 import TodaysBrief from '../components/modules/TodaysBrief/TodaysBrief';
 import TodaysFocus from '../components/modules/TodaysFocus/TodaysFocus';
+import QuickStatus from '../components/modules/QuickStatus/QuickStatus';
 
 import './Home.css';
 
@@ -12,6 +13,10 @@ function Home() {
 
       <div className="home__focus">
         <TodaysFocus />
+      </div>
+
+      <div className="home__status">
+          <QuickStatus />
       </div>
     </main>
   );
