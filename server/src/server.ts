@@ -1,23 +1,22 @@
 import cors from 'cors';
-import dotenv from 'dotenv';
 import express from 'express';
-import { getAccessToken } from './services/googleAuthService';
-import nestRouter from './routes/nest';
 
-dotenv.config();
+import { env } from './config/env.js';
+import nestRouter from './routes/nest.js';
 
 const app = express();
 
-const PORT = Number(process.env.PORT) || 3001;
+app.disable('x-powered-by');
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: env.frontendOrigin,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
   })
 );
 
 app.use(express.json());
-app.use('/api/nest', nestRouter);
 
 app.get('/health', (_request, response) => {
   response.json({
@@ -27,21 +26,16 @@ app.get('/health', (_request, response) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(
-    `eY OS Server running at http://localhost:${PORT}`
-  );
+app.use('/api/nest', nestRouter);
+
+app.use((_request, response) => {
+  response.status(404).json({
+    error: 'Route not found',
+  });
 });
 
-app.get('/token-test', async (_, res) => {
-    try {
-      const token = await getAccessToken();
-  
-      res.json({
-        success: true,
-        length: token.length,
-      });
-    } catch (error) {
-      res.status(500).json(error);
-    }
-  });
+app.listen(env.port, () => {
+  console.log(
+    `eY OS Server running at http://localhost:${env.port}`
+  );
+});

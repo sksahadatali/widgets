@@ -1,10 +1,52 @@
-import { env } from '../config/env';
+import { env } from '../config/env.js';
 
-type TokenResponse = {
+type GoogleTokenResponse = {
   access_token: string;
+  expires_in: number;
+  scope?: string;
+  token_type?: string;
 };
 
+type GoogleOAuthErrorResponse = {
+  error?: string;
+  error_description?: string;
+};
+
+let cachedAccessToken: string | null = null;
+let cachedAccessTokenExpiresAt = 0;
+
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+
+function hasValidCachedToken(): boolean {
+  return (
+    cachedAccessToken !== null &&
+    Date.now() < cachedAccessTokenExpiresAt
+  );
+}
+
+async function readOAuthError(
+  response: Response
+): Promise<string> {
+  try {
+    const errorData =
+      (await response.json()) as GoogleOAuthErrorResponse;
+
+    const error = errorData.error ?? 'unknown_error';
+    const description =
+      errorData.error_description ??
+      'Google did not provide an error description.';
+
+    return `${error}: ${description}`;
+  } catch {
+    return `Google OAuth returned HTTP ${response.status}.`;
+  }
+}
+
 export async function getAccessToken(): Promise<string> {
+  if (hasValidCachedToken()) {
+    return cachedAccessToken as string;
+  }
+
   const response = await fetch(
     'https://oauth2.googleapis.com/token',
     {
@@ -23,15 +65,32 @@ export async function getAccessToken(): Promise<string> {
   );
 
   if (!response.ok) {
-    const error = await response.text();
-  
-    console.error('Google OAuth Error:', error);
-  
-    throw new Error(`Unable to refresh Google access token: ${error}`);
+    const errorMessage = await readOAuthError(response);
+
+    console.error(`Google OAuth error: ${errorMessage}`);
+
+    throw new Error(
+      `Unable to refresh Google access token: ${errorMessage}`
+    );
   }
 
   const data =
-    (await response.json()) as TokenResponse;
+    (await response.json()) as GoogleTokenResponse;
+
+  if (!data.access_token) {
+    throw new Error(
+      'Google OAuth response did not contain an access token.'
+    );
+  }
+
+  const expiresInMilliseconds =
+    Math.max(data.expires_in, 300) * 1000;
+
+  cachedAccessToken = data.access_token;
+  cachedAccessTokenExpiresAt =
+    Date.now() +
+    expiresInMilliseconds -
+    TOKEN_EXPIRY_BUFFER_MS;
 
   return data.access_token;
 }
