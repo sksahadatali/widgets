@@ -1,0 +1,10 @@
+{
+  "name": "ey-os",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names \"UI,API\" --prefix-colors \"cyan,green\" \"npm run dev --prefix app\" \"npm run dev --prefix server\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

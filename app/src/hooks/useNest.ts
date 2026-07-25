@@ -42,7 +42,11 @@ import {
           error
         );
   
-        setError('Nest unavailable');
+        setError(
+            error instanceof Error
+              ? error.message
+              : 'Nest unavailable'
+          );
       } finally {
         setLoading(false);
       }
