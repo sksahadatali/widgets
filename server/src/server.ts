@@ -3,6 +3,7 @@ import express from 'express';
 
 import { env } from './config/env.js';
 import nestRouter from './routes/nest.js';
+import tasksRouter from './routes/tasks.js';
 
 const app = express();
 
@@ -11,7 +12,11 @@ app.disable('x-powered-by');
 app.use(
   cors({
     origin: env.frontendOrigin,
-    methods: ['GET', 'POST'],
+    methods: [
+      'GET',
+      'POST',
+      'PATCH',
+    ],
     allowedHeaders: ['Content-Type'],
   })
 );
@@ -27,6 +32,7 @@ app.get('/health', (_request, response) => {
 });
 
 app.use('/api/nest', nestRouter);
+app.use('/api/tasks', tasksRouter);
 
 app.use((_request, response) => {
   response.status(404).json({

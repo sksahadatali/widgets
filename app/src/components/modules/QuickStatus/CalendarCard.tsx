@@ -16,7 +16,7 @@ function CalendarCard() {
     calendar.title !== 'No Events';
 
   return (
-    <article className="status-card">
+    <article className="status-card calendar-card">
       <div className="status-card__header">
         <span className="status-card__icon">
           <CalendarDays

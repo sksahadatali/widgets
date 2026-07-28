@@ -2,11 +2,11 @@ import { apiGet } from './apiClient';
 
 const CURRENCY_CONFIG = {
   from: 'GBP',
-  to: 'MAD',
+  targets: ['MAD', 'INR', 'USD'],
   refreshMinutes: 60,
-};
+} as const;
 
-const STORAGE_KEY = 'GBP_MAD_RATE';
+const STORAGE_KEY = 'GBP_RATES';
 
 type ExchangeRateResponse = {
   rates: Record<string, number>;
@@ -17,33 +17,47 @@ export type RateMovement =
   | 'down'
   | 'unchanged';
 
-export type CurrencyData = {
+export type CurrencyRate = {
+  code: string;
   rate: number;
-  from: string;
-  to: string;
   movement: RateMovement;
+};
+
+export type CurrencyData = {
+  from: string;
+  rates: CurrencyRate[];
   updatedAt: string;
 };
 
-function getStoredRate(): number | null {
-  const storedRate =
-    localStorage.getItem(STORAGE_KEY);
+function getStoredRates(): Record<string, number> {
+  const storedRates = localStorage.getItem(STORAGE_KEY);
 
-  if (!storedRate) {
-    return null;
+  if (!storedRates) {
+    return {};
   }
 
-  const parsedRate = Number.parseFloat(storedRate);
+  try {
+    const parsedRates = JSON.parse(storedRates) as unknown;
 
-  return Number.isNaN(parsedRate)
-    ? null
-    : parsedRate;
+    if (
+      typeof parsedRates !== 'object' ||
+      parsedRates === null
+    ) {
+      return {};
+    }
+
+    return parsedRates as Record<string, number>;
+  } catch {
+    return {};
+  }
 }
 
-function storeRate(rate: number): void {
+function storeRates(
+  rates: Record<string, number>
+): void {
   localStorage.setItem(
     STORAGE_KEY,
-    rate.toString()
+    JSON.stringify(rates)
   );
 }
 
@@ -73,28 +87,40 @@ export async function getExchangeRate(): Promise<CurrencyData> {
   const data =
     await apiGet<ExchangeRateResponse>(url);
 
-  const rate =
-    data.rates[CURRENCY_CONFIG.to];
+  const previousRates = getStoredRates();
 
-  if (typeof rate !== 'number') {
-    throw new Error(
-      `${CURRENCY_CONFIG.to} exchange rate unavailable`
-    );
-  }
+  const rates: CurrencyRate[] =
+    CURRENCY_CONFIG.targets.map((code) => {
+      const rate = data.rates[code];
 
-  const previousRate = getStoredRate();
+      if (typeof rate !== 'number') {
+        throw new Error(
+          `${code} exchange rate unavailable`
+        );
+      }
 
-  const movement =
-    getMovement(rate, previousRate);
+      return {
+        code,
+        rate,
+        movement: getMovement(
+          rate,
+          previousRates[code] ?? null
+        ),
+      };
+    });
 
-  storeRate(rate);
+  storeRates(
+    Object.fromEntries(
+      rates.map(({ code, rate }) => [
+        code,
+        rate,
+      ])
+    )
+  );
 
   return {
-    rate,
     from: CURRENCY_CONFIG.from,
-    to: CURRENCY_CONFIG.to,
-    movement,
-
+    rates,
     updatedAt: new Date().toLocaleTimeString(
       'en-GB',
       {

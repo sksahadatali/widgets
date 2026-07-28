@@ -6,8 +6,75 @@ import {
 } from 'lucide-react';
 
 import { useExchangeRate } from '../../../hooks/useExchangeRate';
+import type { RateMovement } from '../../../services/currencyService';
 
 import './StatusCard.css';
+
+function getMovementIcon(
+  movement: RateMovement
+) {
+  switch (movement) {
+    case 'up':
+      return (
+        <ArrowUp
+          size={14}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      );
+
+    case 'down':
+      return (
+        <ArrowDown
+          size={14}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      );
+
+    default:
+      return (
+        <ArrowRight
+          size={14}
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      );
+  }
+}
+
+function getCurrencyLabel(
+  code: string
+): string {
+  switch (code) {
+    case 'MAD':
+      return '🇲🇦 MAD';
+
+    case 'INR':
+      return '🇮🇳 INR';
+
+    case 'USD':
+      return '🇺🇸 USD';
+
+    default:
+      return code;
+  }
+}
+
+function formatRate(
+  code: string,
+  value: number
+): string {
+  switch (code) {
+    case 'MAD':
+    case 'INR':
+    case 'USD':
+      return value.toFixed(2);
+
+    default:
+      return value.toFixed(2);
+  }
+}
 
 function FxCard() {
   const {
@@ -15,41 +82,6 @@ function FxCard() {
     loading,
     error,
   } = useExchangeRate();
-
-  function getMovementIcon() {
-    if (!currency) {
-      return null;
-    }
-
-    switch (currency.movement) {
-      case 'up':
-        return (
-          <ArrowUp
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        );
-
-      case 'down':
-        return (
-          <ArrowDown
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        );
-
-      default:
-        return (
-          <ArrowRight
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        );
-    }
-  }
 
   return (
     <article className="status-card">
@@ -63,7 +95,7 @@ function FxCard() {
         </span>
 
         <span className="status-card__label">
-          GBP / MAD
+          FX
         </span>
       </div>
 
@@ -93,24 +125,40 @@ function FxCard() {
         </>
       ) : currency ? (
         <>
-          <strong className="status-card__primary">
-            {currency.rate.toFixed(2)}
-          </strong>
+          <div className="status-card__rates">
+            {currency.rates.map((rate) => (
+              <div
+                key={rate.code}
+                className="status-card__rate"
+              >
+                <span className="status-card__rate-label">
+                  {getCurrencyLabel(rate.code)}
+                </span>
 
-          <span className="status-card__secondary">
-            {currency.from} → {currency.to}
-          </span>
+                <span className="status-card__rate-value">
+                  <strong>
+                    {formatRate(
+                      rate.code,
+                      rate.rate
+                    )}
+                  </strong>
 
-          <span
-            className={`status-card__footer ${
-              currency.movement === 'up'
-                ? 'status-card__footer--positive'
-                : ''
-            }`}
-          >
-            {getMovementIcon()}
-            {' '}
-            Updated {currency.updatedAt}
+                  <span
+                    className={`status-card__rate-movement status-card__rate-movement--${rate.movement}`}
+                    aria-label={`${rate.code} rate ${rate.movement}`}
+                  >
+                    {getMovementIcon(
+                      rate.movement
+                    )}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <span className="status-card__footer">
+            1 {currency.from} · Updated{' '}
+            {currency.updatedAt}
           </span>
         </>
       ) : null}

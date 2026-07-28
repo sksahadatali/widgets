@@ -1,0 +1,158 @@
+.due-soon {
+    width: 100%;
+    min-width: 0;
+  
+    padding: 24px;
+  
+    background: #18243a;
+    border: 1px solid #2a3a54;
+    border-radius: 16px;
+  }
+  
+  .due-soon__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  
+    margin-bottom: 18px;
+  }
+  
+  .due-soon__heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  
+    color: #f6c453;
+  }
+  
+  .due-soon__heading h2 {
+    margin: 0;
+  
+    color: #f8fafc;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  .due-soon__count {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+  
+  .due-soon__list {
+    display: grid;
+  }
+  
+  .due-soon__item {
+    display: grid;
+    grid-template-columns:
+      10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+  
+    min-height: 62px;
+  
+    border-bottom: 1px solid #29384f;
+  }
+  
+  .due-soon__item:last-child {
+    border-bottom: 0;
+  }
+  
+  .due-soon__indicator {
+    width: 8px;
+    height: 8px;
+  
+    border-radius: 50%;
+    background: #60a5fa;
+  }
+  
+  .due-soon__indicator--overdue {
+    background: #fb7185;
+  }
+  
+  .due-soon__indicator--today {
+    background: #f87171;
+  }
+  
+  .due-soon__indicator--tomorrow {
+    background: #f6c453;
+  }
+  
+  .due-soon__indicator--upcoming {
+    background: #60a5fa;
+  }
+  
+  .due-soon__content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  
+    min-width: 0;
+  }
+  
+  .due-soon__task {
+    overflow: hidden;
+  
+    color: #f1f5f9;
+    font-size: 0.92rem;
+    font-weight: 500;
+  
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .due-soon__area {
+    color: #8293ad;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+  }
+  
+  .due-soon__date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  
+    color: #94a3b8;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  
+  .due-soon__date--overdue,
+  .due-soon__date--today {
+    color: #fb7185;
+  }
+  
+  .due-soon__date--tomorrow {
+    color: #f6c453;
+  }
+  
+  .due-soon__date--upcoming {
+    color: #94a3b8;
+  }
+  
+  .due-soon__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    min-height: 120px;
+  
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+  
+  .due-soon__state--error {
+    gap: 12px;
+  }
+  
+  .due-soon__state button {
+    padding: 6px 12px;
+  
+    color: #f8fafc;
+    background: transparent;
+  
+    border: 1px solid #3a4a64;
+    border-radius: 8px;
+  
+    cursor: pointer;
+  }

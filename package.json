@@ -2,7 +2,9 @@
   "name": "ey-os",
   "private": true,
   "scripts": {
-    "dev": "concurrently --names \"UI,API\" --prefix-colors \"cyan,green\" \"npm run dev --prefix app\" \"npm run dev --prefix server\""
+    "dev": "concurrently --names \"UI,API\" --prefix-colors \"cyan,green\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm run dev --prefix app",
+    "dev:backend": "npm run dev --prefix server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

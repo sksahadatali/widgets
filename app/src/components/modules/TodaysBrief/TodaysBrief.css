@@ -26,3 +26,41 @@
   font-weight: 400;
   line-height: 1.6;
 }
+
+.todays-brief__list {
+  display: grid;
+  gap: 8px;
+
+  margin: 16px 0 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.todays-brief__list li {
+  position: relative;
+
+  padding-left: 18px;
+
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.todays-brief__list li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  color: #f4bd4f;
+  content: '•';
+}
+
+.todays-brief__notice {
+  display: block;
+
+  margin-top: 12px;
+
+  color: #7f8da3;
+  font-size: 0.78rem;
+}

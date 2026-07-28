@@ -38,4 +38,11 @@ export const env = {
     projectId: required('NEST_PROJECT_ID'),
     deviceName: required('NEST_DEVICE_NAME'),
   },
+
+  notion: {
+    token: required('NOTION_TOKEN'),
+    tasksDataSourceId: required(
+      'NOTION_TASKS_DATA_SOURCE_ID'
+    ),
+  },
 } as const;
