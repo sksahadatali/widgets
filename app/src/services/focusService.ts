@@ -9,5 +9,8 @@ import type {
 export async function getTodayFocus(): Promise<FocusData> {
   const items = focusItems as FocusItem[];
 
-  return generateTodayFocus(items);
+  return generateTodayFocus({
+    focusItems: items,
+    calendarEvents: [],
+  });
 }

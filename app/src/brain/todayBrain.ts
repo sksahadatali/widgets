@@ -94,13 +94,15 @@ import type {
     );
   }
   
+  import type { BrainInput } from "./types";
+
   export function generateTodayFocus(
-    sourceItems: FocusItem[],
+    input: BrainInput,
     now: Date = new Date()
   ): FocusData {
     const today = getLocalDateString(now);
   
-    const items = sourceItems
+    const items = input.focusItems
       .filter(isActive)
       .filter(item =>
         isEligibleForToday(item, today)
