@@ -1,15 +1,14 @@
 .todays-focus {
   width: 100%;
   min-height: 240px;
-  padding: 24px;
   height: 100%;
+  padding: 24px;
 }
 
 .todays-focus__list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-
   margin-top: 22px;
 }
 
@@ -19,7 +18,7 @@
   justify-content: space-between;
   gap: 16px;
 
-  min-height: 52px;
+  min-height: 56px;
   padding: 10px 0;
 
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
@@ -35,12 +34,17 @@
   gap: 12px;
 
   min-width: 0;
-
   color: #cbd5e1;
 }
 
 .todays-focus__item-main svg {
   flex-shrink: 0;
+}
+
+.todays-focus__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .todays-focus__item-title {
@@ -53,6 +57,13 @@
 
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.todays-focus__item-duration {
+  margin-top: 2px;
+
+  color: #94a3b8;
+  font-size: 0.75rem;
 }
 
 .todays-focus__item--completed {

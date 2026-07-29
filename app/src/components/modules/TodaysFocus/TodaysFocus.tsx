@@ -8,78 +8,77 @@ import Card from '../../ui/Card/Card';
 import SectionHeader from '../../ui/SectionHeader/SectionHeader';
 import StatusChip from '../../ui/StatusChip/StatusChip';
 
+import { useFocus } from '../../../hooks/useFocus';
+import type { FocusPriority } from '../../../types/focus';
+
 import './TodaysFocus.css';
-
-type FocusPriority = 'High' | 'Medium' | 'Low';
-
-type FocusItem = {
-  id: number;
-  title: string;
-  completed: boolean;
-  priority: FocusPriority;
-};
-
-const focusItems: FocusItem[] = [
-  {
-    id: 1,
-    title: 'Complete the eY OS dashboard foundation',
-    completed: false,
-    priority: 'High',
-  },
-  {
-    id: 2,
-    title: 'Review RAEN property opportunities',
-    completed: false,
-    priority: 'Medium',
-  },
-  {
-    id: 3,
-    title: 'Prepare for the upcoming work priorities',
-    completed: false,
-    priority: 'Low',
-  },
-];
 
 function getPriorityVariant(
   priority: FocusPriority
 ): 'danger' | 'warning' | 'info' {
   switch (priority) {
-    case 'High':
+    case 'high':
       return 'danger';
 
-    case 'Medium':
+    case 'medium':
       return 'warning';
 
-    case 'Low':
+    case 'low':
       return 'info';
   }
 }
 
 function TodaysFocus() {
-  const completedCount = focusItems.filter(
-    (item) => item.completed
+  const { items, loading, error } = useFocus();
+
+  const completedCount = items.filter(
+    (item) => item.status === 'completed'
   ).length;
+
+  if (loading) {
+    return (
+      <Card className="todays-focus">
+        <SectionHeader
+          eyebrow="Today"
+          title="Today's Focus"
+          metadata="Loading..."
+        />
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="todays-focus">
+        <SectionHeader
+          eyebrow="Today"
+          title="Today's Focus"
+          metadata="Unavailable"
+        />
+      </Card>
+    );
+  }
 
   return (
     <Card className="todays-focus">
       <SectionHeader
         eyebrow="Today"
         title="Today's Focus"
-        metadata={`${completedCount}/${focusItems.length} completed`}
+        metadata={`${completedCount}/${items.length} completed`}
       />
 
       <div className="todays-focus__list">
-        {focusItems.map((item) => (
+        {items.map((item) => (
           <div
             className={`todays-focus__item ${
-              item.completed
+              item.status === 'completed'
                 ? 'todays-focus__item--completed'
                 : ''
             }`}
             key={item.id}
           >
             <div className="todays-focus__item-main">
-              {item.completed ? (
+              {item.status === 'completed' ? (
                 <CheckCircle2
                   size={20}
                   strokeWidth={2}
@@ -93,13 +92,24 @@ function TodaysFocus() {
                 />
               )}
 
-              <span className="todays-focus__item-title">
-                {item.title}
-              </span>
+              <div className="todays-focus__text">
+                <span className="todays-focus__item-title">
+                  {item.title}
+                </span>
+
+                {item.estimatedMinutes && (
+                  <span className="todays-focus__item-duration">
+                    ~ {item.estimatedMinutes} mins
+                  </span>
+                )}
+              </div>
             </div>
 
             <StatusChip
-              label={item.priority}
+              label={
+                item.priority.charAt(0).toUpperCase() +
+                item.priority.slice(1)
+              }
               variant={getPriorityVariant(item.priority)}
               icon={
                 <Flag
