@@ -6,7 +6,12 @@ import type {
   FocusItem,
 } from '../types/focus';
 
+import {
+  logBrainDecisions,
+} from './logger';
+
 import type {
+  BrainDecision,
   BrainInput,
   BrainResult,
   BrainSource,
@@ -18,7 +23,7 @@ type BrainCandidate = {
   item: FocusItem;
   source: BrainSource;
   score: number;
-  reason: string;
+  reasons: string[];
   deduplicationKey: string;
 };
 
@@ -35,11 +40,9 @@ function getLocalDateString(
   date: Date
 ): string {
   const year = date.getFullYear();
-
   const month = String(
     date.getMonth() + 1
   ).padStart(2, '0');
-
   const day = String(
     date.getDate()
   ).padStart(2, '0');
@@ -100,8 +103,10 @@ function isFinishedCalendarEvent(
     return false;
   }
 
-  return endDate.getTime() <
-    now.getTime();
+  return (
+    endDate.getTime() <
+    now.getTime()
+  );
 }
 
 function formatEventTime(
@@ -137,7 +142,6 @@ function calculateEventDuration(
 
   const startDate =
     new Date(event.start);
-
   const endDate =
     new Date(event.end);
 
@@ -193,15 +197,18 @@ function scoreFocusItem(
   let score =
     priorityScore[item.priority];
 
-  let reason =
-    `${item.priority} priority`;
+  const reasons: string[] = [
+    `${item.priority} priority`,
+  ];
 
   if (
     item.status ===
     'in-progress'
   ) {
     score += 45;
-    reason = 'Currently in progress';
+    reasons.push(
+      'Currently in progress'
+    );
   }
 
   const today =
@@ -209,13 +216,9 @@ function scoreFocusItem(
 
   if (item.dueDate === today) {
     score += 15;
-
-    if (
-      item.status !==
-      'in-progress'
-    ) {
-      reason = 'Due today';
-    }
+    reasons.push(
+      'Due today'
+    );
   }
 
   if (
@@ -240,8 +243,9 @@ function scoreFocusItem(
         minutesUntilDue <= 60
       ) {
         score += 35;
-        reason =
-          'Due within one hour';
+        reasons.push(
+          'Due within one hour'
+        );
       }
     }
   }
@@ -250,7 +254,7 @@ function scoreFocusItem(
     item,
     source: 'focus',
     score,
-    reason,
+    reasons,
     deduplicationKey:
       normaliseTitle(item.title),
   };
@@ -263,13 +267,20 @@ function scoreCalendarEvent(
   const item =
     calendarEventToFocusItem(event);
 
+  const reasons: string[] = [
+    'Calendar event',
+  ];
+
   if (event.allDay) {
+    reasons.push(
+      'All-day event'
+    );
+
     return {
       item,
       source: 'calendar',
       score: 75,
-      reason:
-        'All-day calendar event',
+      reasons,
       deduplicationKey:
         normaliseTitle(event.title),
     };
@@ -277,7 +288,6 @@ function scoreCalendarEvent(
 
   const startDate =
     new Date(event.start);
-
   const endDate =
     new Date(event.end);
 
@@ -285,12 +295,15 @@ function scoreCalendarEvent(
     !isValidDate(startDate) ||
     !isValidDate(endDate)
   ) {
+    reasons.push(
+      'Scheduled today'
+    );
+
     return {
       item,
       source: 'calendar',
       score: 70,
-      reason:
-        'Calendar event today',
+      reasons,
       deduplicationKey:
         normaliseTitle(event.title),
     };
@@ -311,34 +324,39 @@ function scoreCalendarEvent(
     endDate.getTime() >= nowTime;
 
   let score = 90;
-  let reason =
-    'Calendar event today';
+
+  reasons.push(
+    'Scheduled today'
+  );
 
   if (eventIsHappening) {
     score = 140;
-    reason =
-      'Calendar event happening now';
+    reasons.push(
+      'Happening now'
+    );
   } else if (
     minutesUntilStart >= 0 &&
     minutesUntilStart <= 60
   ) {
     score = 125;
-    reason =
-      'Calendar event starts within one hour';
+    reasons.push(
+      'Starts within one hour'
+    );
   } else if (
     minutesUntilStart > 60 &&
     minutesUntilStart <= 180
   ) {
     score = 110;
-    reason =
-      'Calendar event starts within three hours';
+    reasons.push(
+      'Starts within three hours'
+    );
   }
 
   return {
     item,
     source: 'calendar',
     score,
-    reason,
+    reasons,
     deduplicationKey:
       normaliseTitle(event.title),
   };
@@ -497,13 +515,24 @@ export function generateTodayFocus(
       )
     );
 
+  const decisions: BrainDecision[] =
+    candidates.map(candidate => ({
+      item: candidate.item,
+      source: candidate.source,
+      score: candidate.score,
+      reasons: candidate.reasons,
+    }));
+
+  logBrainDecisions(decisions);
+
   return {
-    items: candidates.map(
-      candidate =>
-        candidate.item
+    items: decisions.map(
+      decision =>
+        decision.item
     ),
     generatedAt:
       now.toISOString(),
     sources,
+    decisions,
   };
 }

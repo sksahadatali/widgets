@@ -15,8 +15,16 @@ export interface BrainInput {
   calendarEvents: CalendarEvent[];
 }
 
+export interface BrainDecision {
+  item: FocusItem;
+  source: BrainSource;
+  score: number;
+  reasons: string[];
+}
+
 export interface BrainResult {
   items: FocusItem[];
   generatedAt: string;
   sources: BrainSource[];
+  decisions: BrainDecision[];
 }
