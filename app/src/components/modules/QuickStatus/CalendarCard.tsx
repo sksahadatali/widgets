@@ -6,14 +6,53 @@ import './StatusCard.css';
 
 function CalendarCard() {
   const {
-    calendar,
+    events,
     loading,
     error,
   } = useCalendar();
 
-  const hasEvent =
-    calendar &&
-    calendar.title !== 'No Events';
+  const nextEvent =
+    events.length > 0
+      ? events[0]
+      : null;
+
+  function formatTime() {
+    if (!nextEvent) {
+      return '';
+    }
+
+    if (nextEvent.allDay) {
+      return 'All day';
+    }
+
+    return new Intl.DateTimeFormat(
+      'en-GB',
+      {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }
+    ).format(
+      new Date(nextEvent.start)
+    );
+  }
+
+  function formatDate() {
+    if (!nextEvent) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat(
+      'en-GB',
+      {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      }
+    ).format(
+      new Date(nextEvent.start)
+    );
+  }
 
   return (
     <article className="status-card calendar-card">
@@ -27,11 +66,11 @@ function CalendarCard() {
         </span>
 
         <span className="status-card__label">
-          Calendar
+          Upcoming Event
         </span>
       </div>
 
-      {loading && !calendar ? (
+      {loading ? (
         <>
           <strong className="status-card__primary">
             --
@@ -41,7 +80,7 @@ function CalendarCard() {
             Loading...
           </span>
         </>
-      ) : error && !calendar ? (
+      ) : error ? (
         <>
           <strong className="status-card__primary">
             Unavailable
@@ -55,33 +94,31 @@ function CalendarCard() {
             Update failed
           </span>
         </>
-      ) : calendar ? (
+      ) : nextEvent ? (
         <>
           <strong className="status-card__primary">
-            {calendar.title}
+            {nextEvent.title}
           </strong>
 
-          {hasEvent && calendar.time ? (
-            <>
-              <span className="status-card__secondary">
-                {calendar.time}
-              </span>
+          <span className="status-card__secondary">
+            {formatTime()}
+          </span>
 
-              {calendar.meta && (
-                <span className="status-card__footer">
-                  {calendar.meta}
-                </span>
-              )}
-            </>
-          ) : (
-            calendar.meta && (
-              <span className="status-card__secondary">
-                {calendar.meta}
-              </span>
-            )
-          )}
+          <span className="status-card__footer">
+            {formatDate()}
+          </span>
         </>
-      ) : null}
+      ) : (
+        <>
+          <strong className="status-card__primary">
+            No Events
+          </strong>
+
+          <span className="status-card__secondary">
+            Next 7 days clear
+          </span>
+        </>
+      )}
     </article>
   );
 }

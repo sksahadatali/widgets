@@ -1,0 +1,15 @@
+.task-editor { display:grid; gap:12px; margin-bottom:16px; padding:14px; background:rgba(15,23,42,.5); border:1px solid #2a3a54; border-radius:10px; }
+.task-editor__header { display:flex; align-items:center; justify-content:space-between; color:#f8fafc; }
+.task-editor__close { display:flex; align-items:center; justify-content:center; padding:3px; color:#94a3b8; background:transparent; border:0; cursor:pointer; }
+.task-editor__close:hover { color:#f8fafc; }
+.task-editor input, .task-editor select { min-width:0; padding:9px 10px; color:#f1f5f9; background:#111c30; border:1px solid #34445e; border-radius:8px; font:inherit; }
+.task-editor input:focus, .task-editor select:focus { outline:none; border-color:#f6c453; }
+.task-editor__name { width:100%; }
+.task-editor__fields { display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; gap:10px; }
+.task-editor__hint { color:#f6c453; font-size:.76rem; }
+.task-editor__actions { display:flex; justify-content:flex-end; gap:8px; }
+.task-editor__save, .task-editor__cancel { padding:8px 14px; border-radius:8px; font:inherit; cursor:pointer; }
+.task-editor__save { color:#111827; background:#f6c453; border:0; font-weight:600; }
+.task-editor__save:disabled { cursor:not-allowed; opacity:.5; }
+.task-editor__cancel { color:#cbd5e1; background:transparent; border:1px solid #3a4a64; }
+@media (max-width:768px) { .task-editor__fields { grid-template-columns:1fr; } }

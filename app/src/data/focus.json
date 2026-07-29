@@ -1,0 +1,35 @@
+[
+    {
+      "id": "focus-001",
+      "title": "Complete the highest-priority work task",
+      "category": "work",
+      "priority": "high",
+      "status": "pending",
+      "dueDate": "2026-07-29",
+      "dueTime": null,
+      "estimatedMinutes": 45,
+      "assignedTo": "Sahadat"
+    },
+    {
+      "id": "focus-002",
+      "title": "Review the family calendar",
+      "category": "family",
+      "priority": "medium",
+      "status": "pending",
+      "dueDate": "2026-07-29",
+      "dueTime": null,
+      "estimatedMinutes": 10,
+      "assignedTo": "Household"
+    },
+    {
+      "id": "focus-003",
+      "title": "Continue eY OS development",
+      "category": "personal",
+      "priority": "medium",
+      "status": "in-progress",
+      "dueDate": "2026-07-29",
+      "dueTime": null,
+      "estimatedMinutes": 30,
+      "assignedTo": "Sahadat"
+    }
+  ]

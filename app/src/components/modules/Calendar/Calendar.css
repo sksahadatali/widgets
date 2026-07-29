@@ -1,0 +1,181 @@
+.calendar-card {
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+
+  background: #18243a;
+  border: 1px solid #2a3a54;
+  border-radius: 16px;
+}
+
+.calendar-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-bottom: 18px;
+}
+
+.calendar-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #f6c453;
+}
+
+.calendar-card__heading h2 {
+  margin: 0;
+
+  color: #f8fafc;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.calendar-card__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 10px;
+
+  color: #f6c453;
+  background: transparent;
+
+  border: 1px solid #3a4a64;
+  border-radius: 8px;
+
+  font: inherit;
+  font-size: 0.8rem;
+
+  cursor: pointer;
+}
+
+.calendar-card__view-all:hover {
+  border-color: #f6c453;
+}
+
+.calendar-card__agenda {
+  display: grid;
+  gap: 18px;
+}
+
+.calendar-card__group {
+  min-width: 0;
+}
+
+.calendar-card__group-title {
+  margin: 0 0 8px;
+
+  color: #8293ad;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.calendar-card__events {
+  display: grid;
+}
+
+.calendar-card__event {
+  display: grid;
+  grid-template-columns:
+    62px minmax(0, 1fr);
+  gap: 12px;
+
+  min-height: 52px;
+  padding: 9px 4px;
+
+  border-bottom: 1px solid #29384f;
+}
+
+.calendar-card__event:last-child {
+  border-bottom: 0;
+}
+
+.calendar-card__time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  color: #f6c453;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.calendar-card__weekday {
+  color: #8293ad;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.calendar-card__event-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.calendar-card__event-title {
+  overflow: hidden;
+
+  color: #f1f5f9;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-card__location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  overflow: hidden;
+
+  color: #8293ad;
+  font-size: 0.74rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-card__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 160px;
+
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.calendar-card__state--error {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-card__state button {
+  padding: 6px 12px;
+
+  color: #f8fafc;
+  background: transparent;
+
+  border: 1px solid #3a4a64;
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+@media (max-width: 1200px) {
+  .calendar-card__event {
+    grid-template-columns:
+      74px minmax(0, 1fr);
+  }
+}
