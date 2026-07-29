@@ -1,16 +1,45 @@
-import { generateTodayFocus } from '../brain/todayBrain';
+import {
+  generateTodayFocus,
+} from '../brain/todayBrain';
+
 import focusItems from '../data/focus.json';
 
+import {
+  getCalendarEvents,
+} from './calendarService';
+
 import type {
-  FocusData,
+  BrainResult,
+} from '../brain/types';
+
+import type {
   FocusItem,
 } from '../types/focus';
 
-export async function getTodayFocus(): Promise<FocusData> {
-  const items = focusItems as FocusItem[];
+export async function getTodayFocus(): Promise<BrainResult> {
+  const localFocusItems =
+    focusItems as FocusItem[];
 
-  return generateTodayFocus({
-    focusItems: items,
-    calendarEvents: [],
-  });
+  try {
+    const calendarData =
+      await getCalendarEvents();
+
+    return generateTodayFocus({
+      focusItems:
+        localFocusItems,
+      calendarEvents:
+        calendarData.events,
+    });
+  } catch (calendarError) {
+    console.warn(
+      "Today's Brain could not load Calendar. Using local focus items only.",
+      calendarError
+    );
+
+    return generateTodayFocus({
+      focusItems:
+        localFocusItems,
+      calendarEvents: [],
+    });
+  }
 }

@@ -1,117 +1,509 @@
 import type {
-    FocusData,
-    FocusItem,
-  } from '../types/focus';
-  
-  const MAX_FOCUS_ITEMS = 4;
-  
-  const priorityScore: Record<
-    FocusItem['priority'],
-    number
-  > = {
-    high: 3,
-    medium: 2,
-    low: 1,
-  };
-  
-  function getLocalDateString(date: Date): string {
-    const year = date.getFullYear();
-  
-    const month = String(
-      date.getMonth() + 1
-    ).padStart(2, '0');
-  
-    const day = String(
-      date.getDate()
-    ).padStart(2, '0');
-  
-    return `${year}-${month}-${day}`;
-  }
-  
-  function isDueToday(
-    item: FocusItem,
-    today: string
-  ): boolean {
-    return item.dueDate === today;
-  }
-  
-  function isActive(item: FocusItem): boolean {
-    return item.status !== 'completed';
-  }
-  
-  function isEligibleForToday(
-    item: FocusItem,
-    today: string
-  ): boolean {
-    return (
-      item.status === 'in-progress' ||
-      isDueToday(item, today)
-    );
-  }
-  
-  function compareFocusItems(
-    first: FocusItem,
-    second: FocusItem
-  ): number {
-    const firstInProgress =
-      first.status === 'in-progress';
-  
-    const secondInProgress =
-      second.status === 'in-progress';
-  
-    if (firstInProgress && !secondInProgress) {
-      return -1;
-    }
-  
-    if (secondInProgress && !firstInProgress) {
-      return 1;
-    }
-  
-    const priorityDifference =
-      priorityScore[second.priority] -
-      priorityScore[first.priority];
-  
-    if (priorityDifference !== 0) {
-      return priorityDifference;
-    }
-  
-    if (first.dueTime && second.dueTime) {
-      return first.dueTime.localeCompare(
-        second.dueTime
-      );
-    }
-  
-    if (first.dueTime && !second.dueTime) {
-      return -1;
-    }
-  
-    if (!first.dueTime && second.dueTime) {
-      return 1;
-    }
-  
-    return first.title.localeCompare(
-      second.title
-    );
-  }
-  
-  import type { BrainInput } from "./types";
+  CalendarEvent,
+} from '../services/calendarService';
 
-  export function generateTodayFocus(
-    input: BrainInput,
-    now: Date = new Date()
-  ): FocusData {
-    const today = getLocalDateString(now);
-  
-    const items = input.focusItems
-      .filter(isActive)
-      .filter(item =>
-        isEligibleForToday(item, today)
-      )
-      .sort(compareFocusItems)
-      .slice(0, MAX_FOCUS_ITEMS);
-  
+import type {
+  FocusItem,
+} from '../types/focus';
+
+import type {
+  BrainInput,
+  BrainResult,
+  BrainSource,
+} from './types';
+
+const MAX_FOCUS_ITEMS = 4;
+
+type BrainCandidate = {
+  item: FocusItem;
+  source: BrainSource;
+  score: number;
+  reason: string;
+  deduplicationKey: string;
+};
+
+const priorityScore: Record<
+  FocusItem['priority'],
+  number
+> = {
+  high: 80,
+  medium: 55,
+  low: 35,
+};
+
+function getLocalDateString(
+  date: Date
+): string {
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, '0');
+
+  const day = String(
+    date.getDate()
+  ).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function normaliseTitle(
+  title: string
+): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function isValidDate(
+  date: Date
+): boolean {
+  return !Number.isNaN(
+    date.getTime()
+  );
+}
+
+function isEventToday(
+  event: CalendarEvent,
+  today: string
+): boolean {
+  if (event.allDay) {
+    return event.start.slice(0, 10) === today;
+  }
+
+  const startDate =
+    new Date(event.start);
+
+  if (!isValidDate(startDate)) {
+    return false;
+  }
+
+  return (
+    getLocalDateString(startDate) ===
+    today
+  );
+}
+
+function isFinishedCalendarEvent(
+  event: CalendarEvent,
+  now: Date
+): boolean {
+  if (event.allDay) {
+    return false;
+  }
+
+  const endDate =
+    new Date(event.end);
+
+  if (!isValidDate(endDate)) {
+    return false;
+  }
+
+  return endDate.getTime() <
+    now.getTime();
+}
+
+function formatEventTime(
+  event: CalendarEvent
+): string | null {
+  if (event.allDay) {
+    return null;
+  }
+
+  const startDate =
+    new Date(event.start);
+
+  if (!isValidDate(startDate)) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }
+  ).format(startDate);
+}
+
+function calculateEventDuration(
+  event: CalendarEvent
+): number | null {
+  if (event.allDay) {
+    return null;
+  }
+
+  const startDate =
+    new Date(event.start);
+
+  const endDate =
+    new Date(event.end);
+
+  if (
+    !isValidDate(startDate) ||
+    !isValidDate(endDate)
+  ) {
+    return null;
+  }
+
+  const durationMilliseconds =
+    endDate.getTime() -
+    startDate.getTime();
+
+  const durationMinutes =
+    Math.round(
+      durationMilliseconds /
+        (1000 * 60)
+    );
+
+  return durationMinutes > 0
+    ? durationMinutes
+    : null;
+}
+
+function calendarEventToFocusItem(
+  event: CalendarEvent
+): FocusItem {
+  const eventTime =
+    formatEventTime(event);
+
+  return {
+    id: `calendar-${event.id}`,
+    title: eventTime
+      ? `${eventTime} — ${event.title}`
+      : event.title,
+    category: 'family',
+    priority: 'medium',
+    status: 'pending',
+    dueDate:
+      event.start.slice(0, 10),
+    dueTime: eventTime,
+    estimatedMinutes:
+      calculateEventDuration(event),
+    assignedTo: 'Calendar',
+  };
+}
+
+function scoreFocusItem(
+  item: FocusItem,
+  now: Date
+): BrainCandidate {
+  let score =
+    priorityScore[item.priority];
+
+  let reason =
+    `${item.priority} priority`;
+
+  if (
+    item.status ===
+    'in-progress'
+  ) {
+    score += 45;
+    reason = 'Currently in progress';
+  }
+
+  const today =
+    getLocalDateString(now);
+
+  if (item.dueDate === today) {
+    score += 15;
+
+    if (
+      item.status !==
+      'in-progress'
+    ) {
+      reason = 'Due today';
+    }
+  }
+
+  if (
+    item.dueDate === today &&
+    item.dueTime
+  ) {
+    const dueDateTime =
+      new Date(
+        `${item.dueDate}T${item.dueTime}:00`
+      );
+
+    if (isValidDate(dueDateTime)) {
+      const minutesUntilDue =
+        (
+          dueDateTime.getTime() -
+          now.getTime()
+        ) /
+        (1000 * 60);
+
+      if (
+        minutesUntilDue >= 0 &&
+        minutesUntilDue <= 60
+      ) {
+        score += 35;
+        reason =
+          'Due within one hour';
+      }
+    }
+  }
+
+  return {
+    item,
+    source: 'focus',
+    score,
+    reason,
+    deduplicationKey:
+      normaliseTitle(item.title),
+  };
+}
+
+function scoreCalendarEvent(
+  event: CalendarEvent,
+  now: Date
+): BrainCandidate {
+  const item =
+    calendarEventToFocusItem(event);
+
+  if (event.allDay) {
     return {
-      items,
-      generatedAt: now.toISOString(),
+      item,
+      source: 'calendar',
+      score: 75,
+      reason:
+        'All-day calendar event',
+      deduplicationKey:
+        normaliseTitle(event.title),
     };
   }
+
+  const startDate =
+    new Date(event.start);
+
+  const endDate =
+    new Date(event.end);
+
+  if (
+    !isValidDate(startDate) ||
+    !isValidDate(endDate)
+  ) {
+    return {
+      item,
+      source: 'calendar',
+      score: 70,
+      reason:
+        'Calendar event today',
+      deduplicationKey:
+        normaliseTitle(event.title),
+    };
+  }
+
+  const nowTime =
+    now.getTime();
+
+  const minutesUntilStart =
+    (
+      startDate.getTime() -
+      nowTime
+    ) /
+    (1000 * 60);
+
+  const eventIsHappening =
+    startDate.getTime() <= nowTime &&
+    endDate.getTime() >= nowTime;
+
+  let score = 90;
+  let reason =
+    'Calendar event today';
+
+  if (eventIsHappening) {
+    score = 140;
+    reason =
+      'Calendar event happening now';
+  } else if (
+    minutesUntilStart >= 0 &&
+    minutesUntilStart <= 60
+  ) {
+    score = 125;
+    reason =
+      'Calendar event starts within one hour';
+  } else if (
+    minutesUntilStart > 60 &&
+    minutesUntilStart <= 180
+  ) {
+    score = 110;
+    reason =
+      'Calendar event starts within three hours';
+  }
+
+  return {
+    item,
+    source: 'calendar',
+    score,
+    reason,
+    deduplicationKey:
+      normaliseTitle(event.title),
+  };
+}
+
+function isEligibleFocusItem(
+  item: FocusItem,
+  today: string
+): boolean {
+  if (
+    item.status === 'completed'
+  ) {
+    return false;
+  }
+
+  return (
+    item.status ===
+      'in-progress' ||
+    item.dueDate === today
+  );
+}
+
+function removeDuplicates(
+  candidates: BrainCandidate[]
+): BrainCandidate[] {
+  const uniqueCandidates =
+    new Map<
+      string,
+      BrainCandidate
+    >();
+
+  candidates.forEach(candidate => {
+    const existing =
+      uniqueCandidates.get(
+        candidate.deduplicationKey
+      );
+
+    if (
+      !existing ||
+      candidate.score >
+        existing.score
+    ) {
+      uniqueCandidates.set(
+        candidate.deduplicationKey,
+        candidate
+      );
+    }
+  });
+
+  return Array.from(
+    uniqueCandidates.values()
+  );
+}
+
+function compareCandidates(
+  first: BrainCandidate,
+  second: BrainCandidate
+): number {
+  const scoreDifference =
+    second.score - first.score;
+
+  if (scoreDifference !== 0) {
+    return scoreDifference;
+  }
+
+  if (
+    first.item.dueTime &&
+    second.item.dueTime
+  ) {
+    return first.item.dueTime.localeCompare(
+      second.item.dueTime
+    );
+  }
+
+  if (
+    first.item.dueTime &&
+    !second.item.dueTime
+  ) {
+    return -1;
+  }
+
+  if (
+    !first.item.dueTime &&
+    second.item.dueTime
+  ) {
+    return 1;
+  }
+
+  return first.item.title.localeCompare(
+    second.item.title
+  );
+}
+
+export function generateTodayFocus(
+  input: BrainInput,
+  now: Date = new Date()
+): BrainResult {
+  const today =
+    getLocalDateString(now);
+
+  const focusCandidates =
+    input.focusItems
+      .filter(item =>
+        isEligibleFocusItem(
+          item,
+          today
+        )
+      )
+      .map(item =>
+        scoreFocusItem(
+          item,
+          now
+        )
+      );
+
+  const calendarCandidates =
+    input.calendarEvents
+      .filter(event =>
+        isEventToday(
+          event,
+          today
+        )
+      )
+      .filter(
+        event =>
+          !isFinishedCalendarEvent(
+            event,
+            now
+          )
+      )
+      .map(event =>
+        scoreCalendarEvent(
+          event,
+          now
+        )
+      );
+
+  const candidates =
+    removeDuplicates([
+      ...focusCandidates,
+      ...calendarCandidates,
+    ])
+      .sort(compareCandidates)
+      .slice(
+        0,
+        MAX_FOCUS_ITEMS
+      );
+
+  const sources =
+    Array.from(
+      new Set(
+        candidates.map(
+          candidate =>
+            candidate.source
+        )
+      )
+    );
+
+  return {
+    items: candidates.map(
+      candidate =>
+        candidate.item
+    ),
+    generatedAt:
+      now.toISOString(),
+    sources,
+  };
+}
