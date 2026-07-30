@@ -8,6 +8,10 @@ import {
   getCalendarEvents,
 } from './calendarService';
 
+import {
+  getNextPrayer,
+} from './prayerService';
+
 import type {
   BrainResult,
 } from '../brain/types';
@@ -16,30 +20,53 @@ import type {
   FocusItem,
 } from '../types/focus';
 
+import type {
+  CalendarEvent,
+} from './calendarService';
+
 export async function getTodayFocus(): Promise<BrainResult> {
   const localFocusItems =
     focusItems as FocusItem[];
 
+  let calendarEvents: CalendarEvent[] = [];
+  let prayer = null;
+
+  //
+  // Load Calendar
+  //
   try {
     const calendarData =
       await getCalendarEvents();
 
-    return generateTodayFocus({
-      focusItems:
-        localFocusItems,
-      calendarEvents:
-        calendarData.events,
-    });
+    calendarEvents =
+      calendarData.events;
   } catch (calendarError) {
     console.warn(
-      "Today's Brain could not load Calendar. Using local focus items only.",
+      "Today's Brain could not load Calendar.",
       calendarError
     );
-
-    return generateTodayFocus({
-      focusItems:
-        localFocusItems,
-      calendarEvents: [],
-    });
   }
+
+  //
+  // Load Prayer
+  //
+  try {
+    prayer =
+      await getNextPrayer();
+  } catch (prayerError) {
+    console.warn(
+      "Today's Brain could not load Prayer.",
+      prayerError
+    );
+  }
+
+  //
+  // Generate Today's Focus
+  //
+  return generateTodayFocus({
+    focusItems:
+      localFocusItems,
+    calendarEvents,
+    prayer,
+  });
 }

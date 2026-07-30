@@ -30,7 +30,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
   } = usePrayerTimes();
 
   const {
-    calendar,
+    todayEvents,
     loading: calendarLoading,
     error: calendarError,
   } = useCalendar();
@@ -46,13 +46,13 @@ export function useTodaysBrief(): UseTodaysBriefResult {
       buildTodaysBrief({
         weather,
         prayer,
-        calendar,
+        todayEvents,
         nest,
       }),
     [
       weather,
       prayer,
-      calendar,
+      todayEvents,
       nest,
     ]
   );

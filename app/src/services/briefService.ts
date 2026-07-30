@@ -1,6 +1,6 @@
 import type { WeatherData } from './weatherService';
 import type { PrayerData } from './prayerService';
-import type { CalendarData } from './calendarService';
+import type { CalendarEvent } from './calendarService';
 import type { NestStatus } from './nestService';
 
 export type BriefData = {
@@ -12,7 +12,7 @@ export type BriefData = {
 type BriefInput = {
   weather: WeatherData | null;
   prayer: PrayerData | null;
-  calendar: CalendarData | null;
+  todayEvents: CalendarEvent[];
   nest: NestStatus | null;
 };
 
@@ -48,12 +48,18 @@ function getPrayerMinutesRemaining(
 
   const hours =
     hourMatch
-      ? Number.parseInt(hourMatch[1], 10)
+      ? Number.parseInt(
+          hourMatch[1],
+          10
+        )
       : 0;
 
   const minutes =
     minuteMatch
-      ? Number.parseInt(minuteMatch[1], 10)
+      ? Number.parseInt(
+          minuteMatch[1],
+          10
+        )
       : 0;
 
   return hours * 60 + minutes;
@@ -99,30 +105,107 @@ function getPrayerItem(
   };
 }
 
-function getCalendarItem(
-  calendar: CalendarData
-): BriefItem | null {
-  const noEvents =
-    calendar.title
-      .trim()
-      .toLowerCase() === 'no events';
-
-  if (noEvents) {
+function getEventTime(
+  event: CalendarEvent
+): string | null {
+  if (event.allDay) {
     return null;
   }
 
-  if (calendar.time) {
+  const startDate =
+    new Date(event.start);
+
+  if (
+    Number.isNaN(
+      startDate.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  return startDate.toLocaleTimeString(
+    'en-GB',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+    }
+  );
+}
+
+function getNextRelevantEvent(
+  events: CalendarEvent[]
+): CalendarEvent | null {
+  if (events.length === 0) {
+    return null;
+  }
+
+  const now =
+    new Date().getTime();
+
+  const sortedEvents =
+    [...events].sort(
+      (first, second) =>
+        new Date(
+          first.start
+        ).getTime() -
+        new Date(
+          second.start
+        ).getTime()
+    );
+
+  const upcomingEvent =
+    sortedEvents.find(event => {
+      const eventEnd =
+        new Date(event.end)
+          .getTime();
+
+      return (
+        !Number.isNaN(eventEnd) &&
+        eventEnd >= now
+      );
+    });
+
+  return (
+    upcomingEvent ??
+    sortedEvents[0] ??
+    null
+  );
+}
+
+function getCalendarItem(
+  todayEvents: CalendarEvent[]
+): BriefItem | null {
+  const event =
+    getNextRelevantEvent(
+      todayEvents
+    );
+
+  if (!event) {
+    return null;
+  }
+
+  if (event.allDay) {
     return {
       text:
-        `Next calendar event is ${calendar.title} ` +
-        `at ${calendar.time}.`,
+        `${event.title} is scheduled for today.`,
+      priority: 95,
+    };
+  }
+
+  const eventTime =
+    getEventTime(event);
+
+  if (eventTime) {
+    return {
+      text:
+        `${event.title} starts at ${eventTime}.`,
       priority: 95,
     };
   }
 
   return {
     text:
-      `Next calendar event is ${calendar.title}.`,
+      `${event.title} is scheduled for today.`,
     priority: 95,
   };
 }
@@ -181,13 +264,15 @@ function getNestItem(
   }
 
   if (
-    nest.temperatureCelsius === null
+    nest.temperatureCelsius ===
+    null
   ) {
     return null;
   }
 
   const temperature =
-    nest.temperatureCelsius.toFixed(1);
+    nest.temperatureCelsius
+      .toFixed(1);
 
   if (nest.heating) {
     return {
@@ -199,7 +284,8 @@ function getNestItem(
   }
 
   if (
-    nest.temperatureCelsius >= 25
+    nest.temperatureCelsius >=
+    25
   ) {
     return {
       text:
@@ -210,7 +296,8 @@ function getNestItem(
   }
 
   if (
-    nest.temperatureCelsius <= 17
+    nest.temperatureCelsius <=
+    17
   ) {
     return {
       text:
@@ -228,7 +315,8 @@ function getHeading(
   const prayerMinutes =
     input.prayer
       ? getPrayerMinutesRemaining(
-          input.prayer.timeRemaining
+          input.prayer
+            .timeRemaining
         )
       : null;
 
@@ -248,10 +336,9 @@ function getHeading(
   }
 
   if (
-    input.calendar &&
-    input.calendar.title
-      .trim()
-      .toLowerCase() !== 'no events'
+    getNextRelevantEvent(
+      input.todayEvents
+    )
   ) {
     return 'You have something coming up.';
   }
@@ -289,59 +376,66 @@ function getHeading(
 export function buildTodaysBrief(
   input: BriefInput
 ): BriefData {
-  const candidates: BriefItem[] = [];
+  const candidates:
+    BriefItem[] = [];
 
   if (input.prayer) {
     candidates.push(
-      getPrayerItem(input.prayer)
+      getPrayerItem(
+        input.prayer
+      )
     );
   }
 
-  if (input.calendar) {
-    const calendarItem =
-      getCalendarItem(
-        input.calendar
-      );
+  const calendarItem =
+    getCalendarItem(
+      input.todayEvents
+    );
 
-    if (calendarItem) {
-      candidates.push(calendarItem);
-    }
+  if (calendarItem) {
+    candidates.push(
+      calendarItem
+    );
   }
 
   if (input.weather) {
     candidates.push(
-      getWeatherItem(input.weather)
+      getWeatherItem(
+        input.weather
+      )
     );
   }
 
   if (input.nest) {
     const nestItem =
-      getNestItem(input.nest);
+      getNestItem(
+        input.nest
+      );
 
     if (nestItem) {
-      candidates.push(nestItem);
+      candidates.push(
+        nestItem
+      );
     }
   }
 
   candidates.sort(
-    (a, b) =>
-      b.priority - a.priority
+    (first, second) =>
+      second.priority -
+      first.priority
   );
 
-  /*
-   * Prefer meaningful information.
-   * Low-priority weather/prayer items are used
-   * only when the brief would otherwise be sparse.
-   */
   let selected =
     candidates.filter(
-      item => item.priority >= 60
+      item =>
+        item.priority >= 60
     );
 
   if (selected.length < 2) {
     const fallbackItems =
       candidates.filter(
-        item => item.priority < 60
+        item =>
+          item.priority < 60
       );
 
     selected = [
@@ -353,37 +447,35 @@ export function buildTodaysBrief(
   const items =
     selected
       .slice(0, 3)
-      .map(item => item.text);
+      .map(
+        item =>
+          item.text
+      );
 
-  /*
-   * When nothing needs attention, provide
-   * one useful reassurance about the calendar.
-   */
   if (
     items.length < 3 &&
-    input.calendar &&
-    input.calendar.title
-      .trim()
-      .toLowerCase() === 'no events'
+    input.todayEvents.length ===
+      0
   ) {
     items.push(
-      input.calendar.meta
-        ? `No upcoming calendar commitments — ${input.calendar.meta.toLowerCase()}.`
-        : 'No upcoming calendar commitments.'
+      'No calendar commitments today.'
     );
   }
 
   return {
-    heading: getHeading(input),
+    heading:
+      getHeading(input),
+
     items,
 
     updatedAt:
-      new Date().toLocaleTimeString(
-        'en-GB',
-        {
-          hour: '2-digit',
-          minute: '2-digit',
-        }
-      ),
+      new Date()
+        .toLocaleTimeString(
+          'en-GB',
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        ),
   };
 }

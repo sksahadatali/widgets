@@ -32,11 +32,27 @@ type AladhanResponse = {
 
 export type PrayerData = {
   name: PrayerName;
+
+  // Display time (HH:mm)
   time: string;
+
+  // ISO date/time for Today's Brain
+  dateTime: string;
+
+  // Machine-readable countdown
+  minutesRemaining: number;
+
+  // Convenience flags
+  isDueSoon: boolean;
+  isCurrentPrayer: boolean;
+
+  // Human-readable countdown
   timeRemaining: string;
 };
 
-function cleanPrayerTime(timeText: string): string {
+function cleanPrayerTime(
+  timeText: string
+): string {
   return timeText.split(' ')[0];
 }
 
@@ -44,42 +60,100 @@ function parsePrayerTime(
   timeText: string,
   addDays = 0
 ): Date {
-  const cleanTime = cleanPrayerTime(timeText);
+  const cleanTime =
+    cleanPrayerTime(timeText);
 
-  const [hours, minutes] = cleanTime
-    .split(':')
-    .map(Number);
+  const [hours, minutes] =
+    cleanTime
+      .split(':')
+      .map(Number);
 
   const date = new Date();
 
-  date.setHours(hours, minutes, 0, 0);
+  date.setHours(
+    hours,
+    minutes,
+    0,
+    0
+  );
 
   if (addDays > 0) {
-    date.setDate(date.getDate() + addDays);
+    date.setDate(
+      date.getDate() + addDays
+    );
   }
 
   return date;
 }
 
-function getTimeRemaining(prayerTime: Date): string {
-  const now = new Date();
-
+function getMinutesRemaining(
+  prayerTime: Date
+): number {
   const diffMs =
-    prayerTime.getTime() - now.getTime();
+    prayerTime.getTime() -
+    Date.now();
 
-  const totalMinutes = Math.max(
+  return Math.max(
     0,
     Math.round(diffMs / 60000)
   );
+}
 
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+function getTimeRemaining(
+  prayerTime: Date
+): string {
+  const totalMinutes =
+    getMinutesRemaining(
+      prayerTime
+    );
+
+  const hours =
+    Math.floor(
+      totalMinutes / 60
+    );
+
+  const minutes =
+    totalMinutes % 60;
 
   if (hours > 0) {
     return `In ${hours}h ${minutes}m`;
   }
 
   return `In ${minutes}m`;
+}
+
+function buildPrayerData(
+  name: PrayerName,
+  prayerTime: Date,
+  displayTime: string
+): PrayerData {
+  const minutesRemaining =
+    getMinutesRemaining(
+      prayerTime
+    );
+
+  return {
+    name,
+
+    time: displayTime,
+
+    dateTime:
+      prayerTime.toISOString(),
+
+    minutesRemaining,
+
+    isDueSoon:
+      minutesRemaining <= 30,
+
+    // Reserved for future use
+    isCurrentPrayer:
+      minutesRemaining === 0,
+
+    timeRemaining:
+      getTimeRemaining(
+        prayerTime
+      ),
+  };
 }
 
 function findNextPrayer(
@@ -111,34 +185,39 @@ function findNextPrayer(
     },
   ];
 
-  const now = new Date();
+  const now =
+    new Date();
 
   for (const prayer of prayers) {
-    const prayerTime = parsePrayerTime(
-      prayer.time
-    );
+    const prayerTime =
+      parsePrayerTime(
+        prayer.time
+      );
 
     if (prayerTime > now) {
-      return {
-        name: prayer.name,
-        time: cleanPrayerTime(prayer.time),
-        timeRemaining:
-          getTimeRemaining(prayerTime),
-      };
+      return buildPrayerData(
+        prayer.name,
+        prayerTime,
+        cleanPrayerTime(
+          prayer.time
+        )
+      );
     }
   }
 
-  const fajrTomorrow = parsePrayerTime(
-    timings.Fajr,
-    1
-  );
+  const fajrTomorrow =
+    parsePrayerTime(
+      timings.Fajr,
+      1
+    );
 
-  return {
-    name: 'Fajr',
-    time: cleanPrayerTime(timings.Fajr),
-    timeRemaining:
-      getTimeRemaining(fajrTomorrow),
-  };
+  return buildPrayerData(
+    'Fajr',
+    fajrTomorrow,
+    cleanPrayerTime(
+      timings.Fajr
+    )
+  );
 }
 
 export async function getNextPrayer(): Promise<PrayerData> {
@@ -150,7 +229,9 @@ export async function getNextPrayer(): Promise<PrayerData> {
     `&school=${PRAYER_CONFIG.school}`;
 
   const data =
-    await apiGet<AladhanResponse>(url);
+    await apiGet<AladhanResponse>(
+      url
+    );
 
   return findNextPrayer(
     data.data.timings
@@ -158,4 +239,6 @@ export async function getNextPrayer(): Promise<PrayerData> {
 }
 
 export const PRAYER_REFRESH_MS =
-  PRAYER_CONFIG.refreshMinutes * 60 * 1000;
+  PRAYER_CONFIG.refreshMinutes *
+  60 *
+  1000;
