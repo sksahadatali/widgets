@@ -1,5 +1,14 @@
 import type { CreateTaskInput, DueSoonTask, TaskItem, UpdateTaskInput } from '../types/task';
 
+import { mapTaskToFocusItem } from "./taskMapper";
+import type { FocusItem } from "../types/focus";
+
+export async function fetchFocusItems(): Promise<FocusItem[]> {
+    const tasks = await fetchTasks();
+
+    return tasks.map(mapTaskToFocusItem);
+}
+
 type TaskResponse<T> = { success: boolean; count: number; tasks: T[] };
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
 export const TASKS_CHANGED_EVENT = 'ey:tasks-changed';

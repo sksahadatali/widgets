@@ -2,7 +2,7 @@ import {
   generateTodayFocus,
 } from '../brain/todayBrain';
 
-import focusItems from '../data/focus.json';
+
 
 import {
   getCalendarEvents,
@@ -16,9 +16,6 @@ import type {
   BrainResult,
 } from '../brain/types';
 
-import type {
-  FocusItem,
-} from '../types/focus';
 
 import type {
   CalendarEvent,
@@ -40,14 +37,16 @@ import type {
   WeatherInsight,
 } from './weatherIntelligence';
 
+import { fetchFocusItems } from "./taskService";
+
 export async function getTodayFocus(): Promise<BrainResult> {
-  const localFocusItems =
-    focusItems as FocusItem[];
 
   let calendarEvents: CalendarEvent[] = [];
   let prayer = null;
   let weather: WeatherData | null = null;
   let weatherInsights: WeatherInsight[] = [];
+
+  const focusItems = await fetchFocusItems();
 
   //
   // Load Calendar
@@ -100,7 +99,7 @@ export async function getTodayFocus(): Promise<BrainResult> {
   // Generate Today's Focus
   //
   return generateTodayFocus({
-    focusItems: localFocusItems,
+    focusItems: focusItems,
     calendarEvents,
     prayer,
     weather,

@@ -43,14 +43,6 @@ type BrainCandidate = {
   deduplicationKey: string;
 };
 
-const priorityScore: Record<
-  FocusItem['priority'],
-  number
-> = {
-  high: 80,
-  medium: 55,
-  low: 35,
-};
 
 function getLocalDateString(
   date: Date
@@ -210,31 +202,109 @@ function scoreFocusItem(
   item: FocusItem,
   now: Date
 ): BrainCandidate {
-  let score =
-    priorityScore[item.priority];
+  let score = 0;
 
-  const reasons: string[] = [
-    `${item.priority} priority`,
-  ];
+  const reasons: string[] = [];
 
-  if (
-    item.status ===
-    'in-progress'
-  ) {
-    score += 45;
-    reasons.push(
-      'Currently in progress'
-    );
+  switch (item.priority) {
+    case 'high':
+      score += 80;
+      reasons.push('High priority');
+      break;
+
+    case 'medium':
+      score += 55;
+      reasons.push('Medium priority');
+      break;
+
+    case 'low':
+      score += 30;
+      reasons.push('Low priority');
+      break;
+  }
+
+  if (item.status === 'in-progress') {
+    score += 35;
+    reasons.push('Currently in progress');
+  }
+
+  if (item.status === 'waiting') {
+    score -= 20;
+    reasons.push('Waiting on another action');
   }
 
   const today =
     getLocalDateString(now);
 
-  if (item.dueDate === today) {
+  const todayDate =
+    new Date(`${today}T00:00:00`);
+
+  if (item.dueDate) {
+    const dueDate =
+      new Date(
+        `${item.dueDate}T00:00:00`
+      );
+
+    if (isValidDate(dueDate)) {
+      const differenceDays =
+        Math.round(
+          (
+            dueDate.getTime() -
+            todayDate.getTime()
+          ) /
+          (1000 * 60 * 60 * 24)
+        );
+
+      if (differenceDays < 0) {
+        score += 60;
+        reasons.push('Overdue');
+      } else if (differenceDays === 0) {
+        score += 40;
+        reasons.push('Due today');
+      } else if (differenceDays === 1) {
+        score += 20;
+        reasons.push('Due tomorrow');
+      }
+    }
+  }
+
+  const currentHour =
+    now.getHours();
+
+  if (
+    item.category === 'work' &&
+    currentHour >= 8 &&
+    currentHour < 18
+  ) {
     score += 15;
-    reasons.push(
-      'Due today'
-    );
+    reasons.push('Relevant during work hours');
+  }
+
+  if (
+    (
+      item.category === 'personal' ||
+      item.category === 'home' ||
+      item.category === 'family'
+    ) &&
+    currentHour >= 18
+  ) {
+    score += 10;
+    reasons.push('Relevant this evening');
+  }
+
+  const currentDay =
+    now.getDay();
+
+  const isWeekend =
+    currentDay === 0 ||
+    currentDay === 6;
+
+  if (
+    item.category === 'raen' &&
+    isWeekend
+  ) {
+    score += 10;
+    reasons.push('Suitable for weekend review');
   }
 
   if (
@@ -485,16 +555,36 @@ function isEligibleFocusItem(
   item: FocusItem,
   today: string
 ): boolean {
-  if (
-    item.status === 'completed'
-  ) {
+  if (item.status === 'completed') {
     return false;
   }
 
+  if (item.status === 'in-progress') {
+    return true;
+  }
+
+  if (!item.dueDate) {
+    return false;
+  }
+
+  const dueDate = new Date(
+    `${item.dueDate}T00:00:00`
+  );
+
+  const todayDate = new Date(
+    `${today}T00:00:00`
+  );
+
+  const tomorrowDate = new Date(
+    todayDate
+  );
+
+  tomorrowDate.setDate(
+    tomorrowDate.getDate() + 1
+  );
+
   return (
-    item.status ===
-      'in-progress' ||
-    item.dueDate === today
+    dueDate <= tomorrowDate
   );
 }
 
@@ -644,17 +734,55 @@ export function generateTodayFocus(
 
 
   const weatherCandidates =
-    input.weatherInsights
-      .filter(
-        insight =>
-          !consumedWeatherInsightIds.has(
-            insight.id
-          )
-      )
-      .map(
-        scoreWeatherInsight
-      );    
-    
+  input.weatherInsights
+    .filter(
+      insight =>
+        insight.type !== 'comfort'
+    )
+    .filter(
+      insight =>
+        !consumedWeatherInsightIds.has(
+          insight.id
+        )
+    )
+    .map(scoreWeatherInsight);    
+
+  console.group("Today's Brain");
+
+  focusCandidates.forEach(candidate =>
+    console.log(
+      "TASK:",
+      candidate.item.title,
+      candidate.score
+    )
+  );
+  
+  calendarCandidates.forEach(candidate =>
+    console.log(
+      "CALENDAR:",
+      candidate.item.title,
+      candidate.score
+    )
+  );
+  
+  prayerCandidates.forEach(candidate =>
+    console.log(
+      "PRAYER:",
+      candidate.item.title,
+      candidate.score
+    )
+  );
+  
+  weatherCandidates.forEach(candidate =>
+    console.log(
+      "WEATHER:",
+      candidate.item.title,
+      candidate.score
+    )
+  );
+  
+  console.groupEnd();    
+      
   const candidates =
     removeDuplicates([
       ...focusCandidates,
