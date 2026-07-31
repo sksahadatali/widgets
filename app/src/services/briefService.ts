@@ -3,6 +3,10 @@ import type { PrayerData } from './prayerService';
 import type { CalendarEvent } from './calendarService';
 import type { NestStatus } from './nestService';
 
+import {
+  getPrimaryWeatherInsight,
+} from './weatherIntelligence';
+
 export type BriefData = {
   heading: string;
   items: string[];
@@ -212,43 +216,20 @@ function getCalendarItem(
 
 function getWeatherItem(
   weather: WeatherData
-): BriefItem {
-  if (
-    RAIN_CODES.includes(
-      weather.weatherCode
-    )
-  ) {
-    return {
-      text:
-        `${weather.condition} expected in ${weather.location}. ` +
-        `High ${weather.high}°C, low ${weather.low}°C.`,
-      priority: 85,
-    };
-  }
+): BriefItem | null {
+  const insight =
+    getPrimaryWeatherInsight(
+      weather
+    );
 
-  if (weather.high >= 28) {
-    return {
-      text:
-        `A hot day is expected, reaching ${weather.high}°C ` +
-        `in ${weather.location}.`,
-      priority: 80,
-    };
-  }
-
-  if (weather.low <= 3) {
-    return {
-      text:
-        `It will be cold today, with temperatures falling ` +
-        `to ${weather.low}°C.`,
-      priority: 80,
-    };
+  if (!insight) {
+    return null;
   }
 
   return {
     text:
-      `${weather.condition} today, with a high of ` +
-      `${weather.high}°C.`,
-    priority: 20,
+      `${insight.message} ${insight.action}`,
+    priority: insight.score,
   };
 }
 
@@ -343,6 +324,11 @@ function getHeading(
     return 'You have something coming up.';
   }
 
+  /*
+   * Heading still uses the existing weather checks.
+   * This will move into weatherIntelligence.ts
+   * during the next refinement.
+   */
   if (
     input.weather &&
     RAIN_CODES.includes(
@@ -399,11 +385,16 @@ export function buildTodaysBrief(
   }
 
   if (input.weather) {
-    candidates.push(
+    const weatherItem =
       getWeatherItem(
         input.weather
-      )
-    );
+      );
+
+    if (weatherItem) {
+      candidates.push(
+        weatherItem
+      );
+    }
   }
 
   if (input.nest) {

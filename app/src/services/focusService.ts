@@ -24,12 +24,30 @@ import type {
   CalendarEvent,
 } from './calendarService';
 
+import {
+  getCurrentWeather,
+} from './weatherService';
+
+import {
+  generateWeatherInsights,
+} from './weatherIntelligence';
+
+import type {
+  WeatherData,
+} from './weatherService';
+
+import type {
+  WeatherInsight,
+} from './weatherIntelligence';
+
 export async function getTodayFocus(): Promise<BrainResult> {
   const localFocusItems =
     focusItems as FocusItem[];
 
   let calendarEvents: CalendarEvent[] = [];
   let prayer = null;
+  let weather: WeatherData | null = null;
+  let weatherInsights: WeatherInsight[] = [];
 
   //
   // Load Calendar
@@ -61,12 +79,31 @@ export async function getTodayFocus(): Promise<BrainResult> {
   }
 
   //
+  // Load Weather
+  //
+  try {
+    weather =
+      await getCurrentWeather();
+
+    weatherInsights =
+      generateWeatherInsights(
+        weather
+      );
+  } catch (weatherError) {
+    console.warn(
+      "Today's Brain could not load Weather.",
+      weatherError
+    );
+  }
+
+  //
   // Generate Today's Focus
   //
   return generateTodayFocus({
-    focusItems:
-      localFocusItems,
+    focusItems: localFocusItems,
     calendarEvents,
     prayer,
+    weather,
+    weatherInsights,
   });
 }

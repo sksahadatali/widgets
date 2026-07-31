@@ -21,6 +21,10 @@ import type {
   BrainSource,
 } from './types';
 
+import type {
+  WeatherInsight,
+} from '../services/weatherIntelligence';
+
 const MAX_FOCUS_ITEMS = 4;
 
 type BrainCandidate = {
@@ -409,6 +413,38 @@ function scorePrayer(
   };
 }
 
+function scoreWeatherInsight(
+  insight: WeatherInsight
+): BrainCandidate {
+  const item: FocusItem = {
+    id: insight.id,
+    title: insight.action,
+    category: 'personal',
+    priority:
+      insight.severity === 'high'
+        ? 'high'
+        : insight.severity === 'medium'
+        ? 'medium'
+        : 'low',
+    status: 'pending',
+    dueDate: null,
+    dueTime: null,
+    estimatedMinutes: 5,
+    assignedTo: 'Weather',
+  };
+
+  return {
+    item,
+    source: 'weather',
+    score: insight.score,
+    reasons: [
+      'Weather intelligence',
+      insight.title,
+    ],
+    deduplicationKey: insight.id,
+  };
+}
+
 function isEligibleFocusItem(
   item: FocusItem,
   today: string
@@ -540,20 +576,26 @@ export function generateTodayFocus(
           now
         )
       );
+  
   const prayerCandidates =
-  input.prayer
-    ? [
-        scorePrayer(
-          input.prayer
-        ),
-      ]
-    : [];    
-
+    input.prayer
+      ? [
+          scorePrayer(
+            input.prayer
+          ),
+        ]
+      : [];    
+      const weatherCandidates =
+      input.weatherInsights.map(
+        scoreWeatherInsight
+      );    
+    
   const candidates =
     removeDuplicates([
       ...focusCandidates,
       ...calendarCandidates,
       ...prayerCandidates,
+      ...weatherCandidates,
     ])
       .sort(compareCandidates)
       .slice(

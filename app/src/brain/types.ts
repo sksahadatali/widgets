@@ -10,15 +10,26 @@ import type {
   FocusItem,
 } from '../types/focus';
 
+import type {
+  WeatherData,
+} from '../services/weatherService';
+
+import type {
+  WeatherInsight,
+} from '../services/weatherIntelligence';
+
 export type BrainSource =
   | 'focus'
   | 'calendar'
-  | 'prayer';
+  | 'prayer'
+  | 'weather';  
 
 export interface BrainInput {
   focusItems: FocusItem[];
   calendarEvents: CalendarEvent[];
   prayer: PrayerData | null;
+  weather: WeatherData | null;
+  weatherInsights: WeatherInsight[];
 }
 
 export interface BrainDecision {
