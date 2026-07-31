@@ -12,6 +12,14 @@
   margin-top: 22px;
 }
 
+.todays-focus__item-wrapper {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.todays-focus__item-wrapper:last-child {
+  border-bottom: none;
+}
+
 .todays-focus__item {
   display: flex;
   align-items: center;
@@ -20,12 +28,6 @@
 
   min-height: 56px;
   padding: 10px 0;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.todays-focus__item:last-child {
-  border-bottom: none;
 }
 
 .todays-focus__item-main {
@@ -59,18 +61,95 @@
   white-space: nowrap;
 }
 
-.todays-focus__item-duration {
-  margin-top: 2px;
+.todays-focus__item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.todays-focus__item-duration,
+.todays-focus__item-source {
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.todays-focus__item-source {
+  text-transform: capitalize;
+}
+
+.todays-focus__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.todays-focus__why-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 5px 7px;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+  color: #94a3b8;
+
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.todays-focus__why-button:hover {
+  background: rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
+}
+
+.todays-focus__why-button:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+.todays-focus__reasons {
+  margin: 0 0 12px 32px;
+  padding: 12px 14px;
+
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.todays-focus__reasons-title {
+  display: block;
+  margin-bottom: 7px;
+
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.todays-focus__reasons ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.todays-focus__reasons li {
+  margin-top: 4px;
 
   color: #94a3b8;
   font-size: 0.75rem;
+  line-height: 1.4;
 }
 
-.todays-focus__item--completed {
+.todays-focus__item-wrapper--completed {
   opacity: 0.6;
 }
 
-.todays-focus__item--completed
+.todays-focus__item-wrapper--completed
   .todays-focus__item-title {
   text-decoration: line-through;
 }
@@ -91,5 +170,14 @@
   .todays-focus__item-title {
     overflow: visible;
     white-space: normal;
+  }
+
+  .todays-focus__actions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .todays-focus__reasons {
+    margin-left: 0;
   }
 }

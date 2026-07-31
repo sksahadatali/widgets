@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { getTodayFocus } from "../services/focusService";
-import type { FocusItem } from "../types/focus";
+import type { BrainResult } from "../brain/types";
 
 interface UseFocusResult {
-  items: FocusItem[];
+  brain: BrainResult | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
 }
 
 export function useFocus(): UseFocusResult {
-  const [items, setItems] = useState<FocusItem[]>([]);
+  const [brain, setBrain] =
+  useState<BrainResult | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +24,7 @@ export function useFocus(): UseFocusResult {
 
       const result = await getTodayFocus();
 
-      setItems(result.items);
+      setBrain(result);
     } catch (err) {
       console.error("Failed to load Today's Focus:", err);
       setError("Unable to load today's focus.");
@@ -35,7 +38,7 @@ export function useFocus(): UseFocusResult {
   }, []);
 
   return {
-    items,
+    brain,
     loading,
     error,
     refresh: loadFocus,

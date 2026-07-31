@@ -33,6 +33,9 @@ import type {
   ContextInsight,
 } from './contextIntelligence';
 
+import { BrainRules } from "./brainRules";
+
+
 const MAX_FOCUS_ITEMS = 4;
 
 type BrainCandidate = {
@@ -208,28 +211,28 @@ function scoreFocusItem(
 
   switch (item.priority) {
     case 'high':
-      score += 80;
+      score += BrainRules.PRIORITY.HIGH;
       reasons.push('High priority');
       break;
 
     case 'medium':
-      score += 55;
+      score += BrainRules.PRIORITY.MEDIUM;
       reasons.push('Medium priority');
       break;
 
     case 'low':
-      score += 30;
+      score += BrainRules.PRIORITY.LOW;
       reasons.push('Low priority');
       break;
   }
 
   if (item.status === 'in-progress') {
-    score += 35;
+    score += BrainRules.STATUS.IN_PROGRESS;
     reasons.push('Currently in progress');
   }
 
   if (item.status === 'waiting') {
-    score -= 20;
+    score += BrainRules.STATUS.WAITING;
     reasons.push('Waiting on another action');
   }
 
@@ -256,13 +259,13 @@ function scoreFocusItem(
         );
 
       if (differenceDays < 0) {
-        score += 60;
+        score += BrainRules.DUE.OVERDUE;
         reasons.push('Overdue');
       } else if (differenceDays === 0) {
-        score += 40;
+        score += BrainRules.DUE.TODAY;
         reasons.push('Due today');
       } else if (differenceDays === 1) {
-        score += 20;
+        score += BrainRules.DUE.TOMORROW;
         reasons.push('Due tomorrow');
       }
     }
@@ -276,7 +279,7 @@ function scoreFocusItem(
     currentHour >= 8 &&
     currentHour < 18
   ) {
-    score += 15;
+    score += BrainRules.CONTEXT.WORK_HOURS;
     reasons.push('Relevant during work hours');
   }
 
@@ -288,7 +291,7 @@ function scoreFocusItem(
     ) &&
     currentHour >= 18
   ) {
-    score += 10;
+    score += BrainRules.CONTEXT.EVENING;
     reasons.push('Relevant this evening');
   }
 
@@ -303,7 +306,7 @@ function scoreFocusItem(
     item.category === 'raen' &&
     isWeekend
   ) {
-    score += 10;
+    score += BrainRules.CONTEXT.WEEKEND_RAEN;
     reasons.push('Suitable for weekend review');
   }
 
@@ -328,7 +331,7 @@ function scoreFocusItem(
         minutesUntilDue >= 0 &&
         minutesUntilDue <= 60
       ) {
-        score += 35;
+        score += BrainRules.DUE.NEXT_HOUR;
         reasons.push(
           'Due within one hour'
         );
@@ -747,41 +750,6 @@ export function generateTodayFocus(
     )
     .map(scoreWeatherInsight);    
 
-  console.group("Today's Brain");
-
-  focusCandidates.forEach(candidate =>
-    console.log(
-      "TASK:",
-      candidate.item.title,
-      candidate.score
-    )
-  );
-  
-  calendarCandidates.forEach(candidate =>
-    console.log(
-      "CALENDAR:",
-      candidate.item.title,
-      candidate.score
-    )
-  );
-  
-  prayerCandidates.forEach(candidate =>
-    console.log(
-      "PRAYER:",
-      candidate.item.title,
-      candidate.score
-    )
-  );
-  
-  weatherCandidates.forEach(candidate =>
-    console.log(
-      "WEATHER:",
-      candidate.item.title,
-      candidate.score
-    )
-  );
-  
-  console.groupEnd();    
       
   const candidates =
     removeDuplicates([
@@ -808,22 +776,20 @@ export function generateTodayFocus(
     );
 
   const decisions: BrainDecision[] =
-    candidates.map(candidate => ({
-      item: candidate.item,
-      source: candidate.source,
-      score: candidate.score,
-      reasons: candidate.reasons,
-    }));
-
+  candidates.map(candidate => ({
+    item: candidate.item,
+    source: candidate.source,
+    score: candidate.score,
+    reasons: candidate.reasons,
+  }));
+  
   logBrainDecisions(decisions);
-
+  
   return {
     items: decisions.map(
-      decision =>
-        decision.item
+      decision => decision.item
     ),
-    generatedAt:
-      now.toISOString(),
+    generatedAt: now.toISOString(),
     sources,
     decisions,
   };
