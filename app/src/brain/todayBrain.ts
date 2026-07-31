@@ -25,6 +25,14 @@ import type {
   WeatherInsight,
 } from '../services/weatherIntelligence';
 
+import {
+  generateContextInsights,
+} from './contextIntelligence';
+
+import type {
+  ContextInsight,
+} from './contextIntelligence';
+
 const MAX_FOCUS_ITEMS = 4;
 
 type BrainCandidate = {
@@ -445,6 +453,34 @@ function scoreWeatherInsight(
   };
 }
 
+function scoreContextInsight(
+  insight: ContextInsight
+): BrainCandidate {
+  const item: FocusItem = {
+    id: insight.id,
+    title: insight.title,
+    category: 'personal',
+    priority:
+      insight.score >= 100
+        ? 'high'
+        : 'medium',
+    status: 'pending',
+    dueDate: null,
+    dueTime: null,
+    estimatedMinutes: 5,
+    assignedTo: 'eY Brain',
+  };
+
+  return {
+    item,
+    source: 'context',
+    score: insight.score,
+    reasons: insight.reasons,
+    deduplicationKey:
+      insight.id,
+  };
+}
+
 function isEligibleFocusItem(
   item: FocusItem,
   today: string
@@ -585,8 +621,37 @@ export function generateTodayFocus(
           ),
         ]
       : [];    
-      const weatherCandidates =
-      input.weatherInsights.map(
+      const contextInsights =
+      generateContextInsights(
+        input.calendarEvents,
+        input.weatherInsights,
+        now
+      );
+    
+  const contextCandidates =
+    contextInsights.map(
+      scoreContextInsight
+    );
+  
+  const consumedWeatherInsightIds =
+    new Set(
+      contextInsights.map(
+        insight =>
+          insight
+            .consumedWeatherInsightId
+      )
+    );
+
+
+  const weatherCandidates =
+    input.weatherInsights
+      .filter(
+        insight =>
+          !consumedWeatherInsightIds.has(
+            insight.id
+          )
+      )
+      .map(
         scoreWeatherInsight
       );    
     
@@ -595,6 +660,7 @@ export function generateTodayFocus(
       ...focusCandidates,
       ...calendarCandidates,
       ...prayerCandidates,
+      ...contextCandidates,
       ...weatherCandidates,
     ])
       .sort(compareCandidates)

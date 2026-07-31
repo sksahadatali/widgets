@@ -22,7 +22,8 @@ export type BrainSource =
   | 'focus'
   | 'calendar'
   | 'prayer'
-  | 'weather';  
+  | 'weather'  
+  | 'context';  
 
 export interface BrainInput {
   focusItems: FocusItem[];
