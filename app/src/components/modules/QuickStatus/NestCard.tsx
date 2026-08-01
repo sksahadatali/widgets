@@ -7,6 +7,10 @@ import './StatusCard.css';
 function NestCard() {
   const { nest, loading, error } = useNest();
 
+  const reconnectRequired =
+    error?.includes('Authentication expired') ||
+    error?.includes('Reconnection required');
+
   const displayMode =
     nest?.ecoMode === 'MANUAL_ECO'
       ? 'Eco'
@@ -40,6 +44,20 @@ function NestCard() {
 
           <span className="status-card__secondary">
             Loading...
+          </span>
+        </>
+      ) : reconnectRequired ? (
+        <>
+          <strong className="status-card__primary">
+            Reconnect
+          </strong>
+
+          <span className="status-card__secondary">
+            Google authentication expired
+          </span>
+
+          <span className="status-card__footer">
+            Re-authorisation required
           </span>
         </>
       ) : error && !nest ? (

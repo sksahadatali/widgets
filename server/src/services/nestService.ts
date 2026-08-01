@@ -1,5 +1,10 @@
 import { env } from '../config/env.js';
-import { getAccessToken } from './googleAuthService.js';
+
+import {
+  getAccessToken,
+  GoogleReauthenticationRequiredError,
+} from './googleAuthService.js';
+
 
 type NestTraits = {
   'sdm.devices.traits.Info'?: {

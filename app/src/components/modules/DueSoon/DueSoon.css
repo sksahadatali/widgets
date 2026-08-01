@@ -2,20 +2,18 @@
   width: 100%;
   min-width: 0;
 
-  padding: 24px;
+  padding: var(--ey-card-padding);
 
-  background: #18243a;
-  border: 1px solid #2a3a54;
-  border-radius: 16px;
-}
+  background: var(--ey-bg-card);
 
-.due-soon__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  border: 1px solid var(--ey-border-default);
 
-  margin-bottom: 18px;
+  border-radius: var(--ey-card-radius);
+
+  transition:
+    background-color var(--ey-transition-normal),
+    border-color var(--ey-transition-normal),
+    box-shadow var(--ey-transition-normal);
 }
 
 .due-soon__heading {
@@ -23,16 +21,24 @@
   align-items: center;
   gap: 10px;
 
-  color: #f6c453;
+  color: var(--ey-accent-primary);
+
+  transition:
+    color var(--ey-transition-normal);
 }
 
 .due-soon__heading h2 {
   margin: 0;
 
-  color: #f8fafc;
+  color: var(--ey-text-primary);
+
   font-size: 1.25rem;
   font-weight: 700;
+
+  transition:
+    color var(--ey-transition-normal);
 }
+
 
 .due-soon__header-actions {
   display: flex;
@@ -41,7 +47,7 @@
 }
 
 .due-soon__count {
-  color: #94a3b8;
+  color: var(--ey-text-muted);
   font-size: 0.8rem;
 }
 
@@ -52,20 +58,29 @@
 
   padding: 6px 10px;
 
-  color: #f6c453;
+  color: var(--ey-accent-primary);
+
   background: transparent;
 
-  border: 1px solid #3a4a64;
-  border-radius: 8px;
+  border: 1px solid var(--ey-border-default);
+
+  border-radius: var(--ey-control-radius);
 
   font: inherit;
   font-size: 0.8rem;
 
   cursor: pointer;
+
+  transition:
+    color var(--ey-transition-fast),
+    border-color var(--ey-transition-fast),
+    background-color var(--ey-transition-fast);
 }
 
 .due-soon__add-button:hover {
-  border-color: #f6c453;
+  background: var(--ey-bg-hover);
+
+  border-color: var(--ey-accent-primary);
 }
 
 .due-soon__list {
@@ -73,7 +88,7 @@
 }
 
 .due-soon__item-wrapper {
-  border-bottom: 1px solid #29384f;
+  border-bottom: 1px solid var(--ey-border-subtle);
 }
 
 .due-soon__item-wrapper:last-child {
@@ -99,12 +114,7 @@
 }
 
 .due-soon__item:hover {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.025
-  );
+  background: var(--ey-bg-hover);
 }
 
 .due-soon__item:focus-visible {
@@ -120,20 +130,18 @@
   background: #60a5fa;
 }
 
-.due-soon__indicator--overdue {
-  background: #fb7185;
-}
+.due-soon__indicator--overdue,
 
 .due-soon__indicator--today {
-  background: #f87171;
+  background: var(--ey-danger)
 }
 
 .due-soon__indicator--tomorrow {
-  background: #f6c453;
+  background: var(--ey-warning);
 }
 
 .due-soon__indicator--upcoming {
-  background: #60a5fa;
+  background: var(--ey-info);
 }
 
 .due-soon__content {
@@ -147,7 +155,7 @@
 .due-soon__task {
   overflow: hidden;
 
-  color: #f1f5f9;
+  color: var(--ey-text-primary);
   font-size: 0.92rem;
   font-weight: 500;
 
@@ -165,7 +173,7 @@
 }
 
 .due-soon__area {
-  color: #8293ad;
+  color: var(--ey-text-muted);
 }
 
 .due-soon__priority {
@@ -183,51 +191,21 @@
 }
 
 .due-soon__priority--high {
-  color: #fb7185;
-  background: rgba(
-    251,
-    113,
-    133,
-    0.08
-  );
-  border-color: rgba(
-    251,
-    113,
-    133,
-    0.32
-  );
+  color: var(--ey-danger);
+  background: var(--ey-bg-chip-danger);
+  border-color: var(--ey-border-chip-danger);
 }
 
 .due-soon__priority--medium {
-  color: #f6c453;
-  background: rgba(
-    246,
-    196,
-    83,
-    0.08
-  );
-  border-color: rgba(
-    246,
-    196,
-    83,
-    0.32
-  );
+  color: var(--ey-warning);
+  background: var(--ey-bg-chip-warning);
+  border-color: var(--ey-border-chip-warning);
 }
 
 .due-soon__priority--low {
-  color: #86efac;
-  background: rgba(
-    134,
-    239,
-    172,
-    0.08
-  );
-  border-color: rgba(
-    134,
-    239,
-    172,
-    0.32
-  );
+  color: var(--ey-success);
+  background: var(--ey-bg-chip-success);
+  border-color: var(--ey-border-chip-success);
 }
 
 .due-soon__item-actions {
@@ -241,22 +219,22 @@
   align-items: center;
   gap: 5px;
 
-  color: #94a3b8;
+  color: var(--ey-text-muted);
   font-size: 0.82rem;
   white-space: nowrap;
 }
 
 .due-soon__date--overdue,
 .due-soon__date--today {
-  color: #fb7185;
+  color: var(--ey-danger);
 }
 
 .due-soon__date--tomorrow {
-  color: #f6c453;
+  color: var(--ey-warning);
 }
 
 .due-soon__date--upcoming {
-  color: #94a3b8;
+  color: var(--ey-text-muted);
 }
 
 .due-soon__edit {
@@ -268,7 +246,7 @@
   height: 26px;
   padding: 0;
 
-  color: #8293ad;
+  color: var(--ey-text-muted);
   background: transparent;
 
   border: 0;
@@ -278,13 +256,8 @@
 }
 
 .due-soon__edit:hover {
-  color: #f6c453;
-  background: rgba(
-    246,
-    196,
-    83,
-    0.08
-  );
+  color: var(--ey-accent-primary);
+  background: var(--ey-accent-soft)
 }
 
 .due-soon__editor {
@@ -298,7 +271,7 @@
 
   min-height: 120px;
 
-  color: #94a3b8;
+  color: var(--ey-text-muted);
   font-size: 0.9rem;
 }
 
@@ -309,13 +282,24 @@
 .due-soon__state button {
   padding: 6px 12px;
 
-  color: #f8fafc;
+  color: var(--ey-text-primary);
   background: transparent;
 
-  border: 1px solid #3a4a64;
-  border-radius: 8px;
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-control-radius);
 
   cursor: pointer;
+}
+
+.due-soon__state button:hover {
+  color: var(--ey-accent-primary);
+  background: var(--ey-bg-hover);
+  border-color: var(--ey-accent-primary);
+}
+
+.due-soon__state button:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
 }
 
 @media (max-width: 768px) {

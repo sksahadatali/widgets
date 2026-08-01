@@ -1,5 +1,12 @@
 import { env } from '../config/env.js';
 
+export class GoogleReauthenticationRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoogleReauthenticationRequiredError';
+  }
+}
+
 type GoogleTokenResponse = {
   access_token: string;
   expires_in: number;
@@ -66,9 +73,15 @@ export async function getAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const errorMessage = await readOAuthError(response);
-
+  
+    if (errorMessage.startsWith('invalid_grant:')) {
+      throw new GoogleReauthenticationRequiredError(
+        'Google Nest authentication has expired. Reconnection is required.'
+      );
+    }
+  
     console.error(`Google OAuth error: ${errorMessage}`);
-
+  
     throw new Error(
       `Unable to refresh Google access token: ${errorMessage}`
     );

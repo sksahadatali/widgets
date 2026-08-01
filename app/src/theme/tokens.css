@@ -24,11 +24,9 @@
     /* Cards */
     --ey-card-padding: 24px;
     --ey-card-gap: 16px;
-    --ey-card-radius: 16px;
 
     /* Controls */
     --ey-control-height: 42px;
-    --ey-control-radius: 12px; 
 
     /* Text */
     --ey-text-primary: #f8fafc;
@@ -60,6 +58,73 @@
     --ey-info: #38bdf8;
     --ey-info-soft: rgba(56, 189, 248, 0.14);
   
+    /* =========================================================
+      CHIP COLORS
+    ========================================================= */
+
+    --ey-bg-chip-default: rgba(148,163,184,.12);
+    --ey-border-chip-default: rgba(148,163,184,.24);
+
+    --ey-bg-chip-success: rgba(34,197,94,.12);
+    --ey-border-chip-success: rgba(34,197,94,.24);
+
+    --ey-bg-chip-warning: rgba(245,158,11,.12);
+    --ey-border-chip-warning: rgba(245,158,11,.24);
+
+    --ey-bg-chip-danger: rgba(239,68,68,.12);
+    --ey-border-chip-danger: rgba(239,68,68,.24);
+
+    --ey-bg-chip-info: rgba(59,130,246,.12);
+    --ey-border-chip-info: rgba(59,130,246,.24);    
+
+    /* ==========================================
+      SPACING SCALE
+    ========================================== */
+
+    --ey-space-1: 4px;
+    --ey-space-2: 8px;
+    --ey-space-3: 12px;
+    --ey-space-4: 16px;
+    --ey-space-5: 20px;
+    --ey-space-6: 24px;
+    --ey-space-7: 32px;
+    --ey-space-8: 40px;
+    --ey-space-9: 48px;
+
+    /* ==========================================
+      ICONS
+    ========================================== */
+
+    --ey-icon-xs: 14px;
+    --ey-icon-sm: 16px;
+    --ey-icon-md: 20px;
+    --ey-icon-lg: 24px;
+    --ey-icon-xl: 28px;    
+
+    /* Typography */
+    --ey-font-xs: 0.74rem;
+    --ey-font-sm: 0.8rem;
+    --ey-font-md: 0.9rem;
+    --ey-font-lg: 1rem;
+    --ey-font-xl: 1.25rem;
+    --ey-font-2xl: 2rem;
+
+    /* Opacity */
+    --ey-opacity-disabled: 0.45;
+    --ey-opacity-muted: 0.72;
+    --ey-opacity-hover: 0.92;
+
+    /* Z-index */
+    --ey-z-dropdown: 100;
+    --ey-z-sticky: 200;
+    --ey-z-overlay: 500;
+    --ey-z-modal: 1000;
+    --ey-z-toast: 1100;
+
+    /* Dashboard */
+    --ey-dashboard-scale: 1;
+    --ey-dashboard-max-width: 1800px;
+
     /* Shape and depth */
     --ey-radius-small: 8px;
     --ey-radius-medium: 12px;
@@ -72,6 +137,7 @@
     /* Motion */
     --ey-transition-fast: 150ms ease;
     --ey-transition-normal: 180ms ease;
+    --ey-transition-slow: 260ms ease;
     
     /* Elevation */  
 
@@ -88,54 +154,80 @@
   }
   
   /* ----------------------------------
-     Olive
+    Olive
   ---------------------------------- */
-  
+
   [data-ambience='olive'] {
-    --ey-bg-app: #f5efe6;
-    --ey-bg-sidebar: #e6d8c3;
-    --ey-bg-header: #f5efe6;
-    --ey-bg-card: #ffffff;
-    --ey-bg-card-secondary: #f1ebe2;
+    /* Layout surfaces */
+    --ey-bg-app: #edf2e8;
+    --ey-bg-sidebar: #d9e2d2;
+    --ey-bg-header: #edf2e8;
+
+    --ey-bg-card: #fbfcf8;
+    --ey-bg-card-secondary: #eef4e8;
     --ey-bg-elevated: #ffffff;
-    --ey-bg-input: #fbf8f3;
-    --ey-bg-hover: rgba(94, 125, 97, 0.09);
-    --ey-bg-selected: rgba(94, 125, 97, 0.15);
-  
-    --ey-text-primary: #2d2e33;
-    --ey-text-secondary: #5f605d;
-    --ey-text-muted: #7d7c75;
-    --ey-text-disabled: #aaa69d;
+    --ey-bg-input: #f7faf3;
+
+    --ey-bg-hover: rgba(88, 112, 82, 0.08);
+    --ey-bg-selected: rgba(88, 112, 82, 0.15);
+
+    /* Text */
+    --ey-text-primary: #2b332a;
+    --ey-text-secondary: #5a6557;
+    --ey-text-muted: #7a8476;
+    --ey-text-disabled: #a4aca0;
     --ey-text-on-accent: #ffffff;
-  
-    --ey-border-default: #ddd5c9;
-    --ey-border-subtle: rgba(45, 46, 51, 0.1);
-    --ey-border-strong: #c7bcad;
-  
+
+    /* Borders */
+    --ey-border-default: #c9d4c2;
+    --ey-border-subtle: rgba(43, 51, 42, 0.10);
+    --ey-border-strong: #b2c1ab;
+
+    /* Accent */
     --ey-accent-primary: #5e7d61;
     --ey-accent-hover: #4f6b52;
     --ey-accent-soft: rgba(94, 125, 97, 0.13);
-  
+
+    /* Semantic */
     --ey-success: #5e7d61;
     --ey-success-soft: rgba(94, 125, 97, 0.14);
-  
+
     --ey-warning: #c89a3d;
     --ey-warning-soft: rgba(200, 154, 61, 0.15);
-  
+
     --ey-danger: #c96f4e;
     --ey-danger-soft: rgba(201, 111, 78, 0.14);
-  
+
     --ey-info: #66869a;
     --ey-info-soft: rgba(102, 134, 154, 0.14);
-  
+
+    /* Chip colours */
+    --ey-bg-chip-default: rgba(122, 132, 118, 0.12);
+    --ey-border-chip-default: rgba(122, 132, 118, 0.24);
+
+    --ey-bg-chip-success: rgba(94, 125, 97, 0.12);
+    --ey-border-chip-success: rgba(94, 125, 97, 0.24);
+
+    --ey-bg-chip-warning: rgba(200, 154, 61, 0.12);
+    --ey-border-chip-warning: rgba(200, 154, 61, 0.24);
+
+    --ey-bg-chip-danger: rgba(201, 111, 78, 0.12);
+    --ey-border-chip-danger: rgba(201, 111, 78, 0.24);
+
+    --ey-bg-chip-info: rgba(102, 134, 154, 0.12);
+    --ey-border-chip-info: rgba(102, 134, 154, 0.24);
+
+    /* Elevation */
     --ey-shadow-card:
-      0 6px 18px rgba(79, 65, 48, 0.08);
-  
+      0 6px 18px rgba(72, 92, 63, 0.08);
+
     --ey-shadow-elevated:
-      0 14px 34px rgba(79, 65, 48, 0.14);
-  
-    --ey-focus-ring: 0 0 0 3px rgba(94, 125, 97, 0.28);
-  
+      0 14px 34px rgba(72, 92, 63, 0.14);
+
+    /* Focus */
+    --ey-focus-ring:
+      0 0 0 3px rgba(94, 125, 97, 0.28);
+
     color-scheme: light;
   }
   

@@ -1,58 +1,74 @@
 .status-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  
-    width: fit-content;
-    min-height: 26px;
-    padding: 4px 10px;
-  
-    border: 1px solid transparent;
-    border-radius: 999px;
-  
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-  }
-  
-  .status-chip__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .status-chip__icon svg {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .status-chip--default {
-    color: #cbd5e1;
-    background: rgba(148, 163, 184, 0.12);
-    border-color: rgba(148, 163, 184, 0.24);
-  }
-  
-  .status-chip--success {
-    color: #86efac;
-    background: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.24);
-  }
-  
-  .status-chip--warning {
-    color: #fcd34d;
-    background: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.24);
-  }
-  
-  .status-chip--danger {
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.24);
-  }
-  
-  .status-chip--info {
-    color: #93c5fd;
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.24);
-  }
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  width: fit-content;
+  min-height: 26px;
+
+  padding: 4px 10px;
+
+  border: 1px solid transparent;
+  border-radius: 999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+
+  transition:
+    background-color var(--ey-transition-normal),
+    border-color var(--ey-transition-normal),
+    color var(--ey-transition-normal);
+}
+
+.status-chip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-chip__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Default */
+
+.status-chip--default {
+  color: var(--ey-text-secondary);
+  background: var(--ey-bg-chip-default);
+  border-color: var(--ey-border-chip-default);
+}
+
+/* Success */
+
+.status-chip--success {
+  color: var(--ey-success);
+  background: var(--ey-bg-chip-success);
+  border-color: var(--ey-border-chip-success);
+}
+
+/* Warning */
+
+.status-chip--warning {
+  color: var(--ey-warning);
+  background: var(--ey-bg-chip-warning);
+  border-color: var(--ey-border-chip-warning);
+}
+
+/* Danger */
+
+.status-chip--danger {
+  color: var(--ey-danger);
+  background: var(--ey-bg-chip-danger);
+  border-color: var(--ey-border-chip-danger);
+}
+
+/* Info */
+
+.status-chip--info {
+  color: var(--ey-info);
+  background: var(--ey-bg-chip-info);
+  border-color: var(--ey-border-chip-info);
+}
