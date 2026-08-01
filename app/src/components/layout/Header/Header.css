@@ -5,6 +5,11 @@
 
   padding: 24px 32px;
   margin-bottom: 8px;
+
+  background: var(--ey-bg-header);
+
+  transition:
+    background-color 180ms ease;
 }
 
 .header__greeting {
@@ -15,18 +20,24 @@
 .header__greeting h1 {
   margin: 0;
 
-  color: #f8fafc;
+  color: var(--ey-text-primary);
+
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 1.2;
+
+  transition: color 180ms ease;
 }
 
 .header__greeting p {
   margin: 10px 0 0;
 
-  color: #94a3b8;
+  color: var(--ey-text-muted);
+
   font-size: 0.95rem;
   font-weight: 400;
+
+  transition: color 180ms ease;
 }
 
 .header__actions {
@@ -43,19 +54,28 @@
   height: 42px;
   padding: 0 14px;
 
-  border: 1px solid #2b364b;
-  border-radius: 12px;
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-radius-medium);
 
-  background: #182237;
-  color: #cbd5e1;
+  background: var(--ey-bg-card-secondary);
+
+  color: var(--ey-text-secondary);
 
   font-size: 0.9rem;
   font-weight: 500;
 
   white-space: nowrap;
+
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
 .header__date-time svg {
-  color: #94a3b8;
+  color: var(--ey-text-muted);
+
   flex-shrink: 0;
+
+  transition: color 180ms ease;
 }

@@ -1,7 +1,7 @@
+@import './theme/tokens.css';
+
 :root {
   font-family: Inter, Arial, sans-serif;
-  color: #f8fafc;
-  background: #131c31;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -18,31 +18,62 @@ body,
   margin: 0;
 }
 
+html {
+  background: var(--ey-bg-app);
+}
+
 body {
   min-width: 320px;
-  background: #131c31;
+  background: var(--ey-bg-app);
+  color: var(--ey-text-primary);
+
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: var(--ey-accent-primary);
+}
+
+::selection {
+  background: var(--ey-accent-soft);
+  color: var(--ey-text-primary);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
 }
 
 .app-shell {
   display: flex;
   min-height: 100vh;
+  background: var(--ey-bg-app);
 }
 
 .app-main {
   flex: 1;
   min-width: 0;
+  background: var(--ey-bg-app);
 }
 
 .home-page {
   flex: 1;
   min-width: 0;
   min-height: 100vh;
-  background: #131c31;
+  background: var(--ey-bg-app);
 }
 
 .home-page__content {
