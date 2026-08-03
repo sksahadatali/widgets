@@ -10,6 +10,7 @@ const WEATHER_CONFIG = {
 type OpenMeteoCurrentWeather = {
   temperature_2m: number;
   apparent_temperature: number;
+  relative_humidity_2m: number;
   weather_code: number;
 };
 
@@ -26,6 +27,7 @@ type OpenMeteoResponse = {
 export type WeatherData = {
   temperature: number;
   feelsLike: number;
+  humidityPercent: number;
   high: number;
   low: number;
   condition: string;
@@ -64,7 +66,7 @@ export async function getCurrentWeather(): Promise<WeatherData> {
     'https://api.open-meteo.com/v1/forecast' +
     `?latitude=${WEATHER_CONFIG.latitude}` +
     `&longitude=${WEATHER_CONFIG.longitude}` +
-    '&current=temperature_2m,apparent_temperature,weather_code' +
+    '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code' +
     '&daily=temperature_2m_max,temperature_2m_min' +
     '&forecast_days=1' +
     '&timezone=Europe%2FLondon';
@@ -74,6 +76,7 @@ export async function getCurrentWeather(): Promise<WeatherData> {
   return {
     temperature: Math.round(data.current.temperature_2m),
     feelsLike: Math.round(data.current.apparent_temperature),
+    humidityPercent: data.current.relative_humidity_2m,
     high: Math.round(data.daily.temperature_2m_max[0]),
     low: Math.round(data.daily.temperature_2m_min[0]),
     condition: getCondition(data.current.weather_code),

@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Circle,
   Flag,
+  Target
 } from 'lucide-react';
 
 import {
@@ -76,7 +77,7 @@ function TodaysFocus() {
     return (
       <Card className="todays-focus">
         <SectionHeader
-          eyebrow="Today"
+          icon={Target}
           title="Today's Focus"
           metadata="Loading..."
         />
@@ -88,7 +89,7 @@ function TodaysFocus() {
     return (
       <Card className="todays-focus">
         <SectionHeader
-          eyebrow="Today"
+          icon={Target}
           title="Today's Focus"
           metadata="Unavailable"
         />
@@ -99,7 +100,7 @@ function TodaysFocus() {
   return (
     <Card className="todays-focus">
       <SectionHeader
-        eyebrow="Today"
+        icon={Target}
         title="Today's Focus"
         metadata={`${completedCount}/${decisions.length} completed`}
       />

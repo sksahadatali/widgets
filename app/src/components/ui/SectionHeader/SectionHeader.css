@@ -33,6 +33,9 @@
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
   transition:
     color var(--ey-transition-normal);
@@ -51,6 +54,11 @@
 
   transition:
     color var(--ey-transition-normal);
+}
+
+.section-header__icon {
+  color: var(--ey-accent-primary);
+  flex-shrink: 0;
 }
 
 @media (max-width: 600px) {

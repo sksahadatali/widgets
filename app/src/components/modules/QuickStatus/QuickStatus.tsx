@@ -1,4 +1,5 @@
 import Card from '../../ui/Card/Card';
+import { Activity } from 'lucide-react';
 import SectionHeader from '../../ui/SectionHeader/SectionHeader';
 import StatusChip from '../../ui/StatusChip/StatusChip';
 
@@ -14,6 +15,7 @@ function QuickStatus() {
   return (
     <Card className="quick-status">
       <SectionHeader
+        icon={Activity}
         title="Quick Status"
         metadata={
           <StatusChip

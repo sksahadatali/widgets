@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 import './SectionHeader.css';
 
@@ -7,6 +8,7 @@ type SectionHeaderProps = {
   eyebrow?: string;
   metadata?: ReactNode;
   className?: string;
+  icon?: LucideIcon;
 };
 
 function SectionHeader({
@@ -14,6 +16,7 @@ function SectionHeader({
   eyebrow,
   metadata,
   className = '',
+  icon: Icon,
 }: SectionHeaderProps) {
   const classes = ['section-header', className]
     .filter(Boolean)
@@ -27,9 +30,17 @@ function SectionHeader({
             {eyebrow}
           </span>
         )}
-
         <h2 className="section-header__title">
-          {title}
+          {Icon && (
+            <Icon
+              size={20}
+              strokeWidth={2}
+              className="section-header__icon"
+              aria-hidden="true"
+            />
+          )}
+
+          <span>{title}</span>
         </h2>
       </div>
 

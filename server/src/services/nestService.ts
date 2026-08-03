@@ -67,6 +67,12 @@ export type NestStatus = {
   targetTemperatureCelsius: number | null;
 };
 
+let cachedNestStatus: NestStatus | null = null;
+let cachedNestStatusExpiresAt = 0;
+
+const NEST_CACHE_DURATION_MS =
+  5 * 60 * 1000;
+
 async function readNestApiError(
   response: Response
 ): Promise<string> {
@@ -99,6 +105,14 @@ async function readNestApiError(
 }
 
 export async function getNestStatus(): Promise<NestStatus> {
+  
+  if (
+    cachedNestStatus &&
+    Date.now() < cachedNestStatusExpiresAt
+  ) {
+    return cachedNestStatus;
+  }
+  
   const accessToken = await getAccessToken();
 
   const deviceName = env.nest.deviceName.replace(
@@ -158,33 +172,45 @@ export async function getNestStatus(): Promise<NestStatus> {
       'sdm.devices.traits.ThermostatTemperatureSetpoint'
     ]?.heatCelsius;
 
-  return {
-    room:
-      device.parentRelations?.[0]?.displayName ??
-      traits['sdm.devices.traits.Info']
-        ?.customName ??
-      'Nest Thermostat',
-
-    online: connectivityStatus === 'ONLINE',
-
-    temperatureCelsius:
-      typeof temperature === 'number'
-        ? Number(temperature.toFixed(1))
-        : null,
-
-    humidityPercent:
-      typeof humidity === 'number'
-        ? humidity
-        : null,
-
-    thermostatMode,
-    ecoMode,
-    hvacStatus,
-    heating: hvacStatus === 'HEATING',
-
-    targetTemperatureCelsius:
-      typeof targetTemperature === 'number'
-        ? Number(targetTemperature.toFixed(1))
-        : null,
-  };
+    const status: NestStatus = {
+      room:
+        device.parentRelations?.[0]?.displayName ??
+        traits['sdm.devices.traits.Info']
+          ?.customName ??
+        'Nest Thermostat',
+    
+      online: connectivityStatus === 'ONLINE',
+    
+      temperatureCelsius:
+        typeof temperature === 'number'
+          ? Number(temperature.toFixed(1))
+          : null,
+    
+      humidityPercent:
+        typeof humidity === 'number'
+          ? humidity
+          : null,
+    
+      thermostatMode,
+      ecoMode,
+      hvacStatus,
+      heating: hvacStatus === 'HEATING',
+    
+      targetTemperatureCelsius:
+        typeof targetTemperature === 'number'
+          ? Number(targetTemperature.toFixed(1))
+          : null,
+    };
+    
+    cachedNestStatus = status;
+    cachedNestStatusExpiresAt =
+      Date.now() + NEST_CACHE_DURATION_MS;
+    
+    return status;
+    
+    cachedNestStatus = status;
+    cachedNestStatusExpiresAt =
+      Date.now() + NEST_CACHE_DURATION_MS;
+    
+    return status;
 }

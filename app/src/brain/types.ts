@@ -46,3 +46,13 @@ export interface BrainResult {
   sources: BrainSource[];
   decisions: BrainDecision[];
 }
+
+export interface BriefItem {
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  source: BrainSource;
+  score: number;
+  action?: string;
+}

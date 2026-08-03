@@ -152,7 +152,7 @@ function WeatherCard() {
           </span>
 
           <span className="status-card__secondary">
-            H: {weather.high}° · L: {weather.low}°
+            H: {weather.high}° · L: {weather.low}° · Humidity {weather.humidityPercent}%
           </span>
 
           <span className="status-card__footer">

@@ -4,6 +4,10 @@ import type { CalendarEvent } from './calendarService';
 import type { NestStatus } from './nestService';
 
 import {
+  getTravelRecommendation,
+} from './travelService';
+
+import {
   getPrimaryWeatherInsight,
 } from './weatherIntelligence';
 
@@ -359,6 +363,50 @@ function getHeading(
   return 'A quiet evening ahead.';
 }
 
+function getTravelItem(
+  todayEvents: CalendarEvent[]
+): BriefItem | null {
+
+  const recommendation =
+    getTravelRecommendation(
+      todayEvents
+    );
+
+  if (!recommendation) {
+    return null;
+  }
+
+  const leaveTime =
+    recommendation.leaveTime
+      .toLocaleTimeString(
+        'en-GB',
+        {
+          hour: '2-digit',
+          minute: '2-digit',
+        }
+      );
+
+  const meetingTime =
+    recommendation.meetingTime
+      .toLocaleTimeString(
+        'en-GB',
+        {
+          hour: '2-digit',
+          minute: '2-digit',
+        }
+      );
+
+  return {
+    text:
+      `Leave home by ${leaveTime} ` +
+      `for ${recommendation.title} ` +
+      `at ${recommendation.destination} ` +
+      `(meeting at ${meetingTime}).`,
+
+    priority: 110,
+  };
+}
+
 export function buildTodaysBrief(
   input: BriefInput
 ): BriefData {
@@ -383,6 +431,17 @@ export function buildTodaysBrief(
       calendarItem
     );
   }
+
+  const travelItem =
+  getTravelItem(
+    input.todayEvents
+  );
+
+  if (travelItem) {
+    candidates.push(
+      travelItem
+    );
+  }  
 
   if (input.weather) {
     const weatherItem =

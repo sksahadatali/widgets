@@ -1,4 +1,6 @@
 import Card from '../../ui/Card/Card';
+import { Sparkles } from 'lucide-react';
+
 import SectionHeader from '../../ui/SectionHeader/SectionHeader';
 
 import { useTodaysBrief } from '../../../hooks/useTodaysBrief';
@@ -15,6 +17,7 @@ function TodaysBrief() {
   return (
     <Card className="todays-brief">
       <SectionHeader
+        icon={Sparkles}
         title="Today's Brief"
         metadata={
           loading

@@ -32,7 +32,7 @@ function NestCard() {
         </span>
 
         <span className="status-card__label">
-          Nest
+          Indoor
         </span>
       </div>
 

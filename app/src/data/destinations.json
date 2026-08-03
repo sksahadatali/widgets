@@ -1,0 +1,53 @@
+[
+  {
+    "id": "office",
+    "name": "IAG Cargo Office",
+    "aliases": [
+      "IAG Cargo",
+      "British Airways",
+      "Waterside",
+      "Carrus",
+      "Sealand Rd",
+      "Longford"
+    ],
+    "travelMinutes": 55
+  },
+  {
+    "id": "school",
+    "name": "Rehan School",
+    "aliases": [
+      "School"
+    ],
+    "travelMinutes": 8
+  },
+  {
+    "id": "boxing",
+    "name": "The Cedars Upper School",
+    "aliases": [
+      "The Cedars Upper School",
+      "Cedars",
+      "Leighton Buzzard",
+      "LU7 2AF"
+    ],
+    "travelMinutes": 8
+  },
+  {
+    "id": "mosque",
+    "name": "Mosque",
+    "aliases": [
+      "Mosque"
+    ],
+    "travelMinutes": 6
+  },
+  {
+    "id": "airport",
+    "name": "Heathrow Airport",
+    "aliases": [
+      "Heathrow",
+      "Terminal 5",
+      "T5",
+      "LHR"
+    ],
+    "travelMinutes": 60
+  }
+]
