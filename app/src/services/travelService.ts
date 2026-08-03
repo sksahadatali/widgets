@@ -2,50 +2,33 @@ import type {
   CalendarEvent,
 } from './calendarService';
 
-import destinations from '../data/destinations.json';
-import travelSettings from '../data/travelSettings.json';
+import {
+  getTravelSettings,
+} from './settingsService';
+
+import {
+  getFallbackTravelTime,
+} from './routeService';
 
 export interface TravelRecommendation {
   title: string;
   location: string;
-  destination: string;
   meetingTime: Date;
   leaveTime: Date;
   travelMinutes: number;
   minutesUntilLeave: number;
 }
 
-type Destination = {
-  id: string;
-  name: string;
-  aliases: string[];
-  travelMinutes: number;
-};
-
-function findDestination(
-  location: string
-): Destination | null {
-
-  const value =
-    location.trim().toLowerCase();
-
-  const destination =
-    (destinations as Destination[])
-      .find(item =>
-        item.aliases.some(alias =>
-          value.includes(
-            alias.toLowerCase()
-          )
-        )
-      );
-
-  return destination ?? null;
-}
+const MAX_ADVANCE_MINUTES = 360;
+const MAX_OVERDUE_MINUTES = -60;
 
 export function getTravelRecommendation(
   calendarEvents: CalendarEvent[],
   now: Date = new Date()
 ): TravelRecommendation | null {
+
+  const settings =
+    getTravelSettings();
 
   const nextEvent =
     calendarEvents
@@ -67,12 +50,12 @@ export function getTravelRecommendation(
     return null;
   }
 
-  const destination =
-    findDestination(
+  const travelMinutes =
+    getFallbackTravelTime(
       nextEvent.location
     );
 
-  if (!destination) {
+  if (travelMinutes === null) {
     return null;
   }
 
@@ -83,8 +66,8 @@ export function getTravelRecommendation(
     new Date(
       meetingTime.getTime() -
       (
-        destination.travelMinutes +
-        travelSettings.leaveBufferMinutes
+        travelMinutes +
+        settings.leaveBufferMinutes
       ) *
       60 *
       1000
@@ -99,10 +82,9 @@ export function getTravelRecommendation(
       (1000 * 60)
     );
 
-  // Only show travel when it becomes relevant.
   if (
-    minutesUntilLeave < -60 ||
-    minutesUntilLeave > 360
+    minutesUntilLeave < MAX_OVERDUE_MINUTES ||
+    minutesUntilLeave > MAX_ADVANCE_MINUTES
   ) {
     return null;
   }
@@ -110,11 +92,9 @@ export function getTravelRecommendation(
   return {
     title: nextEvent.title,
     location: nextEvent.location,
-    destination: destination.name,
     meetingTime,
     leaveTime,
-    travelMinutes:
-      destination.travelMinutes,
+    travelMinutes,
     minutesUntilLeave,
   };
 }

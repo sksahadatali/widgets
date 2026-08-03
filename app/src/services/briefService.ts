@@ -400,9 +400,7 @@ function getTravelItem(
     text:
       `Leave home by ${leaveTime} ` +
       `for ${recommendation.title} ` +
-      `at ${recommendation.destination} ` +
       `(meeting at ${meetingTime}).`,
-
     priority: 110,
   };
 }
