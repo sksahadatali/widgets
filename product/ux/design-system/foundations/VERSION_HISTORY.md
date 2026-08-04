@@ -132,3 +132,11 @@ Status: 🚧 In Progress
 # v1.0.0 – Personal Operating System
 
 First public production release.
+
+### Travel Intelligence v2.2
+- Integrated live Google Maps Geocoding and Routes APIs.
+- Replaced static travel time lookup with real-time traffic-aware routing.
+- Added intelligent travel caching.
+- Added adaptive refresh strategy based on departure time.
+- Today's Brief now generates dynamic "Leave home by..." recommendations.
+- Suppressed duplicate calendar reminders when travel intelligence is available.
