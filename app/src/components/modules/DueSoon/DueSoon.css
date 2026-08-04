@@ -16,6 +16,14 @@
     box-shadow var(--ey-transition-normal);
 }
 
+.due-soon__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
 .due-soon__heading {
   display: flex;
   align-items: center;
@@ -43,7 +51,7 @@
 .due-soon__header-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .due-soon__count {

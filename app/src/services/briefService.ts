@@ -420,27 +420,33 @@ export function buildTodaysBrief(
     );
   }
 
+  const travelItem =
+  getTravelItem(
+    input.todayEvents
+  );
+
+if (travelItem) {
+
+  candidates.push(
+    travelItem
+  );
+
+} else {
+
   const calendarItem =
     getCalendarItem(
       input.todayEvents
     );
 
   if (calendarItem) {
+
     candidates.push(
       calendarItem
     );
+
   }
 
-  const travelItem =
-  getTravelItem(
-    input.todayEvents
-  );
-
-  if (travelItem) {
-    candidates.push(
-      travelItem
-    );
-  }  
+}  
 
   if (input.weather) {
     const weatherItem =

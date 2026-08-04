@@ -14,7 +14,7 @@ import {
 } from '../services/briefService';
 
 import {
-  refreshTravelInfo,
+  refreshTravelInfoIfNeeded,
 } from '../services/googleMapsService';
 
 import {
@@ -73,11 +73,15 @@ export function useTodaysBrief(): UseTodaysBriefResult {
         return;
       }
 
+      const meetingTime =
+        new Date(nextEvent.start);
+
       try {
 
-        await refreshTravelInfo(
+        await refreshTravelInfoIfNeeded(
           settings.homeAddress,
-          nextEvent.location!
+          nextEvent.location!,
+          meetingTime
         );
 
       } catch (error) {

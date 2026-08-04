@@ -21,7 +21,10 @@ export function getLastTravelUpdate(): Date | null {
   return lastUpdated;
 }
 
-async function geocode(address: string): Promise<Coordinates> {
+async function geocode(
+  address: string,
+): Promise<Coordinates> {
+
   const url =
     `https://maps.googleapis.com/maps/api/geocode/json` +
     `?address=${encodeURIComponent(address)}` +
@@ -30,7 +33,9 @@ async function geocode(address: string): Promise<Coordinates> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error('Google Geocoding request failed.');
+    throw new Error(
+      'Google Geocoding request failed.'
+    );
   }
 
   const data = await response.json();
@@ -39,10 +44,13 @@ async function geocode(address: string): Promise<Coordinates> {
     data.status !== 'OK' ||
     !data.results?.length
   ) {
-    throw new Error(`Unable to geocode address: ${address}`);
+    throw new Error(
+      `Unable to geocode address: ${address}`
+    );
   }
 
-  const location = data.results[0].geometry.location;
+  const location =
+    data.results[0].geometry.location;
 
   return {
     latitude: location.lat,
@@ -50,7 +58,10 @@ async function geocode(address: string): Promise<Coordinates> {
   };
 }
 
-export async function refreshTravelInfo(
+/**
+ * Performs an actual Google Maps refresh.
+ */
+async function refreshTravelInfo(
   originAddress: string,
   destinationAddress: string,
 ): Promise<RouteInfo> {
@@ -90,28 +101,37 @@ export async function refreshTravelInfo(
             },
           },
           travelMode: 'DRIVE',
-          routingPreference: 'TRAFFIC_AWARE',
+          routingPreference:
+            'TRAFFIC_AWARE',
         }),
       },
     );
 
   if (!response.ok) {
-    throw new Error('Google Routes API request failed.');
+    throw new Error(
+      'Google Routes API request failed.'
+    );
   }
 
   const data = await response.json();
 
   if (!data.routes?.length) {
-    throw new Error('No route found.');
+    throw new Error(
+      'No route found.'
+    );
   }
 
-  const route = data.routes[0];
+  const route =
+    data.routes[0];
 
   cachedRoute = {
     travelMinutes:
       Math.round(
         parseInt(
-          route.duration.replace('s', ''),
+          route.duration.replace(
+            's',
+            '',
+          ),
           10,
         ) / 60,
       ),
@@ -122,7 +142,78 @@ export async function refreshTravelInfo(
       ),
   };
 
-  lastUpdated = new Date();
+  lastUpdated =
+    new Date();
 
   return cachedRoute;
+}
+
+/**
+ * Intelligent refresh policy.
+ */
+export async function refreshTravelInfoIfNeeded(
+  originAddress: string,
+  destinationAddress: string,
+  leaveTime: Date,
+): Promise<RouteInfo> {
+
+  if (
+    !cachedRoute ||
+    !lastUpdated
+  ) {
+    return refreshTravelInfo(
+      originAddress,
+      destinationAddress,
+    );
+  }
+
+  const now =
+    Date.now();
+
+  const minutesUntilLeave =
+    (
+      leaveTime.getTime() -
+      now
+    ) /
+    (1000 * 60);
+
+  const cacheAgeMinutes =
+    (
+      now -
+      lastUpdated.getTime()
+    ) /
+    (1000 * 60);
+
+  let refreshInterval =
+    60;
+
+  if (
+    minutesUntilLeave <= 10
+  ) {
+    refreshInterval = 1;
+  } else if (
+    minutesUntilLeave <= 30
+  ) {
+    refreshInterval = 5;
+  } else if (
+    minutesUntilLeave <= 60
+  ) {
+    refreshInterval = 10;
+  } else if (
+    minutesUntilLeave <= 180
+  ) {
+    refreshInterval = 30;
+  }
+
+  if (
+    cacheAgeMinutes <
+    refreshInterval
+  ) {
+    return cachedRoute;
+  }
+
+  return refreshTravelInfo(
+    originAddress,
+    destinationAddress,
+  );
 }
