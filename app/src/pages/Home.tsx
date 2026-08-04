@@ -5,9 +5,12 @@ import DueSoon from '../components/modules/DueSoon/DueSoon';
 import Tasks from '../components/modules/Tasks/Tasks';
 import Calendar from '../components/modules/Calendar/Calendar';
 
+
+
 import './Home.css';
 
 function Home() {
+
   return (
     <main className="home">
       <div className="home__brief"><TodaysBrief /></div>

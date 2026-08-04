@@ -1,4 +1,7 @@
-import { useMemo } from 'react';
+import {
+  useEffect,
+  useMemo,
+} from 'react';
 
 import { useWeather } from './useWeather';
 import { usePrayerTimes } from './usePrayerTimes';
@@ -9,6 +12,14 @@ import {
   buildTodaysBrief,
   type BriefData,
 } from '../services/briefService';
+
+import {
+  refreshTravelInfo,
+} from '../services/googleMapsService';
+
+import {
+  getTravelSettings,
+} from '../services/settingsService';
 
 type UseTodaysBriefResult = {
   brief: BriefData;
@@ -40,6 +51,49 @@ export function useTodaysBrief(): UseTodaysBriefResult {
     loading: nestLoading,
     error: nestError,
   } = useNest();
+
+  useEffect(() => {
+
+    async function updateTravel() {
+
+      const settings =
+        getTravelSettings();
+
+      const nextEvent =
+        todayEvents
+          .filter(event => !event.allDay)
+          .filter(event => !!event.location)
+          .sort(
+            (a, b) =>
+              new Date(a.start).getTime() -
+              new Date(b.start).getTime()
+          )[0];
+
+      if (!nextEvent) {
+        return;
+      }
+
+      try {
+
+        await refreshTravelInfo(
+          settings.homeAddress,
+          nextEvent.location!
+        );
+
+      } catch (error) {
+
+        console.error(
+          'Travel update failed:',
+          error
+        );
+
+      }
+
+    }
+
+    void updateTravel();
+
+  }, [todayEvents]);
 
   const brief = useMemo(
     () =>

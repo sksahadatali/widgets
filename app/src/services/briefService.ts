@@ -405,6 +405,7 @@ function getTravelItem(
   };
 }
 
+
 export function buildTodaysBrief(
   input: BriefInput
 ): BriefData {

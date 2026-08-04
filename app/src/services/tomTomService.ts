@@ -1,13 +1,19 @@
+export interface RouteInfo {
+  travelMinutes: number;
+  trafficDelayMinutes: number;
+  distanceKm: number;
+}
+
 const API_KEY =
   import.meta.env.VITE_TOMTOM_API_KEY ?? '';
 
 const BASE_URL =
   'https://api.tomtom.com/routing/1/calculateRoute';
 
-export async function getTomTomTravelTime(
+export async function getRoute(
   origin: string,
   destination: string
-): Promise<number | null> {
+): Promise<RouteInfo | null> {
 
   if (!API_KEY) {
     console.warn(
@@ -23,9 +29,9 @@ export async function getTomTomTravelTime(
       `${BASE_URL}/` +
       `${encodeURIComponent(origin)}:` +
       `${encodeURIComponent(destination)}` +
-      `/json?` +
-      `traffic=true&` +
-      `key=${API_KEY}`;
+      `/json` +
+      `?traffic=true` +
+      `&key=${API_KEY}`;
 
     const response =
       await fetch(url);
@@ -39,18 +45,34 @@ export async function getTomTomTravelTime(
     const data =
       await response.json();
 
-    const seconds =
-      data.routes?.[0]?.summary?.travelTimeInSeconds;
+    const summary =
+      data.routes?.[0]?.summary;
 
-    if (
-      typeof seconds !== 'number'
-    ) {
+    if (!summary) {
       return null;
     }
 
-    return Math.round(
-      seconds / 60
-    );
+    return {
+
+      travelMinutes:
+        Math.round(
+          summary.travelTimeInSeconds / 60
+        ),
+
+      trafficDelayMinutes:
+        Math.round(
+          summary.trafficDelayInSeconds / 60
+        ),
+
+      distanceKm:
+        Number(
+          (
+            summary.lengthInMeters /
+            1000
+          ).toFixed(1)
+        ),
+
+    };
 
   } catch (error) {
 
