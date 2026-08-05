@@ -1,7 +1,17 @@
 import {
+  getTravelSettings,
+} from '../services/travelSettingsService';
+
+import {
+  getPrayerSettings,
+} from '../services/prayerSettingsService';
+
+import {
   Check,
   Moon,
   Sun,
+  Car,
+  MapPinned,
 } from 'lucide-react';
 
 import {
@@ -79,6 +89,10 @@ function Settings() {
     ambienceId,
     setAmbience,
   } = useTheme();
+  const travelSettings =
+    getTravelSettings();
+  const prayerSettings =
+    getPrayerSettings();
 
   return (
     <main className="settings-page">
@@ -291,6 +305,123 @@ function Settings() {
           )}
         </div>
       </section>
+      <section
+        className="settings-section"
+        aria-labelledby="system-heading"
+      >
+        <div className="settings-section__header">
+          <div>
+            <h2 id="system-heading">
+              System
+            </h2>
+
+            <p>
+              Configure core eY OS modules.
+            </p>
+          </div>
+        </div>
+        <div className="system-grid">
+
+        <article className="system-card">
+
+          <div className="system-card__header">
+            <div className="system-card__icon"><Car size={24} strokeWidth={1.8} /></div>
+
+            <div>
+              <h3>Travel</h3>
+
+              <p>
+                Configure Travel Intelligence.
+              </p>
+            </div>
+          </div>
+
+          <div className="system-card__content">
+
+            <div className="system-item">
+              <span>Home Address</span>
+
+              <strong>
+                {travelSettings.homeAddress}
+              </strong>
+            </div>
+
+            <div className="system-item">
+              <span>Provider</span>
+
+              <strong>
+                Google Maps
+              </strong>
+            </div>
+
+            <div className="system-item">
+              <span>Leave Buffer</span>
+
+              <strong>
+                {travelSettings.leaveBufferMinutes} minutes
+              </strong>
+            </div>
+
+          </div>
+
+          </article>
+
+          <article className="system-card">
+
+            <div className="system-card__header">
+              <div className="system-card__icon">
+                <MapPinned size={24} strokeWidth={1.8} />
+              </div>
+
+              <div>
+                <h3>Prayer</h3>
+
+                <p>
+                  Configure prayer calculation.
+                </p>
+              </div>
+            </div>
+
+            <div className="system-card__content">
+
+              <div className="system-item">
+                <span>Provider</span>
+
+                <strong>
+                  {prayerSettings.provider}
+                </strong>
+              </div>
+
+              <div className="system-item">
+                <span>Calculation</span>
+
+                <strong>
+                  {prayerSettings.calculationMethodName}
+                </strong>
+              </div>
+
+              <div className="system-item">
+                <span>Madhab / Asr</span>
+
+                <strong>
+                  Later Asr ({prayerSettings.schoolName})
+                </strong>
+              </div>
+
+              <div className="system-item">
+                <span>Refresh</span>
+
+                <strong>
+                  {prayerSettings.refreshMinutes} minutes
+                </strong>
+              </div>
+
+            </div>
+
+            </article>
+
+          </div>
+      </section>      
     </main>
   );
 }
