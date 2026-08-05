@@ -27,7 +27,52 @@ type UseTodaysBriefResult = {
   hasError: boolean;
 };
 
+const ONE_MINUTE = 1 * 60 * 1000;
+const FIVE_MINUTES = 5 * 60 * 1000;
+const TEN_MINUTES = 10 * 60 * 1000;
+const THIRTY_MINUTES = 30 * 60 * 1000;
+const SIXTY_MINUTES = 60 * 60 * 1000;
+
+function getTravelRefreshMs(
+  meetingTime: Date,
+  leaveBufferMinutes: number
+): number {
+
+  const leaveTime = new Date(
+    meetingTime.getTime() -
+    leaveBufferMinutes * 60 * 1000
+  );
+
+  const minutesUntilLeave =
+    Math.max(
+      0,
+      Math.round(
+        (leaveTime.getTime() - Date.now()) /
+        (1000 * 60)
+      )
+    );
+
+  if (minutesUntilLeave > 240) {
+    return SIXTY_MINUTES;
+  }
+
+  if (minutesUntilLeave > 120) {
+    return THIRTY_MINUTES;
+  }
+
+  if (minutesUntilLeave > 60) {
+    return TEN_MINUTES;
+  }
+
+  if (minutesUntilLeave > 30) {
+    return FIVE_MINUTES;
+  }
+
+  return ONE_MINUTE;
+}
+
 export function useTodaysBrief(): UseTodaysBriefResult {
+
   const {
     weather,
     loading: weatherLoading,
@@ -52,64 +97,112 @@ export function useTodaysBrief(): UseTodaysBriefResult {
     error: nestError,
   } = useNest();
 
-  useEffect(() => {
+  const updateTravel = async () => {
 
-    async function updateTravel() {
+    const settings =
+      getTravelSettings();
 
-      const settings =
-        getTravelSettings();
-    
-      const now =
-        new Date();
-    
-      const nextEvent =
-        todayEvents
-          .filter(event => !event.allDay)
-          .filter(event => !!event.location)
-          .filter(
-            event =>
-              new Date(event.start) > now
-          )
-          .sort(
-            (a, b) =>
-              new Date(a.start).getTime() -
-              new Date(b.start).getTime()
-          )[0];
-    
-      if (!nextEvent) {
-        return;
-      }
-    
-      const meetingTime =
-        new Date(nextEvent.start);
-    
-      console.log('Next event selected:', {
-        title: nextEvent.title,
-        location: nextEvent.location,
-        start: nextEvent.start,
-      });
-    
-      try {
-    
-        await refreshTravelInfoIfNeeded(
-          settings.homeAddress,
-          nextEvent.location!,
-          meetingTime
-        );
-    
-      } catch (error) {
-    
-        console.error(
-          'Travel update failed:',
-          error
-        );
-    
-      }
-    
+    const now =
+      new Date();
+
+    const nextEvent =
+      todayEvents
+        .filter(event => !event.allDay)
+        .filter(event => !!event.location)
+        .filter(
+          event =>
+            new Date(event.start) > now
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.start).getTime() -
+            new Date(b.start).getTime()
+        )[0];
+
+    if (!nextEvent) {
+      return;
     }
 
-    void updateTravel();
+    const meetingTime =
+      new Date(nextEvent.start);
 
+    console.log('Next event selected:', {
+      title: nextEvent.title,
+      location: nextEvent.location,
+      start: nextEvent.start,
+    });
+
+    try {
+
+      await refreshTravelInfoIfNeeded(
+        settings.homeAddress,
+        nextEvent.location!,
+        meetingTime
+      );
+
+    } catch (error) {
+
+      console.error(
+        'Travel update failed:',
+        error
+      );
+
+    }
+
+  };
+
+  // Refresh immediately whenever calendar events change
+  useEffect(() => {
+    void updateTravel();
+  }, [todayEvents]);
+
+  // Refresh travel information every 5 minutes
+  useEffect(() => {
+
+    const settings =
+      getTravelSettings();
+  
+    const now =
+      new Date();
+  
+    const nextEvent =
+      todayEvents
+        .filter(event => !event.allDay)
+        .filter(event => !!event.location)
+        .filter(
+          event => new Date(event.start) > now
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.start).getTime() -
+            new Date(b.start).getTime()
+        )[0];
+  
+    if (!nextEvent) {
+      return;
+    }
+  
+    const refreshMs =
+      getTravelRefreshMs(
+        new Date(nextEvent.start),
+        settings.leaveBufferMinutes
+      );
+  
+    console.log(
+      'Travel refresh interval:',
+      refreshMs / 60000,
+      'minutes'
+    );
+  
+    const intervalId =
+      window.setInterval(() => {
+        void updateTravel();
+      }, refreshMs);
+  
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  
   }, [todayEvents]);
 
   const brief = useMemo(

@@ -386,21 +386,46 @@ function getTravelItem(
         }
       );
 
-  const meetingTime =
-    recommendation.meetingTime
-      .toLocaleTimeString(
-        'en-GB',
-        {
-          hour: '2-digit',
-          minute: '2-digit',
-        }
-      );
+  const traffic =
+    recommendation.trafficLevel === 'light'
+      ? '🟢 Light'
+      : recommendation.trafficLevel === 'moderate'
+      ? '🟠 Moderate'
+      : '🔴 Heavy';
 
+  let arrivalStatus: string;
+
+  if (recommendation.arrivalBufferMinutes >= 0) {
+    arrivalStatus =
+      `Arrive +${recommendation.arrivalBufferMinutes} min`;
+  } else {
+    arrivalStatus =
+      `Arrive ${recommendation.arrivalBufferMinutes} min`;
+  }
+  
+  let action: string;
+  
+  switch (recommendation.urgency) {
+  
+    case 'leave-now':
+      action = '⚠️ Leave now';
+      break;
+  
+    case 'leave-soon':
+      action = `🟡 Leave ${leaveTime}`;
+      break;
+  
+    default:
+      action = `🚗 Leave ${leaveTime}`;
+  }
+  
   return {
     text:
-      `Leave home by ${leaveTime} ` +
-      `for ${recommendation.title} ` +
-      `(meeting at ${meetingTime}).`,
+      `${recommendation.title} • ` +
+      `${action} • ` +
+      `Drive ${recommendation.travelMinutes} min • ` +
+      `${traffic} • ` +
+      `${arrivalStatus}`,
     priority: 110,
   };
 }
