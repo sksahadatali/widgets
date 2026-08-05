@@ -4,7 +4,7 @@ import type {
   
   import {
     getTravelSettings,
-  } from './settingsService';
+  } from './travelSettingsService';
   
   import {
     getCachedTravelInfo,

@@ -1,0 +1,9 @@
+{
+    "provider": "AlAdhan",
+    "calculationMethod": 15,
+    "calculationMethodName": "Moonsighting Committee",
+    "school": 1,
+    "schoolName": "Hanafi",
+    "shafaq": "general",
+    "refreshMinutes": 60
+  }

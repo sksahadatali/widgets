@@ -6,10 +6,10 @@ import {
   
   import {
     getNextPrayer,
-    PRAYER_REFRESH_MS,
+    getPrayerRefreshMs,
     type PrayerData,
   } from '../services/prayerService';
-  
+
   type UsePrayerTimesResult = {
     prayer: PrayerData | null;
     loading: boolean;
@@ -55,7 +55,7 @@ import {
           () => {
             void refresh();
           },
-          PRAYER_REFRESH_MS
+          getPrayerRefreshMs()
         );
   
       return () => {

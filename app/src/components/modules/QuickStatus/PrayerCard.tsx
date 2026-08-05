@@ -1,9 +1,9 @@
 import {
-  Moon,
   MoonStar,
   Sun,
   Sunrise,
   Sunset,
+  Clock3,
 } from 'lucide-react';
 
 import { usePrayerTimes } from '../../../hooks/usePrayerTimes';
@@ -34,7 +34,7 @@ function getPrayerIcon(
 
     case 'Asr':
       return (
-        <Sun
+        <Clock3
           size={20}
           strokeWidth={2}
           aria-hidden="true"
@@ -52,7 +52,7 @@ function getPrayerIcon(
 
     case 'Isha':
       return (
-        <Moon
+        <MoonStar
           size={20}
           strokeWidth={2}
           aria-hidden="true"

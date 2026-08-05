@@ -19,7 +19,7 @@ import {
 
 import {
   getTravelSettings,
-} from '../services/settingsService';
+} from '../services/travelSettingsService';
 
 type UseTodaysBriefResult = {
   brief: BriefData;
@@ -58,41 +58,54 @@ export function useTodaysBrief(): UseTodaysBriefResult {
 
       const settings =
         getTravelSettings();
-
+    
+      const now =
+        new Date();
+    
       const nextEvent =
         todayEvents
           .filter(event => !event.allDay)
           .filter(event => !!event.location)
+          .filter(
+            event =>
+              new Date(event.start) > now
+          )
           .sort(
             (a, b) =>
               new Date(a.start).getTime() -
               new Date(b.start).getTime()
           )[0];
-
+    
       if (!nextEvent) {
         return;
       }
-
+    
       const meetingTime =
         new Date(nextEvent.start);
-
+    
+      console.log('Next event selected:', {
+        title: nextEvent.title,
+        location: nextEvent.location,
+        start: nextEvent.start,
+      });
+    
       try {
-
+    
         await refreshTravelInfoIfNeeded(
           settings.homeAddress,
           nextEvent.location!,
           meetingTime
         );
-
+    
       } catch (error) {
-
+    
         console.error(
           'Travel update failed:',
           error
         );
-
+    
       }
-
+    
     }
 
     void updateTravel();

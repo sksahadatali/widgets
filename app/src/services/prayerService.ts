@@ -1,13 +1,8 @@
 import { apiGet } from './apiClient';
 
-const PRAYER_CONFIG = {
-  latitude: 51.9172,
-  longitude: -0.6603,
-  method: 2,
-  school: 1,
-  timezone: 'Europe/London',
-  refreshMinutes: 60,
-};
+import { getPrayerSettings } from './prayerSettingsService';
+import { getTravelSettings } from './travelSettingsService';
+
 
 type PrayerName =
   | 'Fajr'
@@ -221,12 +216,19 @@ function findNextPrayer(
 }
 
 export async function getNextPrayer(): Promise<PrayerData> {
+
+  const prayerSettings =
+    getPrayerSettings();
+
+  const travelSettings =
+    getTravelSettings();
+
   const url =
-    'https://api.aladhan.com/v1/timings' +
-    `?latitude=${PRAYER_CONFIG.latitude}` +
-    `&longitude=${PRAYER_CONFIG.longitude}` +
-    `&method=${PRAYER_CONFIG.method}` +
-    `&school=${PRAYER_CONFIG.school}`;
+    'https://api.aladhan.com/v1/timingsByAddress' +
+    `?address=${encodeURIComponent(travelSettings.homeAddress)}` +
+    `&method=${prayerSettings.calculationMethod}` +
+    `&school=${prayerSettings.school}` +
+    `&shafaq=${prayerSettings.shafaq}`;
 
   const data =
     await apiGet<AladhanResponse>(
@@ -238,7 +240,10 @@ export async function getNextPrayer(): Promise<PrayerData> {
   );
 }
 
-export const PRAYER_REFRESH_MS =
-  PRAYER_CONFIG.refreshMinutes *
-  60 *
-  1000;
+export function getPrayerRefreshMs(): number {
+  return (
+    getPrayerSettings().refreshMinutes *
+    60 *
+    1000
+  );
+}

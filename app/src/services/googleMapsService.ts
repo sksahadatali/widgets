@@ -10,15 +10,21 @@ export interface RouteInfo {
   distanceKm: number;
 }
 
-let cachedRoute: RouteInfo | null = null;
-let lastUpdated: Date | null = null;
+type CachedRoute = {
+  origin: string;
+  destination: string;
+  route: RouteInfo;
+  updatedAt: Date;
+};
+
+let cachedRoute: CachedRoute | null = null;
 
 export function getCachedTravelInfo(): RouteInfo | null {
-  return cachedRoute;
+  return cachedRoute?.route ?? null;
 }
 
 export function getLastTravelUpdate(): Date | null {
-  return lastUpdated;
+  return cachedRoute?.updatedAt ?? null;
 }
 
 async function geocode(
@@ -71,6 +77,12 @@ async function refreshTravelInfo(
 
   const destination =
     await geocode(destinationAddress);
+  
+  console.log('Origin address:', originAddress);
+  console.log('Destination address:', destinationAddress);
+  
+  console.log('Origin coordinates:', origin);
+  console.log('Destination coordinates:', destination);  
 
   const response =
     await fetch(
@@ -101,8 +113,7 @@ async function refreshTravelInfo(
             },
           },
           travelMode: 'DRIVE',
-          routingPreference:
-            'TRAFFIC_AWARE',
+          routingPreference: 'TRAFFIC_AWARE',
         }),
       },
     );
@@ -123,15 +134,14 @@ async function refreshTravelInfo(
 
   const route =
     data.routes[0];
+  
+  console.log('Google route:', route);  
 
-  cachedRoute = {
+  const routeInfo: RouteInfo = {
     travelMinutes:
       Math.round(
         parseInt(
-          route.duration.replace(
-            's',
-            '',
-          ),
+          route.duration.replace('s', ''),
           10,
         ) / 60,
       ),
@@ -142,10 +152,14 @@ async function refreshTravelInfo(
       ),
   };
 
-  lastUpdated =
-    new Date();
+  cachedRoute = {
+    origin: originAddress,
+    destination: destinationAddress,
+    route: routeInfo,
+    updatedAt: new Date(),
+  };
 
-  return cachedRoute;
+  return routeInfo;
 }
 
 /**
@@ -157,18 +171,7 @@ export async function refreshTravelInfoIfNeeded(
   leaveTime: Date,
 ): Promise<RouteInfo> {
 
-  if (
-    !cachedRoute ||
-    !lastUpdated
-  ) {
-    return refreshTravelInfo(
-      originAddress,
-      destinationAddress,
-    );
-  }
-
-  const now =
-    Date.now();
+  const now = Date.now();
 
   const minutesUntilLeave =
     (
@@ -177,39 +180,38 @@ export async function refreshTravelInfoIfNeeded(
     ) /
     (1000 * 60);
 
-  const cacheAgeMinutes =
-    (
-      now -
-      lastUpdated.getTime()
-    ) /
-    (1000 * 60);
+  let refreshInterval = 60;
 
-  let refreshInterval =
-    60;
-
-  if (
-    minutesUntilLeave <= 10
-  ) {
+  if (minutesUntilLeave <= 10) {
     refreshInterval = 1;
-  } else if (
-    minutesUntilLeave <= 30
-  ) {
+  } else if (minutesUntilLeave <= 30) {
     refreshInterval = 5;
-  } else if (
-    minutesUntilLeave <= 60
-  ) {
+  } else if (minutesUntilLeave <= 60) {
     refreshInterval = 10;
-  } else if (
-    minutesUntilLeave <= 180
-  ) {
+  } else if (minutesUntilLeave <= 180) {
     refreshInterval = 30;
   }
 
   if (
-    cacheAgeMinutes <
-    refreshInterval
+    cachedRoute &&
+    cachedRoute.origin === originAddress &&
+    cachedRoute.destination === destinationAddress
   ) {
-    return cachedRoute;
+
+    const cacheAgeMinutes =
+      (
+        now -
+        cachedRoute.updatedAt.getTime()
+      ) /
+      (1000 * 60);
+
+    if (
+      cacheAgeMinutes <
+      refreshInterval
+    ) {
+      return cachedRoute.route;
+    }
+
   }
 
   return refreshTravelInfo(

@@ -11,10 +11,22 @@ function CalendarCard() {
     error,
   } = useCalendar();
 
+  const now = new Date();
+
   const nextEvent =
-    events.length > 0
-      ? events[0]
-      : null;
+    events
+      .filter(event => {
+        if (event.allDay) {
+          return true;
+        }
+  
+        return new Date(event.start) > now;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.start).getTime() -
+          new Date(b.start).getTime()
+      )[0] ?? null;
 
   function formatTime() {
     if (!nextEvent) {
