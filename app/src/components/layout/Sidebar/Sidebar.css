@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
 
-  width: 280px;
+  width: 260px;
   min-height: 100vh;
-  padding: 32px 20px;
+  padding: 28px 18px;
 
   background: var(--ey-bg-sidebar);
   border-right: 1px solid var(--ey-border-default);
@@ -64,7 +64,7 @@
 }
 
 .sidebar__brand p {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
 
   font-size: 13px;
 
@@ -75,7 +75,7 @@
 
 .sidebar__divider {
   height: 1px;
-  margin: 32px 0 24px;
+  margin: 24px 0 20px;
 
   background: var(--ey-border-default);
 
@@ -85,7 +85,7 @@
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .sidebar__nav-item {
@@ -95,7 +95,7 @@
   align-items: center;
 
   width: 100%;
-  height: 52px;
+  height: 48px;
 
   padding: 0 16px;
 
@@ -146,7 +146,7 @@
 .sidebar__nav-icon {
   flex-shrink: 0;
 
-  margin-right: 14px;
+  margin-right: 12px;
 
   color: inherit;
 }

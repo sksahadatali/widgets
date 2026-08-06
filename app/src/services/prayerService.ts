@@ -13,6 +13,7 @@ type PrayerName =
 
 type PrayerTimings = {
   Fajr: string;
+  Sunrise: string;
   Dhuhr: string;
   Asr: string;
   Maghrib: string;
@@ -22,19 +23,32 @@ type PrayerTimings = {
 type AladhanResponse = {
   data: {
     timings: PrayerTimings;
+
+    date: {
+      hijri: {
+        day: string;
+
+        month: {
+          en: string;
+        };
+
+        year: string;
+      };
+    };
   };
 };
 
 export type PrayerData = {
+  // Next prayer
   name: PrayerName;
 
   // Display time (HH:mm)
   time: string;
 
-  // ISO date/time for Today's Brain
+  // ISO date/time
   dateTime: string;
 
-  // Machine-readable countdown
+  // Countdown
   minutesRemaining: number;
 
   // Convenience flags
@@ -43,6 +57,12 @@ export type PrayerData = {
 
   // Human-readable countdown
   timeRemaining: string;
+
+  // Today's prayer timetable
+  timings: PrayerTimings;
+
+  // Hijri date
+  hijriDate: string;
 };
 
 function cleanPrayerTime(
@@ -120,7 +140,9 @@ function getTimeRemaining(
 function buildPrayerData(
   name: PrayerName,
   prayerTime: Date,
-  displayTime: string
+  displayTime: string,
+  timings: PrayerTimings,
+  hijriDate: string
 ): PrayerData {
   const minutesRemaining =
     getMinutesRemaining(
@@ -129,30 +151,34 @@ function buildPrayerData(
 
   return {
     name,
-
+  
     time: displayTime,
-
+  
     dateTime:
       prayerTime.toISOString(),
-
+  
     minutesRemaining,
-
+  
     isDueSoon:
       minutesRemaining <= 30,
-
-    // Reserved for future use
+  
     isCurrentPrayer:
       minutesRemaining === 0,
-
+  
     timeRemaining:
       getTimeRemaining(
         prayerTime
       ),
+  
+    timings,
+  
+    hijriDate,
   };
 }
 
 function findNextPrayer(
-  timings: PrayerTimings
+  timings: PrayerTimings,
+  hijriDate: string
 ): PrayerData {
   const prayers: Array<{
     name: PrayerName;
@@ -195,7 +221,9 @@ function findNextPrayer(
         prayerTime,
         cleanPrayerTime(
           prayer.time
-        )
+        ),
+        timings,
+        hijriDate
       );
     }
   }
@@ -211,7 +239,9 @@ function findNextPrayer(
     fajrTomorrow,
     cleanPrayerTime(
       timings.Fajr
-    )
+    ),
+    timings,
+    hijriDate
   );
 }
 
@@ -225,7 +255,9 @@ export async function getNextPrayer(): Promise<PrayerData> {
 
   const url =
     'https://api.aladhan.com/v1/timingsByAddress' +
-    `?address=${encodeURIComponent(travelSettings.homeAddress)}` +
+    `?address=${encodeURIComponent(
+      travelSettings.homeAddress
+    )}` +
     `&method=${prayerSettings.calculationMethod}` +
     `&school=${prayerSettings.school}` +
     `&shafaq=${prayerSettings.shafaq}`;
@@ -235,8 +267,14 @@ export async function getNextPrayer(): Promise<PrayerData> {
       url
     );
 
+  const hijriDate =
+    `${data.data.date.hijri.month.en} ` +
+    `${data.data.date.hijri.day}, ` +
+    `${data.data.date.hijri.year}`;
+
   return findNextPrayer(
-    data.data.timings
+    data.data.timings,
+    hijriDate
   );
 }
 

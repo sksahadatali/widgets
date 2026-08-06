@@ -8,6 +8,10 @@
   border: 1px solid var(--ey-border-default);
   border-radius: var(--ey-card-radius);
 
+  display: flex;
+  flex-direction: column;
+
+
   transition:
     background-color var(--ey-transition-normal),
     border-color var(--ey-transition-normal),
@@ -76,7 +80,16 @@
 
 .calendar-card__agenda {
   display: grid;
+
   gap: var(--ey-space-4);
+
+  max-height: var(--ey-list-max-height);
+
+  overflow-y: auto;
+
+  min-height: 0;
+
+  padding-bottom: 16px;
 }
 
 .calendar-card__group {
@@ -227,6 +240,27 @@
 .calendar-card__state button:focus-visible {
   outline: none;
   box-shadow: var(--ey-focus-ring);
+}
+
+/* Scrollbar */
+
+.due-soon__list::-webkit-scrollbar,
+.tasks__list::-webkit-scrollbar,
+.calendar-card__agenda::-webkit-scrollbar {
+  width: 6px;
+}
+
+.due-soon__list::-webkit-scrollbar-thumb,
+.tasks__list::-webkit-scrollbar-thumb,
+.calendar-card__agenda::-webkit-scrollbar-thumb {
+  background: var(--ey-border-default);
+  border-radius: 999px;
+}
+
+.due-soon__list::-webkit-scrollbar-thumb:hover,
+.tasks__list::-webkit-scrollbar-thumb:hover,
+.calendar-card__agenda::-webkit-scrollbar-thumb:hover {
+  background: var(--ey-accent-primary);
 }
 
 @media (max-width: 1200px) {

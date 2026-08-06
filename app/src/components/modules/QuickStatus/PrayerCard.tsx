@@ -4,6 +4,7 @@ import {
   Sunrise,
   Sunset,
   Clock3,
+  CalendarDays,
 } from 'lucide-react';
 
 import { usePrayerTimes } from '../../../hooks/usePrayerTimes';
@@ -86,6 +87,28 @@ function PrayerCard() {
         aria-hidden="true"
       />
     );
+  const prayerTimes = [
+    {
+      name: 'Fajr',
+      time: prayer?.timings.Fajr,
+    },
+    {
+      name: 'Dhuhr',
+      time: prayer?.timings.Dhuhr,
+    },
+    {
+      name: 'Asr',
+      time: prayer?.timings.Asr,
+    },
+    {
+      name: 'Maghrib',
+      time: prayer?.timings.Maghrib,
+    },
+    {
+      name: 'Isha',
+      time: prayer?.timings.Isha,
+    },
+  ];
 
   return (
     <article className="status-card">
@@ -125,17 +148,80 @@ function PrayerCard() {
         </>
       ) : prayer ? (
         <>
-          <strong className="status-card__primary">
-            {prayer.name}
-          </strong>
+          <div className="status-card__content">
 
-          <span className="status-card__secondary">
-            {prayer.time}
-          </span>
+            {/* LEFT COLUMN */}
 
-          <span className="status-card__footer">
-            {prayer.timeRemaining}
-          </span>
+            <div className="status-card__left">
+
+              <strong className="status-card__primary">
+                {prayer.name}
+              </strong>
+
+              <span className="status-card__secondary">
+                {prayer.time}
+                &nbsp; • &nbsp;
+                {prayer.timeRemaining}
+              </span>
+
+              <div className="status-card__divider" />
+
+              <div className="status-card__sunrise">
+
+                <div className="status-card__sunrise-label">
+                  <Sunrise
+                    size={18}
+                    strokeWidth={2}
+                  />
+
+                  <span>Sunrise</span>
+                </div>
+
+                <strong>
+                  {prayer.timings.Sunrise}
+                </strong>
+
+              </div>
+
+              <div className="status-card__footer">
+
+                <CalendarDays
+                  size={16}
+                  strokeWidth={2}
+                />
+
+                <span>{prayer.hijriDate}</span>
+
+              </div>
+
+            </div>
+
+            {/* RIGHT COLUMN */}
+
+            <div className="status-card__right">
+
+              {prayerTimes.map(item => (
+
+                <div
+                  key={item.name}
+                  className={`status-card__prayer ${
+                    prayer.name === item.name
+                      ? 'status-card__prayer--active'
+                      : ''
+                  }`}
+                >
+
+                  <span>{item.name}</span>
+
+                  <strong>{item.time}</strong>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          </div>
         </>
       ) : null}
     </article>

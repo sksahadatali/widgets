@@ -122,8 +122,13 @@
     --ey-z-toast: 1100;
 
     /* Dashboard */
+
     --ey-dashboard-scale: 1;
     --ey-dashboard-max-width: 1800px;
+
+    /* Dashboard Widgets */
+
+    --ey-list-max-height: 320px;
 
     /* Shape and depth */
     --ey-radius-small: 8px;
