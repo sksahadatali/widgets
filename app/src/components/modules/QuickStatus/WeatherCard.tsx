@@ -92,6 +92,22 @@ function getWeatherIcon(code: number) {
   );
 }
 
+function getForecastIcon(icon: string) {
+  switch (icon) {
+    case 'cloud':
+      return <Cloud size={16} strokeWidth={2} />;
+
+    case 'partly-cloudy':
+      return <CloudSun size={16} strokeWidth={2} />;
+
+    case 'rain':
+      return <CloudRain size={16} strokeWidth={2} />;
+
+    default:
+      return <Sun size={16} strokeWidth={2} />;
+  }
+}
+
 function WeatherCard() {
   const { weather, loading, error } = useWeather();
 
@@ -143,21 +159,68 @@ function WeatherCard() {
         </>
       ) : weather ? (
         <>
-          <strong className="status-card__primary">
-            {weather.temperature}°C
-          </strong>
+          <div className="status-card__content">
 
-          <span className="status-card__secondary">
-            {weather.condition}
-          </span>
+            {/* LEFT */}
 
-          <span className="status-card__secondary">
-            H: {weather.high}° · L: {weather.low}° · Humidity {weather.humidityPercent}%
-          </span>
+            <div className="status-card__weather-left">
 
-          <span className="status-card__footer">
-            Feels like {weather.feelsLike}° · Updated {weather.updatedAt}
-          </span>
+              <strong className="status-card__primary">
+                {weather.temperature}°C
+              </strong>
+
+              <span className="status-card__secondary">
+                {weather.condition}
+              </span>
+
+              <div className="status-card__weather-divider" />
+
+              <div className="status-card__weather-details">
+                <span>H: {weather.high}°</span>
+
+                <span>•</span>
+
+                <span>L: {weather.low}°</span>
+
+                <span>•</span>
+
+                <span>💧 {weather.humidityPercent}%</span>
+              </div>
+
+              <span className="status-card__footer">
+                Feels like {weather.feelsLike}° · Updated {weather.updatedAt}
+              </span>
+
+            </div>
+
+            {/* RIGHT */}
+
+            <div className="status-card__weather-right">
+
+              {weather.forecast.map(day => (
+
+                <div
+                  key={day.day}
+                  className="status-card__weather-forecast"
+                >
+
+                  <div className="status-card__weather-day">
+
+                    {getForecastIcon(day.icon)}
+
+                    <span>{day.day}</span>
+
+                  </div>
+
+                  <strong>{day.high}°/{day.low}°</strong>
+
+                </div>
+
+                ))}
+
+            </div>
+
+          </div>
         </>
       ) : null}
     </article>

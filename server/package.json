@@ -10,14 +10,15 @@
     },
     "dependencies": {
         "@notionhq/client": "^5.23.2",
-        "cors": "^2.8.5",
+        "axios": "^1.19.0",
+        "cors": "^2.8.6",
         "dotenv": "^17.2.0",
         "express": "^5.1.0"
     },
     "devDependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.3",
-        "@types/node": "^24.0.0",
+        "@types/node": "^24.13.3",
         "tsx": "^4.20.0",
         "typescript": "^5.8.0"
     }

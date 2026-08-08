@@ -15,6 +15,8 @@ type OpenMeteoCurrentWeather = {
 };
 
 type OpenMeteoDailyWeather = {
+  time: string[];
+  weather_code: number[];
   temperature_2m_max: number[];
   temperature_2m_min: number[];
 };
@@ -23,6 +25,13 @@ type OpenMeteoResponse = {
   current: OpenMeteoCurrentWeather;
   daily: OpenMeteoDailyWeather;
 };
+
+export interface WeatherForecastDay {
+  day: string;
+  icon: string;
+  high: number;
+  low: number;
+}
 
 export type WeatherData = {
   temperature: number;
@@ -34,6 +43,7 @@ export type WeatherData = {
   weatherCode: number;
   location: string;
   updatedAt: string;
+  forecast: WeatherForecastDay[];
 };
 
 function getCondition(code: number): string {
@@ -61,14 +71,32 @@ function getCondition(code: number): string {
   return conditions[code] ?? 'Unknown';
 }
 
+function getDayName(date: string): string {
+  return new Date(date).toLocaleDateString('en-GB', {
+    weekday: 'short',
+  });
+}
+
+function getForecastIcon(code: number): string {
+  if ([0, 1].includes(code)) return 'sun';
+  if (code === 2) return 'partly-cloudy';
+  if (code === 3) return 'cloud';
+  if ([45, 48].includes(code)) return 'fog';
+  if ([51, 53, 55, 61, 63, 65, 80, 81].includes(code)) return 'rain';
+  if ([71, 73, 75].includes(code)) return 'snow';
+  if (code === 95) return 'storm';
+
+  return 'cloud';
+}
+
 export async function getCurrentWeather(): Promise<WeatherData> {
   const url =
     'https://api.open-meteo.com/v1/forecast' +
     `?latitude=${WEATHER_CONFIG.latitude}` +
     `&longitude=${WEATHER_CONFIG.longitude}` +
     '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code' +
-    '&daily=temperature_2m_max,temperature_2m_min' +
-    '&forecast_days=1' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+    '&forecast_days=4' +
     '&timezone=Europe%2FLondon';
 
   const data = await apiGet<OpenMeteoResponse>(url);
@@ -87,6 +115,15 @@ export async function getCurrentWeather(): Promise<WeatherData> {
       hour: '2-digit',
       minute: '2-digit',
     }),
+    
+    forecast: data.daily.time
+    .slice(1, 4)
+    .map((date, index) => ({
+      day: getDayName(date),
+      icon: getForecastIcon(data.daily.weather_code[index + 1]),
+      high: Math.round(data.daily.temperature_2m_max[index + 1]),
+      low: Math.round(data.daily.temperature_2m_min[index + 1]),
+    })), 
   };
 }
 

@@ -2,26 +2,30 @@ import cors from 'cors';
 import express from 'express';
 
 import { env } from './config/env.js';
+
 import nestRouter from './routes/nest.js';
 import tasksRouter from './routes/tasks.js';
+import petrolRouter from './routes/petrol.js';
 
 const app = express();
 
 app.disable('x-powered-by');
 
+// CORS FIRST
 app.use(
   cors({
     origin: env.frontendOrigin,
-    methods: [
-      'GET',
-      'POST',
-      'PATCH',
-    ],
+    methods: ['GET', 'POST', 'PATCH'],
     allowedHeaders: ['Content-Type'],
   })
 );
 
 app.use(express.json());
+
+// THEN routes
+app.use('/api/petrol', petrolRouter);
+app.use('/api/nest', nestRouter);
+app.use('/api/tasks', tasksRouter);
 
 app.get('/health', (_request, response) => {
   response.json({
@@ -30,9 +34,6 @@ app.get('/health', (_request, response) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-app.use('/api/nest', nestRouter);
-app.use('/api/tasks', tasksRouter);
 
 app.use((_request, response) => {
   response.status(404).json({

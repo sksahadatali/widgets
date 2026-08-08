@@ -2,11 +2,13 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
-  BadgePoundSterling,
+  Banknote,
 } from 'lucide-react';
+import { Fuel } from 'lucide-react';
 
 import { useExchangeRate } from '../../../hooks/useExchangeRate';
 import type { RateMovement } from '../../../services/currencyService';
+import { usePetrol } from '../../../hooks/usePetrol';
 
 import './StatusCard.css';
 
@@ -83,11 +85,15 @@ function FxCard() {
     error,
   } = useExchangeRate();
 
+  const {
+    petrol,
+  } = usePetrol();
+
   return (
     <article className="status-card">
       <div className="status-card__header">
         <span className="status-card__icon">
-          <BadgePoundSterling
+          <Banknote
             size={20}
             strokeWidth={2}
             aria-hidden="true"
@@ -95,7 +101,7 @@ function FxCard() {
         </span>
 
         <span className="status-card__label">
-          FX
+          Finance
         </span>
       </div>
 
@@ -126,39 +132,79 @@ function FxCard() {
       ) : currency ? (
         <>
           <div className="status-card__rates">
-            {currency.rates.map((rate) => (
-              <div
-                key={rate.code}
-                className="status-card__rate"
-              >
-                <span className="status-card__rate-label">
-                  {getCurrencyLabel(rate.code)}
-                </span>
 
-                <span className="status-card__rate-value">
-                  <strong>
-                    {formatRate(
-                      rate.code,
-                      rate.rate
-                    )}
-                  </strong>
+          {currency.rates.map((rate) => (
+            <div
+              key={rate.code}
+              className="status-card__rate"
+            >
+              <span className="status-card__rate-label">
+                {getCurrencyLabel(rate.code)}
+              </span>
 
-                  <span
-                    className={`status-card__rate-movement status-card__rate-movement--${rate.movement}`}
-                    aria-label={`${rate.code} rate ${rate.movement}`}
-                  >
-                    {getMovementIcon(
-                      rate.movement
-                    )}
-                  </span>
+              <span className="status-card__rate-value">
+                <strong>
+                  {formatRate(rate.code, rate.rate)}
+                </strong>
+
+                <span
+                  className={`status-card__rate-movement status-card__rate-movement--${rate.movement}`}
+                  aria-label={`${rate.code} rate ${rate.movement}`}
+                >
+                  {getMovementIcon(rate.movement)}
                 </span>
-              </div>
-            ))}
+              </span>
+            </div>
+          ))}
+
+          {/* Petrol */}
+
+          <div className="status-card__rate status-card__rate--petrol">
+
+          <span className="status-card__rate-label">
+            🇬🇧
+            <Fuel
+              size={14}
+              strokeWidth={2}
+              className="status-card__inline-icon"
+            />
+            {petrol?.station
+              ? `Petrol - ${petrol.station
+                  .replace('MFG ', '')
+                  .replace(' LEIGHTON BUZZARD', '')}`
+                  .toLowerCase()
+                  .replace(/\b\w/g, c => c.toUpperCase())
+              : 'Petrol'}
+          </span>
+
+            <span className="status-card__rate-value">
+            <strong>
+              {petrol
+                ? `${petrol.petrolPrice.toFixed(1)}p/L`
+                : '--.- p/L'}
+            </strong>
+            </span>
+
+          </div>
+
           </div>
 
           <span className="status-card__footer">
-            1 {currency.from} · Updated{' '}
-            {currency.updatedAt}
+            FX: {currency.updatedAt}
+
+            {petrol && (
+              <>
+                {' • '}
+                Petrol:{' '}
+                {new Date(petrol.updatedAt).toLocaleDateString(
+                  'en-GB',
+                  {
+                    day: '2-digit',
+                    month: 'short',
+                  }
+                )}
+              </>
+            )}
           </span>
         </>
       ) : null}
