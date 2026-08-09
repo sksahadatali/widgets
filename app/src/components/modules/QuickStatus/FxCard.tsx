@@ -180,7 +180,9 @@ function FxCard() {
             <span className="status-card__rate-value">
             <strong>
               {petrol
-                ? `${petrol.petrolPrice.toFixed(1)}p/L`
+                ? `${typeof petrol?.petrolPrice === 'number'
+                  ? petrol.petrolPrice.toFixed(1)
+                  : '--.-'}p/L`
                 : '--.- p/L'}
             </strong>
             </span>

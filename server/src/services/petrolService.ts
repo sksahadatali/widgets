@@ -5,6 +5,11 @@ const BASE_URL = 'https://www.fuel-finder.service.gov.uk';
 let accessToken = '';
 let tokenExpiresAt = 0;
 
+let petrolCache: any = null;
+let petrolCacheTime = 0;
+
+const PETROL_CACHE_MINUTES = 15;
+
 async function getAccessToken(): Promise<string> {
 
   // Reuse cached token
@@ -43,6 +48,8 @@ async function getAccessToken(): Promise<string> {
     }
   );
 
+  console.log('[API] Token generated successfully');
+
   accessToken = response.data.data.access_token;
 
   const expiresIn =
@@ -52,6 +59,10 @@ async function getAccessToken(): Promise<string> {
     Date.now() + (expiresIn - 300) * 1000;
 
   return accessToken;
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function fetchAllBatches(
@@ -67,15 +78,42 @@ async function fetchAllBatches(
 
     try {
 
-      const response = await axios.get(
-        `${BASE_URL}${path}`,
-        {
-          headers,
-          params: {
-            'batch-number': batch,
-          },
+      console.log(`[API] Fetching ${path} batch ${batch}`);
+
+      let response;
+
+      try {
+        response = await axios.get(
+          `${BASE_URL}${path}`,
+          {
+            headers,
+            params: {
+              'batch-number': batch,
+            },
+          }
+        );
+      } catch (error: any) {
+
+        if (error.response?.status === 403) {
+          console.log(`[API] 403 received. Retrying batch ${batch}...`);
+
+          await sleep(2000);
+
+          response = await axios.get(
+            `${BASE_URL}${path}`,
+            {
+              headers,
+              params: {
+                'batch-number': batch,
+              },
+            }
+          );
+        } else if (error.response?.status === 404) {
+          break;
+        } else {
+          throw error;
         }
-      );
+      }
 
       let rows: any[] = [];
 
@@ -118,6 +156,16 @@ async function fetchAllBatches(
 
 export async function getPetrolPrice() {
 
+  const now = Date.now();
+
+  if (
+    petrolCache &&
+    now - petrolCacheTime < PETROL_CACHE_MINUTES * 60 * 1000
+  ) {
+    console.log('[API] Returning cached petrol price');
+    return petrolCache;
+  }
+  
   console.log('[API] Getting petrol price...');
 
   const token = await getAccessToken();
@@ -168,9 +216,15 @@ export async function getPetrolPrice() {
     throw new Error('E10 price not found.');
   }
 
-  return {
+  petrolCache = {
     station: station.trading_name,
     petrolPrice: Number(e10.price),
     updatedAt: e10.price_last_updated,
   };
+  
+  petrolCacheTime = Date.now();
+  
+  console.log('[API] Petrol cached');
+  
+  return petrolCache;
 }

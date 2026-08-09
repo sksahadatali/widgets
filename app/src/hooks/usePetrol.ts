@@ -18,10 +18,10 @@ export function usePetrol() {
         );
 
         const result = await response.json();
-        console.log(
-          'Petrol API response:',
-          JSON.stringify(result, null, 2)
-        );
+        if (!response.ok || result.error) {
+          console.error('Petrol API error:', result);
+          return;
+        }
 
         setData(result);
       } catch (err) {
