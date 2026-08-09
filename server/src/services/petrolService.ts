@@ -8,7 +8,7 @@ let tokenExpiresAt = 0;
 let petrolCache: any = null;
 let petrolCacheTime = 0;
 
-const PETROL_CACHE_MINUTES = 15;
+const PETROL_CACHE_MINUTES = 12 * 60;
 
 async function getAccessToken(): Promise<string> {
 
@@ -48,7 +48,7 @@ async function getAccessToken(): Promise<string> {
     }
   );
 
-  console.log('[API] Token generated successfully');
+  /*console.log('[API] Token generated successfully');*/
 
   accessToken = response.data.data.access_token;
 
@@ -78,7 +78,7 @@ async function fetchAllBatches(
 
     try {
 
-      console.log(`[API] Fetching ${path} batch ${batch}`);
+      /*console.log(`[API] Fetching ${path} batch ${batch}`);*/
 
       let response;
 
@@ -127,9 +127,9 @@ async function fetchAllBatches(
         rows = response.data.data.data;
       }
 
-      console.log(
+      /*console.log(
         `[API] ${path} - Batch ${batch}: ${rows.length} rows`
-      );
+      );*/
 
       results.push(...rows);
 
@@ -155,7 +155,6 @@ async function fetchAllBatches(
 }
 
 export async function getPetrolPrice() {
-
   const now = Date.now();
 
   if (
@@ -165,66 +164,71 @@ export async function getPetrolPrice() {
     console.log('[API] Returning cached petrol price');
     return petrolCache;
   }
-  
+
   console.log('[API] Getting petrol price...');
 
-  const token = await getAccessToken();
+  try {
+    const token = await getAccessToken();
 
-  const headers = {
-    accept: 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+    const headers = {
+      accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
 
-  const [stations, prices] = await Promise.all([
-    fetchAllBatches('/api/v1/pfs', headers),
-    fetchAllBatches('/api/v1/pfs/fuel-prices', headers),
-  ]);
+    const [stations, prices] = await Promise.all([
+      fetchAllBatches('/api/v1/pfs', headers),
+      fetchAllBatches('/api/v1/pfs/fuel-prices', headers),
+    ]);
 
-  console.log(`[API] Stations: ${stations.length}`);
-  console.log(`[API] Prices: ${prices.length}`);
+    /*console.log(`[API] Stations: ${stations.length}`);*/
+    /*console.log(`[API] Prices: ${prices.length}`);*/
 
-  const station = stations.find(
-    (s: any) =>
-      s.brand_name?.toUpperCase() === 'MORRISONS' &&
-      s.location?.postcode?.startsWith('LU7')
-  );
-
-  if (!station) {
-    throw new Error(
-      'Morrisons Leighton Buzzard not found.'
+    const station = stations.find(
+      (s: any) =>
+        s.brand_name?.toUpperCase() === 'MORRISONS' &&
+        s.location?.postcode?.startsWith('LU7')
     );
+
+    if (!station) {
+      throw new Error('Morrisons Leighton Buzzard not found.');
+    }
+
+    const stationPrices = prices.find(
+      (p: any) => p.node_id === station.node_id
+    );
+
+    if (!stationPrices) {
+      throw new Error('Fuel prices not found.');
+    }
+
+    const e10 = stationPrices.fuel_prices.find(
+      (fuel: any) => fuel.fuel_type === 'E10'
+    );
+
+    if (!e10) {
+      throw new Error('E10 price not found.');
+    }
+
+    petrolCache = {
+      station: station.trading_name,
+      petrolPrice: Number(e10.price),
+      updatedAt: e10.price_last_updated,
+    };
+
+    petrolCacheTime = Date.now();
+
+    console.log('[API] Petrol cached');
+
+    return petrolCache;
+
+  } catch (error) {
+
+    // If we have an old cached value, use it
+    if (petrolCache) {
+      console.log('[API] Using old cached petrol price');
+      return petrolCache;
+    }
+
+    throw error;
   }
-
-  console.log(
-    '[API] Station found:',
-    station.trading_name
-  );
-
-  const stationPrices = prices.find(
-    (p: any) => p.node_id === station.node_id
-  );
-
-  if (!stationPrices) {
-    throw new Error('Fuel prices not found.');
-  }
-
-  const e10 = stationPrices.fuel_prices.find(
-    (fuel: any) => fuel.fuel_type === 'E10'
-  );
-
-  if (!e10) {
-    throw new Error('E10 price not found.');
-  }
-
-  petrolCache = {
-    station: station.trading_name,
-    petrolPrice: Number(e10.price),
-    updatedAt: e10.price_last_updated,
-  };
-  
-  petrolCacheTime = Date.now();
-  
-  console.log('[API] Petrol cached');
-  
-  return petrolCache;
 }
