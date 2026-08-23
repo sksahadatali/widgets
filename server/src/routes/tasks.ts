@@ -42,11 +42,13 @@ router.post(
     try {
       const {
         task,
+        type,
         area,
         priority,
         dueDate,
       } = request.body as {
         task?: string;
+        type?: 'Task' | 'Reminder';
         area?: string;
         priority?: string;
         dueDate?: string | null;
@@ -61,6 +63,15 @@ router.post(
         return;
       }
 
+      if (type !== 'Task' && type !== 'Reminder') {
+        response.status(400).json({
+          success: false,
+          error: 'Valid Type is required',
+        });
+      
+        return;
+      }
+
       if (!area?.trim()) {
         response.status(400).json({
           success: false,
@@ -72,6 +83,7 @@ router.post(
 
       const id = await createTask({
         task: task.trim(),
+        type,
         area: area.trim(),
         priority:
           priority?.trim() ||

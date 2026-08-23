@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Bell, CalendarDays, Clock3 } from 'lucide-react';
 
 import SearchBox from '../../ui/SearchBox/SearchBox';
@@ -14,6 +15,16 @@ import {
 import './Header.css';
 
 function Header() {
+  const [, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 30000); // Refresh every 30 Secs
+  
+    return () => clearInterval(timer);
+  }, []);
+  
   const greeting = getGreeting();
   const currentDate = getCurrentDate();
   const currentTime = getCurrentTime();

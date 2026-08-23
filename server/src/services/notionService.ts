@@ -40,6 +40,7 @@ export type TaskItem = {
 
 export type CreateTaskInput = {
   task: string;
+  type: 'Task' | 'Reminder';
   area: string;
   priority: string;
   dueDate: string | null;
@@ -444,7 +445,7 @@ export async function createTask(
 
     Type: {
       select: {
-        name: 'Task',
+        name: input.type,
       },
     },
 
