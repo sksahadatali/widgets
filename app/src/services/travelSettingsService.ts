@@ -1,4 +1,6 @@
-import travelSettings from '../data/travelSettings.json';
+import {
+  getHouseholdConfig,
+} from './householdConfigService';
 
 export type TravelSettings = {
   homeAddress: string;
@@ -6,5 +8,13 @@ export type TravelSettings = {
 };
 
 export function getTravelSettings(): TravelSettings {
-  return travelSettings;
+  const { travel } =
+    getHouseholdConfig();
+
+  return {
+    homeAddress:
+      travel.homeAddress,
+    leaveBufferMinutes:
+      travel.leaveBufferMinutes,
+  };
 }
