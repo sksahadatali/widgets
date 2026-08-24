@@ -9,6 +9,13 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
 
+    "baseUrl": ".",
+    "paths": {
+      "@household-config": [
+        "src/config/household.example.json"
+      ]
+    },
+
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -23,6 +30,6 @@
   },
   "include": ["src"],
   "exclude": [
-  "../server"
+    "../server"
   ]
 }
