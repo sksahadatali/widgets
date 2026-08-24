@@ -1,10 +1,12 @@
 import { apiGet } from './apiClient';
 
-const CALENDAR_CONFIG = {
-  endpoint:
-    'https://script.google.com/macros/s/AKfycbzAqiws7K9sdm8tIc1XnB0PlD3_lX8nMpADkLJJC4aej-kjGf1cyjukJF6RFCpL9hCtIA/exec',
-  refreshMinutes: 15,
-};
+import {
+  getAppMode,
+  getHouseholdConfig,
+} from './householdConfigService';
+
+const CALENDAR_CONFIG =
+  getHouseholdConfig().calendar;
 
 type CalendarApiEvent = {
   id: string;
@@ -46,6 +48,22 @@ export type CalendarData = {
 };
 
 export async function getCalendarEvents(): Promise<CalendarData> {
+  if (
+    getAppMode() === 'demo' &&
+    !CALENDAR_CONFIG.endpoint
+  ) {
+    return {
+      calendarUrl:
+        'https://calendar.google.com/calendar/u/0/r',
+      generatedAt:
+        new Date().toISOString(),
+      timeZone:
+        getHouseholdConfig()
+          .location.timezone,
+      events: [],
+    };
+  }
+
   const data =
     await apiGet<CalendarApiResponse>(
       CALENDAR_CONFIG.endpoint
@@ -87,9 +105,8 @@ export async function getCalendarEvents(): Promise<CalendarData> {
       data.generatedAt ?? '',
     timeZone:
       data.timeZone ||
-      Intl.DateTimeFormat()
-        .resolvedOptions()
-        .timeZone,
+      getHouseholdConfig()
+        .location.timezone,
     events,
   };
 }
