@@ -9,7 +9,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
 
-    "baseUrl": ".",
     "paths": {
       "@household-config": [
         "src/config/household.example.json"
