@@ -1,4 +1,6 @@
-import destinations from '../data/destinations.json';
+import {
+  getHouseholdConfig,
+} from '../services/householdConfigService';
 
 export interface Destination {
   id: string;
@@ -14,7 +16,11 @@ export function findDestination(
   const value =
     location.trim().toLowerCase();
 
-  return (destinations as Destination[])
+  const destinations =
+    getHouseholdConfig()
+      .travel.destinations;
+
+  return destinations
     .find(destination =>
       destination.name.toLowerCase() === value ||
       destination.aliases.some(
