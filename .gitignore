@@ -5,6 +5,10 @@
 
 server/.env
 
+# Private household configuration
+app/src/config/*.local.json
+dashboard/config.local.js
+
 # Dependencies
 node_modules/
 
