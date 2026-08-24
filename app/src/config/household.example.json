@@ -1,0 +1,37 @@
+{
+  "household": {
+    "displayName": "Example Household"
+  },
+  "location": {
+    "name": "Example Town",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "timezone": "Europe/London"
+  },
+  "travel": {
+    "homeAddress": "Trafalgar Square, London, UK",
+    "leaveBufferMinutes": 10,
+    "destinations": [
+      {
+        "id": "school",
+        "name": "Local School",
+        "aliases": [
+          "School"
+        ],
+        "travelMinutes": 10
+      },
+      {
+        "id": "office",
+        "name": "Main Office",
+        "aliases": [
+          "Office"
+        ],
+        "travelMinutes": 30
+      }
+    ]
+  },
+  "calendar": {
+    "endpoint": "",
+    "refreshMinutes": 15
+  }
+}
