@@ -45,12 +45,14 @@ export default defineConfig(
     }
 
     const appMode: AppMode =
-      configuredMode ??
-      (
-        mode === 'development'
-          ? 'household'
-          : 'demo'
-      );
+      configuredMode === 'household' ||
+      configuredMode === 'demo'
+        ? configuredMode
+        : (
+          mode === 'development'
+            ? 'household'
+            : 'demo'
+        );
 
     const configFile =
       appMode === 'household'
