@@ -1,4 +1,4 @@
-import exampleConfig from '../config/household.example.json';
+import selectedConfig from '@household-config';
 
 export type AppMode =
   | 'household'
@@ -34,18 +34,6 @@ export type HouseholdConfig = {
     refreshMinutes: number;
   };
 };
-
-const localConfigModules =
-  import.meta.glob(
-    '../config/household.local.json',
-    {
-      eager: true,
-      import: 'default',
-    }
-  ) as Record<string, unknown>;
-
-const LOCAL_CONFIG_PATH =
-  '../config/household.local.json';
 
 function resolveAppMode(): AppMode {
   const configuredMode =
@@ -105,29 +93,6 @@ function validateConfig(
 
 export const APP_MODE =
   resolveAppMode();
-
-const localConfig =
-  localConfigModules[
-    LOCAL_CONFIG_PATH
-  ] as HouseholdConfig | undefined;
-
-if (
-  APP_MODE === 'household' &&
-  !localConfig
-) {
-  throw new Error(
-    'eY OS is running in Household mode, but ' +
-    'app/src/config/household.local.json is missing. ' +
-    'Create it from household.example.json and add ' +
-    'the real household values locally. This file ' +
-    'must never be committed.'
-  );
-}
-
-const selectedConfig =
-  APP_MODE === 'household'
-    ? localConfig
-    : exampleConfig;
 
 validateConfig(
   selectedConfig as HouseholdConfig,
