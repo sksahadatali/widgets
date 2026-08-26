@@ -103,7 +103,7 @@ widgets/
 Example location
 
 ```
-C:\Users\n541568\Tools\node
+C:\Tools\node
 ```
 
 ---
@@ -162,6 +162,7 @@ app/.env
 
 ```env
 VITE_API_BASE_URL=http://localhost:3001
+VITE_EY_MODE=household
 ```
 
 ---
@@ -181,6 +182,28 @@ NEST_REFRESH_TOKEN=
 NEST_PROJECT_ID=
 NEST_DEVICE_NAME=
 ```
+
+---
+
+# Household and Demo Configuration
+
+eY OS supports two configuration modes:
+
+- **Household mode** is the primary mode for the wall-mounted 32-inch Elo touchscreen. It requires a private local household configuration.
+- **Demo mode** is the safe public/GitHub Pages mode. It uses tracked example data and never loads private household values.
+
+Local development defaults to Household mode. Production builds default to Demo mode unless `VITE_EY_MODE` is explicitly set.
+
+To configure the household installation:
+
+1. Copy `app/src/config/household.example.json` to `app/src/config/household.local.json`.
+2. Add the real household address, location, destinations and calendar endpoint locally.
+3. Keep `household.local.json` private. It is ignored by Git and must never be committed.
+4. Restart `npm run dev` after changing configuration.
+
+If Household mode is selected without the private local file, eY OS stops with a clear configuration error instead of silently showing demo data.
+
+Do not store API keys, OAuth tokens, passwords or other credentials in the household JSON file. Secrets belong in ignored environment files or the backend.
 
 ---
 

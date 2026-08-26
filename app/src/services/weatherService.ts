@@ -1,9 +1,21 @@
 import { apiGet } from './apiClient';
 
+import {
+  getHouseholdConfig,
+} from './householdConfigService';
+
+const householdLocation =
+  getHouseholdConfig().location;
+
 const WEATHER_CONFIG = {
-  latitude: 51.9172,
-  longitude: -0.6603,
-  locationName: 'Leighton Buzzard',
+  latitude:
+    householdLocation.latitude,
+  longitude:
+    householdLocation.longitude,
+  locationName:
+    householdLocation.name,
+  timezone:
+    householdLocation.timezone,
   refreshMinutes: 30,
 };
 
@@ -97,7 +109,7 @@ export async function getCurrentWeather(): Promise<WeatherData> {
     '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code' +
     '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
     '&forecast_days=4' +
-    '&timezone=Europe%2FLondon';
+    `&timezone=${encodeURIComponent(WEATHER_CONFIG.timezone)}`;
 
   const data = await apiGet<OpenMeteoResponse>(url);
 
@@ -115,7 +127,7 @@ export async function getCurrentWeather(): Promise<WeatherData> {
       hour: '2-digit',
       minute: '2-digit',
     }),
-    
+
     forecast: data.daily.time
     .slice(1, 4)
     .map((date, index) => ({
@@ -123,7 +135,7 @@ export async function getCurrentWeather(): Promise<WeatherData> {
       icon: getForecastIcon(data.daily.weather_code[index + 1]),
       high: Math.round(data.daily.temperature_2m_max[index + 1]),
       low: Math.round(data.daily.temperature_2m_min[index + 1]),
-    })), 
+    })),
   };
 }
 

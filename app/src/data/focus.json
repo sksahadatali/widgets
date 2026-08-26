@@ -8,7 +8,7 @@
     "dueDate": "2026-07-29",
     "dueTime": null,
     "estimatedMinutes": 45,
-    "assignedTo": "Sahadat"
+    "assignedTo": "Household Member"
   },
   {
     "id": "focus-002",
@@ -30,6 +30,6 @@
     "dueDate": "2026-07-29",
     "dueTime": null,
     "estimatedMinutes": 60,
-    "assignedTo": "Sahadat"
+    "assignedTo": "Household Member"
   }
 ]
