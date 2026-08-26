@@ -4,7 +4,7 @@ import { Bell, CalendarDays, Clock3 } from 'lucide-react';
 import SearchBox from '../../ui/SearchBox/SearchBox';
 import IconButton from '../../ui/IconButton/IconButton';
 
-import Avatar from '../../ui/Avatar/Avatar';
+import ProfileSwitcher from '../../household/ProfileSwitcher/ProfileSwitcher';
 
 import {
   getGreeting,
@@ -12,13 +12,16 @@ import {
   getCurrentTime,
 } from '../../../utils/date';
 import {
-  getHouseholdConfig,
-} from '../../../services/householdConfigService';
+  useHouseholdProfile,
+} from '../../../household/useHouseholdProfile';
 
 import './Header.css';
 
 function Header() {
   const [, setNow] = useState(new Date());
+  const {
+    selectedProfile,
+  } = useHouseholdProfile();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -31,13 +34,13 @@ function Header() {
   const greeting = getGreeting();
   const currentDate = getCurrentDate();
   const currentTime = getCurrentTime();
-  const householdName =
-    getHouseholdConfig().household.displayName;
+  const profileName =
+    selectedProfile.displayName;
 
   return (
     <header className="header">
       <div className="header__greeting">
-        <h1>{greeting} {householdName}</h1>
+        <h1>{greeting} {profileName}</h1>
       </div>
 
       <div className="header__actions">
@@ -56,9 +59,7 @@ function Header() {
           ariaLabel="Notifications"
         />
 
-        <Avatar
-          name={householdName}
-        />
+        <ProfileSwitcher />
       </div>
     </header>
   );

@@ -1,12 +1,34 @@
+import {
+  forwardRef,
+} from 'react';
+
 import './Avatar.css';
 
 type AvatarProps = {
   name: string;
   imageUrl?: string;
   onClick?: () => void;
+  ariaLabel?: string;
+  ariaExpanded?: boolean;
+  ariaControls?: string;
+  ariaHasPopup?: 'dialog' | 'menu';
 };
 
-function Avatar({ name, imageUrl, onClick }: AvatarProps) {
+const Avatar = forwardRef<
+  HTMLButtonElement,
+  AvatarProps
+>(function Avatar(
+  {
+    name,
+    imageUrl,
+    onClick,
+    ariaLabel = 'User profile',
+    ariaExpanded,
+    ariaControls,
+    ariaHasPopup,
+  },
+  ref
+) {
   const initials = name
     .split(' ')
     .map((part) => part[0])
@@ -16,9 +38,14 @@ function Avatar({ name, imageUrl, onClick }: AvatarProps) {
 
   return (
     <button
+      ref={ref}
+      type="button"
       className="avatar"
       onClick={onClick}
-      aria-label="User profile"
+      aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
+      aria-haspopup={ariaHasPopup}
     >
       {imageUrl ? (
         <img src={imageUrl} alt={name} />
@@ -27,6 +54,6 @@ function Avatar({ name, imageUrl, onClick }: AvatarProps) {
       )}
     </button>
   );
-}
+});
 
 export default Avatar;

@@ -197,9 +197,35 @@ Local development defaults to Household mode. Production builds default to Demo 
 To configure the household installation:
 
 1. Copy `app/src/config/household.example.json` to `app/src/config/household.local.json`.
-2. Add the real household address, location, destinations and calendar endpoint locally.
+2. Add the real household members, address, location, destinations and calendar endpoint locally.
 3. Keep `household.local.json` private. It is ignored by Git and must never be committed.
 4. Restart `npm run dev` after changing configuration.
+
+Household members belong inside the existing `household` section:
+
+```json
+{
+  "household": {
+    "displayName": "Your household display name",
+    "members": [
+      {
+        "id": "adult-1",
+        "displayName": "Preferred adult name",
+        "memberType": "adult"
+      },
+      {
+        "id": "child-1",
+        "displayName": "Preferred child name",
+        "memberType": "child"
+      }
+    ]
+  }
+}
+```
+
+Use stable, non-identifying IDs such as `adult-1` and `child-1`. The real display names stay only in the ignored local file. Demo mode uses the safe example profiles from `household.example.json`.
+
+The Family profile is derived automatically from `household.displayName`. A selected member remains active only for the current page session; a page reload or application restart returns to Family. Profile selection is context only. `memberType` is descriptive metadata and does not authenticate an adult or grant permissions.
 
 If Household mode is selected without the private local file, eY OS stops with a clear configuration error instead of silently showing demo data.
 
