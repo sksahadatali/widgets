@@ -269,3 +269,114 @@
       74px minmax(0, 1fr);
   }
 }
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar > .calendar-card {
+  min-height: 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__header {
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__heading {
+  gap: 5px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__heading svg {
+  width: 14px;
+  height: 14px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__heading h2 {
+  font-size: 0.88rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__view-all {
+  gap: 3px;
+  padding: 2px 5px;
+
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__view-all svg {
+  width: 10px;
+  height: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__agenda {
+  gap: 4px;
+  padding-bottom: 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__group {
+  padding-bottom: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__group-title {
+  margin-bottom: 3px;
+
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__event {
+  grid-template-columns:
+    44px minmax(0, 1fr);
+  gap: 6px;
+
+  min-height: 34px;
+  padding: 3px 2px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__time {
+  gap: 1px;
+
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__weekday {
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__event-content {
+  gap: 1px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__event-title {
+  font-size: 0.7rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__location {
+  gap: 2px;
+
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__location svg {
+  width: 9px;
+  height: 9px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__state {
+  min-height: 80px;
+
+  font-size: 0.7rem;
+}

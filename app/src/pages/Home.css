@@ -60,13 +60,10 @@
 :where(:root[data-display-profile='compact'])
   .home__due-soon,
 :where(:root[data-display-profile='compact'])
-  .home__tasks {
-  grid-column: span 6;
-}
-
+  .home__tasks,
 :where(:root[data-display-profile='compact'])
   .home__calendar {
-  grid-column: 1 / -1;
+  grid-column: span 4;
 }
 
 @media (max-width: 1200px) {

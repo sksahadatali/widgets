@@ -82,7 +82,35 @@
 
 :where(:root[data-display-profile='compact'])
   .header .search-box {
-  width: 220px;
+  width: 170px;
+  padding-inline: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header {
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header__actions {
+  gap: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header__date-time {
+  gap: 4px;
+  padding-inline: 8px;
+
+  font-size: 0.72rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header .avatar {
+  width: var(--ey-control-height);
+  height: var(--ey-control-height);
+
+  font-size: 0.78rem;
 }
 
 :where(:root[data-display-profile='elo-touch'])

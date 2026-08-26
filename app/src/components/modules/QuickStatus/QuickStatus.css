@@ -55,3 +55,11 @@
   }
 
 }
+
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='compact'])
+    .quick-status__grid {
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+  }
+}

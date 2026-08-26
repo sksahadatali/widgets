@@ -351,3 +351,130 @@
     margin-left: 0;
   }
 }
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__header {
+  margin-bottom: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__heading {
+  gap: 5px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__heading svg {
+  width: 14px;
+  height: 14px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__heading h2 {
+  font-size: 0.88rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__header-actions {
+  gap: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__count {
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__add-button {
+  gap: 3px;
+  padding: 2px 5px;
+
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__add-button svg {
+  width: 10px;
+  height: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__list {
+  padding-bottom: 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__item {
+  grid-template-columns:
+    6px minmax(0, 1fr) auto;
+  gap: 5px;
+
+  min-height: 38px;
+  padding-inline: 2px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__indicator {
+  width: 6px;
+  height: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__content {
+  gap: 1px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__task {
+  font-size: 0.7rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__meta {
+  gap: 3px;
+
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__priority {
+  padding: 1px 4px;
+
+  font-size: 0.6rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__item-actions {
+  gap: 3px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__date {
+  gap: 2px;
+
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__date svg {
+  width: 10px;
+  height: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__edit {
+  width: 18px;
+  height: 18px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__edit svg {
+  width: 11px;
+  height: 11px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .due-soon__state {
+  min-height: 80px;
+
+  font-size: 0.7rem;
+}

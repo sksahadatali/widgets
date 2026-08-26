@@ -460,84 +460,196 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__header {
-  gap: 8px;
+  gap: 5px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__icon {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__label {
-  font-size: 0.76rem;
+  font-size: 0.62rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__primary {
-  margin-top: 12px;
+  margin-top: 5px;
 
-  font-size: 1.5rem;
+  font-size: 1.05rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__secondary {
-  margin-top: 4px;
+  margin-top: 2px;
+
+  font-size: 0.68rem;
+  line-height: 1.2;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__content {
-  grid-template-columns: 1fr 96px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 4px;
 
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__right,
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__weather-right {
-  gap: 6px;
+  gap: 2px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__divider {
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__sunrise {
-  margin-top: 8px;
+  margin-top: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__sunrise-label {
+  gap: 3px;
+
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__sunrise-label svg {
+  width: 12px;
+  height: 12px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__sunrise strong {
+  font-size: 0.68rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__prayer {
+  column-gap: 3px;
+
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__prayer strong {
+  min-width: 36px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__footer {
-  gap: 6px;
-  padding-top: 8px;
+  gap: 3px;
+  padding-top: 4px;
+
+  font-size: 0.62rem;
+  line-height: 1.15;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__footer svg {
+  width: 11px;
+  height: 11px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rates {
-  gap: 5px;
-  margin-top: 12px;
+  gap: 2px;
+  margin-top: 5px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__rate {
+  grid-template-columns: minmax(0, 1fr) 54px;
+  gap: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__rate-label {
+  font-size: 0.65rem;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__rate-value {
+  grid-template-columns: 38px 12px;
+  gap: 2px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__rate-value strong {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__rate-movement svg {
+  width: 10px;
+  height: 10px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rate--petrol {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 4px;
+  padding-top: 4px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__weather-divider {
-  margin: 6px 0;
+  margin: 3px 0;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__weather-details {
-  gap: 6px;
-  margin-top: 6px;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 3px;
 
-  font-size: 0.82rem;
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__weather-day {
+  gap: 3px;
+
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__weather-day svg {
+  width: 11px;
+  height: 11px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__weather-forecast {
+  column-gap: 3px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__weather-forecast strong {
+  min-width: 28px;
+
+  font-size: 0.62rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status .status-card__inline-icon {
+  width: 10px;
+  height: 10px;
+  margin-right: 2px;
 }
