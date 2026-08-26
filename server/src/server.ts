@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import nestRouter from './routes/nest.js';
 import tasksRouter from './routes/tasks.js';
 import petrolRouter from './routes/petrol.js';
+import routinesRouter from './routes/routines.js';
 
 const app = express();
 
@@ -15,7 +16,7 @@ app.disable('x-powered-by');
 app.use(
   cors({
     origin: env.frontendOrigin,
-    methods: ['GET', 'POST', 'PATCH'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type'],
   })
 );
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/api/petrol', petrolRouter);
 app.use('/api/nest', nestRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/routines', routinesRouter);
 
 app.get('/health', (_request, response) => {
   response.json({

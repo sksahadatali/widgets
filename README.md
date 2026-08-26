@@ -231,6 +231,40 @@ If Household mode is selected without the private local file, eY OS stops with a
 
 Do not store API keys, OAuth tokens, passwords or other credentials in the household JSON file. Secrets belong in ignored environment files or the backend.
 
+## Family Routines
+
+The Daily area provides two shared routine views:
+
+- **Today** shows scheduled Family routines and, when a household member is selected, that member's routines alongside Family routines.
+- **Manage Routines** creates, edits, activates, deactivates and permanently deletes routine definitions.
+
+Household mode stores real routine definitions and occurrence completion history in:
+
+```text
+server/data/routines.local.json
+```
+
+The file is created automatically on first use and is ignored by Git. Before replacing a valid primary file, the server retains one previous valid copy as:
+
+```text
+server/data/routines.local.json.bak
+```
+
+Both files, and temporary atomic-write files, are ignored. Writes validate the current store, write a temporary file, retain the backup and atomically rename the temporary file. If the primary store is malformed, the API returns a clear error and does not overwrite it.
+
+Demo mode is isolated from this household store. It starts with safe tracked examples and saves Demo changes only in the browser's `ey-os-demo-routines-v1` local-storage entry.
+
+### Restoring the routines backup
+
+1. Stop `npm run dev` so the backend cannot write during recovery.
+2. Keep the malformed `server/data/routines.local.json` for diagnosis by renaming it to a non-tracked local filename such as `routines.local.json.corrupt`.
+3. Copy `server/data/routines.local.json.bak` to `server/data/routines.local.json`.
+4. Restart `npm run dev`, open **Daily**, and verify the recovered routines before making further changes.
+
+Phase 1 intentionally preserves all occurrence history and applies no automatic retention or pruning. The local store can therefore grow without limit over time. A future retention policy can operate on the persistence layer without changing the routine or occurrence domain model.
+
+Deactivation is the normal non-destructive way to stop a routine. Permanent deletion requires confirmation and removes both the routine definition and every recorded occurrence for it.
+
 ---
 
 # Development Workflow

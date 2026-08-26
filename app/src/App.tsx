@@ -6,6 +6,7 @@ import Sidebar, {
 } from './components/layout/Sidebar/Sidebar';
 
 import Home from './pages/Home';
+import Daily from './pages/Daily';
 import Settings from './pages/Settings';
 
 import {
@@ -44,14 +45,7 @@ function App() {
               )}
 
               {page === 'Daily' && (
-                <div
-                  style={{
-                    padding: '48px',
-                  }}
-                >
-                  <h1>Daily</h1>
-                  <p>Coming in Sprint 6.</p>
-                </div>
+                <Daily />
               )}
 
               {page === 'Personal' && (
