@@ -1,6 +1,18 @@
 {
   "household": {
-    "displayName": "Example Household"
+    "displayName": "Example Household",
+    "members": [
+      {
+        "id": "adult-1",
+        "displayName": "Alex",
+        "memberType": "adult"
+      },
+      {
+        "id": "child-1",
+        "displayName": "Sam",
+        "memberType": "child"
+      }
+    ]
   },
   "location": {
     "name": "Example Town",

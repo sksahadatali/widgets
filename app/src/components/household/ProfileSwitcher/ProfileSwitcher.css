@@ -1,0 +1,187 @@
+.profile-switcher {
+  position: relative;
+
+  flex-shrink: 0;
+}
+
+.profile-switcher__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1000;
+
+  width: min(
+    320px,
+    calc(100vw - 24px)
+  );
+  max-height: min(480px, 70vh);
+  padding: 12px;
+
+  overflow-y: auto;
+
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-card-radius);
+
+  background: var(--ey-bg-card);
+  box-shadow: var(--ey-shadow-elevated);
+}
+
+.profile-switcher__title {
+  display: block;
+
+  margin-bottom: 10px;
+
+  color: var(--ey-text-muted);
+
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-switcher__options {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-switcher__option {
+  display: grid;
+  grid-template-columns:
+    40px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  min-height: max(
+    52px,
+    var(--ey-touch-target-min)
+  );
+  padding: 6px 10px;
+
+  border: 1px solid transparent;
+  border-radius: var(--ey-control-radius);
+
+  background: transparent;
+  color: var(--ey-text-primary);
+
+  cursor: pointer;
+  text-align: left;
+
+  transition:
+    background-color var(--ey-transition-fast),
+    border-color var(--ey-transition-fast);
+}
+
+@media (hover: hover) {
+  .profile-switcher__option:hover {
+    background: var(--ey-bg-hover);
+  }
+}
+
+.profile-switcher__option:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
+}
+
+.profile-switcher__option--selected {
+  border-color: var(--ey-accent-primary);
+  background: var(--ey-bg-selected);
+}
+
+.profile-switcher__option-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+
+  background: var(--ey-accent-primary);
+  color: var(--ey-text-on-accent);
+
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.profile-switcher__option-name {
+  min-width: 0;
+
+  overflow: hidden;
+
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-switcher__selected-icon {
+  color: var(--ey-accent-primary);
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__panel {
+  width: min(
+    260px,
+    calc(100vw - 16px)
+  );
+  padding: 8px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__title {
+  margin-bottom: 6px;
+
+  font-size: 0.68rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__options {
+  gap: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__option {
+  grid-template-columns:
+    34px minmax(0, 1fr) 18px;
+  gap: 8px;
+
+  min-height: 44px;
+  padding: 4px 8px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__option-avatar {
+  width: 30px;
+  height: 30px;
+
+  font-size: 0.66rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .profile-switcher__option-name {
+  font-size: 0.78rem;
+}
+
+:where(:root[data-display-profile='elo-touch'])
+  .profile-switcher__panel {
+  width: 360px;
+  padding: 16px;
+}
+
+:where(:root[data-display-profile='elo-touch'])
+  .profile-switcher__option {
+  grid-template-columns:
+    52px minmax(0, 1fr) 24px;
+  min-height: 64px;
+  padding: 8px 12px;
+}
+
+:where(:root[data-display-profile='elo-touch'])
+  .profile-switcher__option-avatar {
+  width: 46px;
+  height: 46px;
+
+  font-size: 0.9rem;
+}

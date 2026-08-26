@@ -11,9 +11,20 @@ export type HouseholdDestination = {
   travelMinutes: number;
 };
 
+export type HouseholdMemberType =
+  | 'adult'
+  | 'child';
+
+export type HouseholdMember = {
+  id: string;
+  displayName: string;
+  memberType: HouseholdMemberType;
+};
+
 export type HouseholdConfig = {
   household: {
     displayName: string;
+    members: HouseholdMember[];
   };
 
   location: {
@@ -57,6 +68,44 @@ function validateConfig(
   config: HouseholdConfig,
   mode: AppMode
 ): void {
+  if (
+    !config.household?.displayName ||
+    !Array.isArray(
+      config.household.members
+    ) ||
+    config.household.members.length === 0
+  ) {
+    throw new Error(
+      'Household member profiles are not configured.'
+    );
+  }
+
+  const memberIds = new Set<string>();
+
+  config.household.members.forEach(
+    (member, index) => {
+      const memberId =
+        member.id?.trim();
+
+      if (
+        !memberId ||
+        memberId === 'family' ||
+        memberIds.has(memberId) ||
+        !member.displayName?.trim() ||
+        (
+          member.memberType !== 'adult' &&
+          member.memberType !== 'child'
+        )
+      ) {
+        throw new Error(
+          `Household member profile ${index + 1} is invalid.`
+        );
+      }
+
+      memberIds.add(memberId);
+    }
+  );
+
   if (
     !config.location?.name ||
     typeof config.location.latitude !==

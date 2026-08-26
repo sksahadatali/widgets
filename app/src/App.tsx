@@ -14,6 +14,9 @@ import {
 import {
   DisplayProfileProvider,
 } from './display/DisplayProfileContext';
+import {
+  HouseholdProfileProvider,
+} from './household/HouseholdProfileContext';
 
 function App() {
   const [page, setPage] =
@@ -22,68 +25,70 @@ function App() {
   return (
     <ThemeProvider>
       <DisplayProfileProvider>
-        <div className="app-shell">
-          <Sidebar
-            page={page}
-            onNavigate={setPage}
-          />
+        <HouseholdProfileProvider>
+          <div className="app-shell">
+            <Sidebar
+              page={page}
+              onNavigate={setPage}
+            />
 
-          <div className="app-main">
-            <Header />
+            <div className="app-main">
+              <Header />
 
-            {page === 'Home' && (
-              <Home />
-            )}
+              {page === 'Home' && (
+                <Home />
+              )}
 
-            {page === 'Settings' && (
-              <Settings />
-            )}
+              {page === 'Settings' && (
+                <Settings />
+              )}
 
-            {page === 'Daily' && (
-              <div
-                style={{
-                  padding: '48px',
-                }}
-              >
-                <h1>Daily</h1>
-                <p>Coming in Sprint 6.</p>
-              </div>
-            )}
+              {page === 'Daily' && (
+                <div
+                  style={{
+                    padding: '48px',
+                  }}
+                >
+                  <h1>Daily</h1>
+                  <p>Coming in Sprint 6.</p>
+                </div>
+              )}
 
-            {page === 'Personal' && (
-              <div
-                style={{
-                  padding: '48px',
-                }}
-              >
-                <h1>Personal</h1>
-                <p>Coming in Sprint 7.</p>
-              </div>
-            )}
+              {page === 'Personal' && (
+                <div
+                  style={{
+                    padding: '48px',
+                  }}
+                >
+                  <h1>Personal</h1>
+                  <p>Coming in Sprint 7.</p>
+                </div>
+              )}
 
-            {page === 'RAEN' && (
-              <div
-                style={{
-                  padding: '48px',
-                }}
-              >
-                <h1>RAEN</h1>
-                <p>Coming soon.</p>
-              </div>
-            )}
+              {page === 'RAEN' && (
+                <div
+                  style={{
+                    padding: '48px',
+                  }}
+                >
+                  <h1>RAEN</h1>
+                  <p>Coming soon.</p>
+                </div>
+              )}
 
-            {page === 'AYANOH' && (
-              <div
-                style={{
-                  padding: '48px',
-                }}
-              >
-                <h1>AYANOH</h1>
-                <p>Coming soon.</p>
-              </div>
-            )}
+              {page === 'AYANOH' && (
+                <div
+                  style={{
+                    padding: '48px',
+                  }}
+                >
+                  <h1>AYANOH</h1>
+                  <p>Coming soon.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </HouseholdProfileProvider>
       </DisplayProfileProvider>
     </ThemeProvider>
   );

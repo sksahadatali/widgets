@@ -24,6 +24,11 @@
     background: #2563eb;
     transform: scale(1.05);
   }
+
+  .avatar:focus-visible {
+    outline: none;
+    box-shadow: var(--ey-focus-ring);
+  }
   
   .avatar img {
     width: 100%;
