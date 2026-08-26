@@ -72,3 +72,19 @@
   background: var(--ey-bg-chip-info);
   border-color: var(--ey-border-chip-info);
 }
+
+:where(:root[data-display-profile='compact'])
+  .status-chip {
+  gap: 3px;
+
+  min-height: 18px;
+  padding: 2px 5px;
+
+  font-size: 0.66rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .status-chip__icon svg {
+  width: 10px;
+  height: 10px;
+}

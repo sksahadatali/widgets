@@ -233,3 +233,77 @@
   }
 
 }
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus {
+  min-height: 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__list {
+  gap: 1px;
+  margin-top: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item {
+  gap: 6px;
+
+  min-height: 38px;
+  padding: 4px 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-main {
+  gap: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-main > svg {
+  width: 14px;
+  height: 14px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-title {
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-meta {
+  gap: 4px;
+  margin-top: 1px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-duration,
+:where(:root[data-display-profile='compact'])
+  .todays-focus__item-source {
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__actions {
+  gap: 3px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__why-button {
+  gap: 2px;
+  padding: 2px 3px;
+
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__why-button svg {
+  width: 10px;
+  height: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .todays-focus__reasons {
+  margin: 0 0 4px 20px;
+  padding: 6px;
+}

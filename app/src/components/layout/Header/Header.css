@@ -1,9 +1,13 @@
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--ey-card-gap);
 
-  padding: 24px 32px;
+  padding:
+    var(--ey-header-padding-block)
+    var(--ey-page-padding);
   margin-bottom: 8px;
 
   background: var(--ey-bg-header);
@@ -22,7 +26,7 @@
 
   color: var(--ey-text-primary);
 
-  font-size: 1.75rem;
+  font-size: var(--ey-shell-heading-size);
   font-weight: 700;
   line-height: 1.2;
 
@@ -42,8 +46,12 @@
 
 .header__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 16px;
+
+  min-width: 0;
 }
 
 .header__date-time {
@@ -51,7 +59,7 @@
   align-items: center;
   gap: 8px;
 
-  height: 42px;
+  min-height: var(--ey-control-height);
   padding: 0 14px;
 
   border: 1px solid var(--ey-border-default);
@@ -70,6 +78,61 @@
     background-color 180ms ease,
     border-color 180ms ease,
     color 180ms ease;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header .search-box {
+  width: 170px;
+  padding-inline: 10px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header {
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header__actions {
+  gap: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header__date-time {
+  gap: 4px;
+  padding-inline: 8px;
+
+  font-size: 0.72rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .header .avatar {
+  width: var(--ey-control-height);
+  height: var(--ey-control-height);
+
+  font-size: 0.78rem;
+}
+
+:where(:root[data-display-profile='elo-touch'])
+  .header .search-box {
+  width: 320px;
+}
+
+@media (max-width: 1100px) {
+  .header {
+    align-items: flex-start;
+  }
+
+  .header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .header .search-box {
+    width: auto;
+    min-width: 200px;
+    flex: 1 1 240px;
+  }
 }
 
 .header__date-time svg {

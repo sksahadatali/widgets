@@ -2,9 +2,12 @@
   display: flex;
   flex-direction: column;
 
-  width: 260px;
+  width: var(--ey-sidebar-width);
+  flex: 0 0 var(--ey-sidebar-width);
   min-height: 100vh;
-  padding: 28px 18px;
+  padding:
+    28px
+    var(--ey-sidebar-padding-inline);
 
   background: var(--ey-bg-sidebar);
   border-right: 1px solid var(--ey-border-default);
@@ -48,7 +51,7 @@
 }
 
 .sidebar__logo {
-  font-size: 48px;
+  font-size: var(--ey-sidebar-logo-size);
   font-weight: 600;
   line-height: 1;
 
@@ -95,7 +98,10 @@
   align-items: center;
 
   width: 100%;
-  height: 48px;
+  min-height: max(
+    var(--ey-nav-item-height),
+    var(--ey-touch-target-min)
+  );
 
   padding: 0 16px;
 
@@ -140,7 +146,7 @@
 }
 
 .sidebar__nav-label {
-  font-size: 16px;
+  font-size: var(--ey-nav-font-size);
 }
 
 .sidebar__nav-icon {
@@ -196,7 +202,10 @@
   justify-content: space-between;
 
   width: 100%;
-  min-height: 52px;
+  min-height: max(
+    52px,
+    var(--ey-touch-target-min)
+  );
 
   padding: 0 18px;
 
@@ -232,4 +241,88 @@
 .sidebar__quick-add:focus-visible {
   outline: none;
   box-shadow: var(--ey-focus-ring);
+}
+
+/* Compact laptop density */
+
+:where(:root[data-display-profile='compact'])
+  .sidebar {
+  height: 100vh;
+  min-height: 0;
+  padding:
+    10px
+    var(--ey-sidebar-padding-inline);
+
+  overflow-y: auto;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__brand p {
+  margin-top: 4px;
+
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__divider {
+  margin: 8px 0;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__nav {
+  gap: 3px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__nav-item {
+  padding-inline: 8px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__active-indicator {
+  width: 3px;
+  height: 22px;
+  margin-right: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__nav-icon {
+  margin-right: 6px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__bottom {
+  gap: 8px;
+  padding-top: 8px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__reflection {
+  gap: 5px;
+  padding-inline: 4px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__reflection-icon {
+  width: 14px;
+  height: 14px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__reflection-text {
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__reflection-source {
+  font-size: 0.65rem;
+}
+
+:where(:root[data-display-profile='compact'])
+  .sidebar__quick-add {
+  min-height: var(--ey-control-height);
+  padding-inline: 8px;
+
+  font-size: 0.72rem;
 }

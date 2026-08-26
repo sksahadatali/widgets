@@ -1,7 +1,11 @@
 .quick-status {
   width: 100%;
 
-  padding: var(--ey-card-padding);
+  padding:
+    var(
+      --ey-quick-status-padding,
+      var(--ey-card-padding)
+    );
 }
 
 .quick-status__grid {
@@ -12,6 +16,12 @@
   gap: var(--ey-card-gap);
 
   margin-top: var(--ey-card-gap);
+}
+
+:where(:root[data-display-profile='compact'])
+  .quick-status__grid {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
 }
 
 @media (max-width: 1300px) {
@@ -33,11 +43,23 @@
 @media (max-width: 600px) {
 
   .quick-status {
-    padding: 20px;
+    padding:
+      var(
+        --ey-quick-status-padding,
+        var(--ey-card-padding)
+      );
   }
 
   .quick-status__grid {
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='compact'])
+    .quick-status__grid {
+    grid-template-columns:
+      repeat(5, minmax(0, 1fr));
+  }
 }

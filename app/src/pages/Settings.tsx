@@ -22,6 +22,13 @@ import {
 import {
   useTheme,
 } from '../theme/useTheme';
+import {
+  DISPLAY_PROFILE_OPTIONS,
+  getDisplayProfileName,
+} from '../display/displayProfiles';
+import {
+  useDisplayProfile,
+} from '../display/useDisplayProfile';
 
 import './Settings.css';
 
@@ -89,6 +96,12 @@ function Settings() {
     ambienceId,
     setAmbience,
   } = useTheme();
+  const {
+    preference,
+    effectiveProfile,
+    viewport,
+    setPreference,
+  } = useDisplayProfile();
   const travelSettings =
     getTravelSettings();
   const prayerSettings =
@@ -108,6 +121,100 @@ function Settings() {
           across your devices.
         </p>
       </header>
+
+      <section
+        className="settings-section"
+        aria-labelledby="display-heading"
+      >
+        <div className="settings-section__header">
+          <div>
+            <h2 id="display-heading">
+              Display Profile
+            </h2>
+
+            <p>
+              Adapt the shared eY OS interface to
+              this display. The preference is saved
+              on this device.
+            </p>
+          </div>
+        </div>
+
+        <div className="display-profile-grid">
+          {DISPLAY_PROFILE_OPTIONS.map(
+            profile => {
+              const isSelected =
+                profile.id === preference;
+
+              return (
+                <button
+                  key={profile.id}
+                  type="button"
+                  className={`display-profile-card ${
+                    isSelected
+                      ? 'display-profile-card--selected'
+                      : ''
+                  }`}
+                  onClick={() =>
+                    setPreference(profile.id)
+                  }
+                  aria-pressed={isSelected}
+                >
+                  <span className="display-profile-card__title-row">
+                    <strong>{profile.name}</strong>
+
+                    {isSelected && (
+                      <span
+                        className="display-profile-card__selected-icon"
+                        aria-label="Selected"
+                      >
+                        <Check
+                          size={17}
+                          strokeWidth={2.5}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="display-profile-card__description">
+                    {profile.description}
+                  </span>
+                </button>
+              );
+            }
+          )}
+        </div>
+
+        <dl
+          className="display-profile-status"
+          aria-live="polite"
+        >
+          <div>
+            <dt>Current viewport</dt>
+            <dd>
+              {viewport.width} × {viewport.height}
+              {' '}CSS px
+            </dd>
+          </div>
+
+          <div>
+            <dt>Selected preference</dt>
+            <dd>
+              {getDisplayProfileName(preference)}
+            </dd>
+          </div>
+
+          <div>
+            <dt>Effective profile</dt>
+            <dd>
+              {getDisplayProfileName(
+                effectiveProfile
+              )}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       <section
         className="settings-section"
