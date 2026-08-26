@@ -11,6 +11,9 @@ import {
   getCurrentDate,
   getCurrentTime,
 } from '../../../utils/date';
+import {
+  getHouseholdConfig,
+} from '../../../services/householdConfigService';
 
 import './Header.css';
 
@@ -28,11 +31,13 @@ function Header() {
   const greeting = getGreeting();
   const currentDate = getCurrentDate();
   const currentTime = getCurrentTime();
+  const householdName =
+    getHouseholdConfig().household.displayName;
 
   return (
     <header className="header">
       <div className="header__greeting">
-        <h1>{greeting} Sahadat</h1>
+        <h1>{greeting} {householdName}</h1>
       </div>
 
       <div className="header__actions">
@@ -52,7 +57,7 @@ function Header() {
         />
 
         <Avatar
-          name="Sahadat Ali"
+          name={householdName}
         />
       </div>
     </header>

@@ -204,7 +204,7 @@ Recommendation
 
 # Example
 
-Good morning Sahadat.
+Good morning.
 
 Today looks productive.
 

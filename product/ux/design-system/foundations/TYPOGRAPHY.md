@@ -39,7 +39,7 @@ Main page heading.
 
 Example
 
-Good morning Sahadat
+Good morning
 
 Properties
 

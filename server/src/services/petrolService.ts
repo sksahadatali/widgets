@@ -10,6 +10,26 @@ let petrolCacheTime = 0;
 
 const PETROL_CACHE_MINUTES = 12 * 60;
 
+function getPetrolStationConfig() {
+  const brand =
+    process.env.FUEL_FINDER_STATION_BRAND?.trim();
+  const postcodePrefix =
+    process.env.FUEL_FINDER_POSTCODE_PREFIX?.trim();
+
+  if (!brand || !postcodePrefix) {
+    throw new Error(
+      'Petrol station configuration is missing. Set ' +
+      'FUEL_FINDER_STATION_BRAND and ' +
+      'FUEL_FINDER_POSTCODE_PREFIX in server/.env.'
+    );
+  }
+
+  return {
+    brand: brand.toUpperCase(),
+    postcodePrefix: postcodePrefix.toUpperCase(),
+  };
+}
+
 async function getAccessToken(): Promise<string> {
 
   // Reuse cached token
@@ -155,6 +175,8 @@ async function fetchAllBatches(
 }
 
 export async function getPetrolPrice() {
+  const stationConfig =
+    getPetrolStationConfig();
   const now = Date.now();
 
   if (
@@ -185,12 +207,16 @@ export async function getPetrolPrice() {
 
     const station = stations.find(
       (s: any) =>
-        s.brand_name?.toUpperCase() === 'MORRISONS' &&
-        s.location?.postcode?.startsWith('LU7')
+        s.brand_name?.toUpperCase() ===
+          stationConfig.brand &&
+        s.location?.postcode?.toUpperCase()
+          .startsWith(stationConfig.postcodePrefix)
     );
 
     if (!station) {
-      throw new Error('Morrisons Leighton Buzzard not found.');
+      throw new Error(
+        'Configured petrol station not found.'
+      );
     }
 
     const stationPrices = prices.find(
