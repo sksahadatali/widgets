@@ -477,12 +477,12 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__label {
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__primary {
-  margin-top: 5px;
+  margin-top: 7px;
 
   font-size: 1.05rem;
 }
@@ -491,40 +491,40 @@
   .quick-status .status-card__secondary {
   margin-top: 2px;
 
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   line-height: 1.2;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__content {
   grid-template-columns: minmax(0, 1fr) 72px;
-  gap: 4px;
+  gap: 5px;
 
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__right,
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__weather-right {
-  gap: 2px;
+  gap: 3px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__divider {
-  margin: 4px 0;
+  margin: 5px 0;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__sunrise {
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__sunrise-label {
   gap: 3px;
 
-  font-size: 0.65rem;
+  font-size: 0.69rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -535,14 +535,14 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__sunrise strong {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__prayer {
   column-gap: 3px;
 
-  font-size: 0.65rem;
+  font-size: 0.69rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -552,10 +552,10 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__footer {
-  gap: 3px;
-  padding-top: 4px;
+  gap: 4px;
+  padding-top: 6px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   line-height: 1.15;
 }
 
@@ -568,7 +568,7 @@
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rates {
   gap: 2px;
-  margin-top: 5px;
+  margin-top: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -579,7 +579,7 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rate-label {
-  font-size: 0.65rem;
+  font-size: 0.69rem;
   line-height: 1.2;
   white-space: normal;
 }
@@ -592,7 +592,7 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rate-value strong {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   line-height: 1.2;
 }
 
@@ -604,8 +604,8 @@
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__rate--petrol {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: 5px;
+  padding-top: 5px;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -619,14 +619,14 @@
   gap: 2px;
   margin-top: 3px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .quick-status .status-card__weather-day {
   gap: 3px;
 
-  font-size: 0.65rem;
+  font-size: 0.69rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -644,7 +644,7 @@
   .quick-status .status-card__weather-forecast strong {
   min-width: 28px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])

@@ -7,15 +7,15 @@
   --ey-shell-heading-size: 1.15rem;
   --ey-nav-font-size: 0.78rem;
   --ey-page-padding: 8px;
-  --ey-section-gap: 6px;
-  --ey-card-padding: 8px;
-  --ey-card-gap: 6px;
+  --ey-section-gap: 8px;
+  --ey-card-padding: 10px;
+  --ey-card-gap: 8px;
   --ey-control-height: 34px;
   --ey-touch-target-min: 34px;
-  --ey-list-max-height: 132px;
-  --ey-quick-status-padding: 8px;
-  --ey-status-card-padding: 8px;
-  --ey-status-card-min-height: 128px;
+  --ey-list-max-height: 172px;
+  --ey-quick-status-padding: 10px;
+  --ey-status-card-padding: 10px;
+  --ey-status-card-min-height: 152px;
 }
 
 :root[data-display-profile='desktop'] {

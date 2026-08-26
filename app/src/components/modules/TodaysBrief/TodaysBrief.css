@@ -96,7 +96,7 @@
 
 :where(:root[data-display-profile='compact'])
   .todays-brief__content {
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -107,23 +107,23 @@
 
 :where(:root[data-display-profile='compact'])
   .todays-brief__content p {
-  margin-top: 4px;
+  margin-top: 6px;
 
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   line-height: 1.25;
 }
 
 :where(:root[data-display-profile='compact'])
   .todays-brief__list {
-  gap: 2px;
-  margin-top: 4px;
+  gap: 3px;
+  margin-top: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
   .todays-brief__list li {
   padding-left: 12px;
 
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   line-height: 1.25;
 }
 
@@ -131,5 +131,5 @@
   .todays-brief__notice {
   margin-top: 3px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }

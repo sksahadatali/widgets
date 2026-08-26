@@ -70,7 +70,7 @@
   .section-header__eyebrow {
   margin-bottom: 2px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -89,7 +89,7 @@
 
 :where(:root[data-display-profile='compact'])
   .section-header__metadata {
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   line-height: 1.2;
 }
 

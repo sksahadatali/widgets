@@ -241,16 +241,16 @@
 
 :where(:root[data-display-profile='compact'])
   .todays-focus__list {
-  gap: 0;
-  margin-top: 4px;
+  gap: 1px;
+  margin-top: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
   .todays-focus__item {
   gap: 6px;
 
-  min-height: 34px;
-  padding: 3px 0;
+  min-height: 38px;
+  padding: 4px 0;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -266,7 +266,7 @@
 
 :where(:root[data-display-profile='compact'])
   .todays-focus__item-title {
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   line-height: 1.2;
 }
 
@@ -280,7 +280,7 @@
   .todays-focus__item-duration,
 :where(:root[data-display-profile='compact'])
   .todays-focus__item-source {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -293,7 +293,7 @@
   gap: 2px;
   padding: 2px 3px;
 
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])

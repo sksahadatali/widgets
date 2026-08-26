@@ -278,7 +278,7 @@
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__header {
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -302,7 +302,7 @@
   gap: 3px;
   padding: 2px 5px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -326,7 +326,7 @@
   .home__calendar .calendar-card__group-title {
   margin-bottom: 3px;
 
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -335,37 +335,37 @@
     44px minmax(0, 1fr);
   gap: 6px;
 
-  min-height: 34px;
-  padding: 3px 2px;
+  min-height: 42px;
+  padding: 4px 2px;
 }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__time {
   gap: 1px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__weekday {
-  font-size: 0.6rem;
+  font-size: 0.64rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__event-content {
-  gap: 1px;
+  gap: 2px;
 }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__event-title {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__location {
   gap: 2px;
 
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])

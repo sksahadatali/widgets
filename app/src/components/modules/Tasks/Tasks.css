@@ -565,7 +565,7 @@
 :where(:root[data-display-profile='compact'])
   .tasks__header {
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -591,7 +591,7 @@
 
 :where(:root[data-display-profile='compact'])
   .tasks__count {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -599,7 +599,7 @@
   gap: 3px;
   padding: 2px 5px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -619,7 +619,7 @@
     20px minmax(0, 1fr) auto;
   gap: 5px;
 
-  min-height: 38px;
+  min-height: 44px;
   padding-inline: 2px;
 }
 
@@ -641,19 +641,19 @@
 
 :where(:root[data-display-profile='compact'])
   .tasks__content {
-  gap: 1px;
+  gap: 2px;
 }
 
 :where(:root[data-display-profile='compact'])
   .tasks__title {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .tasks__meta {
   gap: 3px;
 
-  font-size: 0.6rem;
+  font-size: 0.65rem;
 }
 
 :where(:root[data-display-profile='compact'])
@@ -663,14 +663,14 @@
 
 :where(:root[data-display-profile='compact'])
   .tasks__due {
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
   .tasks__priority {
   padding: 1px 4px;
 
-  font-size: 0.6rem;
+  font-size: 0.64rem;
 }
 
 :where(:root[data-display-profile='compact'])

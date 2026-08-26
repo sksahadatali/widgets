@@ -80,7 +80,7 @@
   min-height: 18px;
   padding: 2px 5px;
 
-  font-size: 0.62rem;
+  font-size: 0.66rem;
 }
 
 :where(:root[data-display-profile='compact'])
