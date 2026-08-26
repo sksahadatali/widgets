@@ -1,7 +1,11 @@
 .quick-status {
   width: 100%;
 
-  padding: var(--ey-card-padding);
+  padding:
+    var(
+      --ey-quick-status-padding,
+      var(--ey-card-padding)
+    );
 }
 
 .quick-status__grid {
@@ -39,7 +43,11 @@
 @media (max-width: 600px) {
 
   .quick-status {
-    padding: var(--ey-card-padding);
+    padding:
+      var(
+        --ey-quick-status-padding,
+        var(--ey-card-padding)
+      );
   }
 
   .quick-status__grid {

@@ -1,18 +1,21 @@
 :root[data-display-profile='compact'] {
   --ey-sidebar-width: 220px;
   --ey-sidebar-padding-inline: 14px;
-  --ey-header-padding-block: 18px;
+  --ey-header-padding-block: 14px;
   --ey-nav-item-height: 46px;
   --ey-sidebar-logo-size: 40px;
   --ey-shell-heading-size: 1.5rem;
   --ey-nav-font-size: 0.95rem;
-  --ey-page-padding: 20px;
-  --ey-section-gap: 18px;
-  --ey-card-padding: 20px;
-  --ey-card-gap: 12px;
+  --ey-page-padding: 18px;
+  --ey-section-gap: 12px;
+  --ey-card-padding: 16px;
+  --ey-card-gap: 10px;
   --ey-control-height: 44px;
   --ey-touch-target-min: 44px;
-  --ey-list-max-height: 280px;
+  --ey-list-max-height: 260px;
+  --ey-quick-status-padding: 16px;
+  --ey-status-card-padding: 14px;
+  --ey-status-card-min-height: 160px;
 }
 
 :root[data-display-profile='desktop'] {
