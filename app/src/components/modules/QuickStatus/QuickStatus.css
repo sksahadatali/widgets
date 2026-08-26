@@ -14,6 +14,12 @@
   margin-top: var(--ey-card-gap);
 }
 
+:where(:root[data-display-profile='compact'])
+  .quick-status__grid {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 1300px) {
 
   .quick-status__grid {
@@ -33,7 +39,7 @@
 @media (max-width: 600px) {
 
   .quick-status {
-    padding: 20px;
+    padding: var(--ey-card-padding);
   }
 
   .quick-status__grid {

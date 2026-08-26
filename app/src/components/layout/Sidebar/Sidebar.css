@@ -2,9 +2,12 @@
   display: flex;
   flex-direction: column;
 
-  width: 260px;
+  width: var(--ey-sidebar-width);
+  flex: 0 0 var(--ey-sidebar-width);
   min-height: 100vh;
-  padding: 28px 18px;
+  padding:
+    28px
+    var(--ey-sidebar-padding-inline);
 
   background: var(--ey-bg-sidebar);
   border-right: 1px solid var(--ey-border-default);
@@ -48,7 +51,7 @@
 }
 
 .sidebar__logo {
-  font-size: 48px;
+  font-size: var(--ey-sidebar-logo-size);
   font-weight: 600;
   line-height: 1;
 
@@ -95,7 +98,10 @@
   align-items: center;
 
   width: 100%;
-  height: 48px;
+  min-height: max(
+    var(--ey-nav-item-height),
+    var(--ey-touch-target-min)
+  );
 
   padding: 0 16px;
 
@@ -140,7 +146,7 @@
 }
 
 .sidebar__nav-label {
-  font-size: 16px;
+  font-size: var(--ey-nav-font-size);
 }
 
 .sidebar__nav-icon {
@@ -196,7 +202,10 @@
   justify-content: space-between;
 
   width: 100%;
-  min-height: 52px;
+  min-height: max(
+    52px,
+    var(--ey-touch-target-min)
+  );
 
   padding: 0 18px;
 

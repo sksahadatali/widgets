@@ -1,0 +1,50 @@
+:root[data-display-profile='compact'] {
+  --ey-sidebar-width: 220px;
+  --ey-sidebar-padding-inline: 14px;
+  --ey-header-padding-block: 18px;
+  --ey-nav-item-height: 46px;
+  --ey-sidebar-logo-size: 40px;
+  --ey-shell-heading-size: 1.5rem;
+  --ey-nav-font-size: 0.95rem;
+  --ey-page-padding: 20px;
+  --ey-section-gap: 18px;
+  --ey-card-padding: 20px;
+  --ey-card-gap: 12px;
+  --ey-control-height: 44px;
+  --ey-touch-target-min: 44px;
+  --ey-list-max-height: 280px;
+}
+
+:root[data-display-profile='desktop'] {
+  --ey-sidebar-width: 260px;
+  --ey-sidebar-padding-inline: 18px;
+  --ey-header-padding-block: 24px;
+  --ey-nav-item-height: 48px;
+  --ey-sidebar-logo-size: 48px;
+  --ey-shell-heading-size: 1.75rem;
+  --ey-nav-font-size: 1rem;
+  --ey-page-padding: 32px;
+  --ey-section-gap: 24px;
+  --ey-card-padding: 24px;
+  --ey-card-gap: 16px;
+  --ey-control-height: 42px;
+  --ey-touch-target-min: 42px;
+  --ey-list-max-height: 320px;
+}
+
+:root[data-display-profile='elo-touch'] {
+  --ey-sidebar-width: 288px;
+  --ey-sidebar-padding-inline: 22px;
+  --ey-header-padding-block: 28px;
+  --ey-nav-item-height: 56px;
+  --ey-sidebar-logo-size: 54px;
+  --ey-shell-heading-size: 2rem;
+  --ey-nav-font-size: 1.05rem;
+  --ey-page-padding: 36px;
+  --ey-section-gap: 28px;
+  --ey-card-padding: 28px;
+  --ey-card-gap: 20px;
+  --ey-control-height: 56px;
+  --ey-touch-target-min: 56px;
+  --ey-list-max-height: 360px;
+}

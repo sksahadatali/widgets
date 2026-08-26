@@ -18,6 +18,9 @@
     --ey-bg-selected: rgba(59, 130, 246, 0.16);
   
     /* Layout */
+    --ey-sidebar-width: 260px;
+    --ey-sidebar-padding-inline: 18px;
+    --ey-header-padding-block: 24px;
     --ey-page-padding: 32px;
     --ey-section-gap: 24px;
 
@@ -27,6 +30,13 @@
 
     /* Controls */
     --ey-control-height: 42px;
+    --ey-touch-target-min: 42px;
+
+    /* Shell */
+    --ey-nav-item-height: 48px;
+    --ey-sidebar-logo-size: 48px;
+    --ey-shell-heading-size: 1.75rem;
+    --ey-nav-font-size: 1rem;
 
     /* Text */
     --ey-text-primary: #f8fafc;

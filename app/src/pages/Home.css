@@ -1,10 +1,15 @@
 .home {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 24px;
+  gap: var(--ey-section-gap);
   width: 100%;
+  max-width: var(--ey-dashboard-max-width);
   min-width: 0;
-  padding: 0 32px 32px;
+  margin-inline: auto;
+  padding:
+    0
+    var(--ey-page-padding)
+    var(--ey-page-padding);
   align-items: stretch;
 }
 
@@ -42,6 +47,28 @@
   height: 100%;
 }
 
+:where(:root[data-display-profile='compact'])
+  .home__brief {
+  grid-column: span 7;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__focus {
+  grid-column: span 5;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__due-soon,
+:where(:root[data-display-profile='compact'])
+  .home__tasks {
+  grid-column: span 6;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 1200px) {
   .home__brief,
   .home__focus,
@@ -55,7 +82,10 @@
 
 @media (max-width: 768px) {
   .home {
-    gap: 20px;
-    padding: 0 20px 20px;
+    gap: var(--ey-section-gap);
+    padding:
+      0
+      var(--ey-page-padding)
+      var(--ey-page-padding);
   }
 }
