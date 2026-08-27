@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "routines": [
+    {
+      "id": "example-family-evening",
+      "title": "Evening household reset",
+      "ownerProfileId": "family",
+      "active": true,
+      "schedule": {
+        "daysOfWeek": [1, 2, 3, 4, 5, 6, 7],
+        "startTime": "18:30",
+        "endTime": "21:00"
+      },
+      "steps": [
+        {
+          "id": "example-family-step-1",
+          "title": "Tidy the shared space"
+        },
+        {
+          "id": "example-family-step-2",
+          "title": "Check tomorrow's calendar"
+        }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "example-adult-morning",
+      "title": "Morning preparation",
+      "ownerProfileId": "adult-1",
+      "active": true,
+      "schedule": {
+        "daysOfWeek": [1, 2, 3, 4, 5],
+        "startTime": "06:30",
+        "endTime": "08:30"
+      },
+      "steps": [
+        {
+          "id": "example-adult-step-1",
+          "title": "Review today's schedule"
+        },
+        {
+          "id": "example-adult-step-2",
+          "title": "Pack the day's essentials"
+        }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "example-child-bedtime",
+      "title": "Bedtime checklist",
+      "ownerProfileId": "child-1",
+      "active": true,
+      "schedule": {
+        "daysOfWeek": [1, 2, 3, 4, 5, 6, 7],
+        "startTime": "19:00",
+        "endTime": "21:00"
+      },
+      "steps": [
+        {
+          "id": "example-child-step-1",
+          "title": "Prepare clothes for tomorrow"
+        },
+        {
+          "id": "example-child-step-2",
+          "title": "Brush teeth"
+        }
+      ],
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "occurrences": []
+}

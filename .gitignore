@@ -9,6 +9,9 @@ server/.env
 app/src/config/*.local.json
 dashboard/config.local.js
 
+# Private household routine data and atomic-write files
+server/data/routines.local.json*
+
 # Dependencies
 node_modules/
 
