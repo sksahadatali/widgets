@@ -431,7 +431,7 @@ function RoutineEditor({
         </label>
 
         <label className="routine-field">
-          <span>Owner</span>
+          <span>Assigned to</span>
           <select
             value={ownerProfileId}
             onChange={event =>
