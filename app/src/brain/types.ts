@@ -17,13 +17,17 @@ import type {
 import type {
   WeatherInsight,
 } from '../services/weatherIntelligence';
+import type {
+  RoutineAttentionCandidate,
+} from '../routines/routineSelectors';
 
 export type BrainSource =
   | 'focus'
   | 'calendar'
   | 'prayer'
   | 'weather'  
-  | 'context';  
+  | 'context'
+  | 'routine';
 
 export interface BrainInput {
   focusItems: FocusItem[];
@@ -31,13 +35,31 @@ export interface BrainInput {
   prayer: PrayerData | null;
   weather: WeatherData | null;
   weatherInsights: WeatherInsight[];
+  routineCandidates: RoutineAttentionCandidate[];
 }
+
+export type BrainDecisionPresentation = {
+  statusLabel: string;
+  metadata: string[];
+  chipVariant:
+    | 'danger'
+    | 'warning'
+    | 'info';
+};
+
+export type BrainDecisionAction = {
+  type: 'open-routine';
+  routineId: string;
+  occurrenceId: string;
+};
 
 export interface BrainDecision {
   item: FocusItem;
   source: BrainSource;
   score: number;
   reasons: string[];
+  presentation?: BrainDecisionPresentation;
+  action?: BrainDecisionAction;
 }
 
 export interface BrainResult {

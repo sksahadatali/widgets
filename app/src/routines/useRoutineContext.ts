@@ -11,10 +11,15 @@ import type {
   RoutineDefinitionInput,
   RoutineOccurrence,
 } from '../types/routine';
+import type {
+  RoutineAttentionCandidate,
+} from './routineSelectors';
 
 export type RoutineContextValue = {
   routines: RoutineDefinition[];
   todayRoutines: RoutineDefinition[];
+  routineAttentionCandidates:
+    RoutineAttentionCandidate[];
   occurrenceByRoutineId: ReadonlyMap<
     string,
     RoutineOccurrence

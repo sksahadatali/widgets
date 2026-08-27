@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -122,12 +123,14 @@ function RoutineChecklist({
   routine,
   occurrence,
   status,
+  isTargeted,
   disabled,
   onStepChange,
 }: {
   routine: RoutineDefinition;
   occurrence: RoutineOccurrence | undefined;
   status: RoutineTimeStatus;
+  isTargeted: boolean;
   disabled: boolean;
   onStepChange: (
     routine: RoutineDefinition,
@@ -149,7 +152,13 @@ function RoutineChecklist({
 
   return (
     <article
-      className={`routine-card routine-card--${status}`}
+      id={`routine-occurrence-${routine.id}`}
+      className={`routine-card routine-card--${status} ${
+        isTargeted
+          ? 'routine-card--focus-target'
+          : ''
+      }`}
+      tabIndex={isTargeted ? -1 : undefined}
     >
       <header className="routine-card__header">
         <div>
@@ -631,7 +640,16 @@ function RoutineEditor({
   );
 }
 
-function Daily() {
+type DailyProps = {
+  routineTarget: {
+    routineId: string;
+    occurrenceId: string;
+  } | null;
+};
+
+function Daily({
+  routineTarget,
+}: DailyProps) {
   const {
     profiles,
     selectedProfile,
@@ -659,6 +677,60 @@ function Daily() {
     );
   const [deleteCandidate, setDeleteCandidate] =
     useState<RoutineDefinition | null>(null);
+  const handledTargetRef =
+    useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !routineTarget ||
+      loading ||
+      tab !== 'today' ||
+      handledTargetRef.current ===
+        routineTarget.occurrenceId
+    ) {
+      return;
+    }
+
+    const occurrence =
+      occurrenceByRoutineId.get(
+        routineTarget.routineId
+      );
+
+    if (
+      occurrence?.id !==
+      routineTarget.occurrenceId
+    ) {
+      return;
+    }
+
+    handledTargetRef.current =
+      routineTarget.occurrenceId;
+    const animationFrameId =
+      window.requestAnimationFrame(() => {
+        const element = document.getElementById(
+          `routine-occurrence-${routineTarget.routineId}`
+        );
+
+        element?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+        element?.focus({
+          preventScroll: true,
+        });
+      });
+
+    return () => {
+      window.cancelAnimationFrame(
+        animationFrameId
+      );
+    };
+  }, [
+    loading,
+    occurrenceByRoutineId,
+    routineTarget,
+    tab,
+  ]);
 
   useEffect(() => {
     if (!deleteCandidate) {
@@ -897,6 +969,10 @@ function Daily() {
                           routine={routine}
                           occurrence={occurrence}
                           status={status}
+                          isTargeted={
+                            routineTarget?.occurrenceId ===
+                            occurrence?.id
+                          }
                           disabled={saving}
                           onStepChange={
                             setStepCompleted

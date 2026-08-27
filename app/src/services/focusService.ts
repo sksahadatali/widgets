@@ -1,10 +1,4 @@
 import {
-  generateTodayFocus,
-} from '../brain/todayBrain';
-
-
-
-import {
   getCalendarEvents,
 } from './calendarService';
 
@@ -13,7 +7,7 @@ import {
 } from './prayerService';
 
 import type {
-  BrainResult,
+  BrainInput,
 } from '../brain/types';
 
 
@@ -39,7 +33,9 @@ import type {
 
 import { fetchFocusItems } from "./taskService";
 
-export async function getTodayFocus(): Promise<BrainResult> {
+export async function getTodayFocusSources(): Promise<
+  Omit<BrainInput, 'routineCandidates'>
+> {
 
   let calendarEvents: CalendarEvent[] = [];
   let prayer = null;
@@ -95,14 +91,11 @@ export async function getTodayFocus(): Promise<BrainResult> {
     );
   }
 
-  //
-  // Generate Today's Focus
-  //
-  return generateTodayFocus({
+  return {
     focusItems: focusItems,
     calendarEvents,
     prayer,
     weather,
     weatherInsights,
-  });
+  };
 }

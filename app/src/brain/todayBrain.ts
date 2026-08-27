@@ -15,11 +15,21 @@ import {
 } from './logger';
 
 import type {
+  BrainDecisionAction,
+  BrainDecisionPresentation,
   BrainDecision,
   BrainInput,
   BrainResult,
   BrainSource,
 } from './types';
+
+import type {
+  RoutineAttentionCandidate,
+} from '../routines/routineSelectors';
+
+import {
+  timeToMinutes,
+} from '../routines/recurrence';
 
 import type {
   WeatherInsight,
@@ -44,6 +54,10 @@ type BrainCandidate = {
   score: number;
   reasons: string[];
   deduplicationKey: string;
+  presentation?: BrainDecisionPresentation;
+  action?: BrainDecisionAction;
+  routineSortMinutes?: number;
+  routineTieKey?: string;
 };
 
 
@@ -554,6 +568,201 @@ function scoreContextInsight(
   };
 }
 
+function getRoutineScore(
+  candidate: RoutineAttentionCandidate
+): number {
+  if (candidate.status === 'overdue') {
+    return BrainRules.ROUTINE.OVERDUE;
+  }
+
+  if (candidate.displayStatus === 'In progress') {
+    return BrainRules.ROUTINE.IN_PROGRESS;
+  }
+
+  if (candidate.status === 'due') {
+    return BrainRules.ROUTINE.DUE;
+  }
+
+  if (candidate.status === 'upcoming') {
+    return BrainRules.ROUTINE.UPCOMING;
+  }
+
+  return BrainRules.ROUTINE.TODAY;
+}
+
+function getRoutineAttentionTime(
+  candidate: RoutineAttentionCandidate
+): string | null {
+  if (candidate.status === 'upcoming') {
+    return candidate.startTime;
+  }
+
+  if (
+    candidate.status === 'overdue' ||
+    candidate.status === 'due'
+  ) {
+    return candidate.endTime ?? candidate.startTime;
+  }
+
+  return null;
+}
+
+function getRoutineTimeMetadata(
+  candidate: RoutineAttentionCandidate
+): string | null {
+  if (
+    candidate.status === 'upcoming' &&
+    candidate.startTime
+  ) {
+    return candidate.startTime;
+  }
+
+  if (
+    candidate.status === 'overdue' &&
+    candidate.endTime
+  ) {
+    return `ended ${candidate.endTime}`;
+  }
+
+  if (
+    candidate.status === 'due' &&
+    candidate.endTime
+  ) {
+    return `until ${candidate.endTime}`;
+  }
+
+  if (
+    candidate.status === 'due' &&
+    candidate.startTime
+  ) {
+    return `from ${candidate.startTime}`;
+  }
+
+  return null;
+}
+
+function getRoutineChipVariant(
+  candidate: RoutineAttentionCandidate
+): BrainDecisionPresentation['chipVariant'] {
+  if (candidate.status === 'overdue') {
+    return 'danger';
+  }
+
+  if (
+    candidate.status === 'due' ||
+    candidate.displayStatus === 'In progress'
+  ) {
+    return 'warning';
+  }
+
+  return 'info';
+}
+
+function isEligibleRoutineCandidate(
+  candidate: RoutineAttentionCandidate
+): boolean {
+  if (candidate.status !== 'upcoming') {
+    return true;
+  }
+
+  return (
+    candidate.minutesUntilStart !== null &&
+    candidate.minutesUntilStart >= 0 &&
+    candidate.minutesUntilStart <=
+      BrainRules.ROUTINE.UPCOMING_HORIZON_MINUTES
+  );
+}
+
+function scoreRoutineCandidate(
+  candidate: RoutineAttentionCandidate
+): BrainCandidate {
+  const attentionTime =
+    getRoutineAttentionTime(candidate);
+  const timeMetadata =
+    getRoutineTimeMetadata(candidate);
+  const metadata = [
+    timeMetadata,
+    `${candidate.completedSteps}/${candidate.totalSteps}`,
+  ].filter(
+    (value): value is string => Boolean(value)
+  );
+  const item: FocusItem = {
+    id: `routine-${candidate.occurrenceId}`,
+    title: candidate.title,
+    category: 'family',
+    priority:
+      candidate.status === 'overdue' ||
+      candidate.status === 'due'
+        ? 'high'
+        : 'medium',
+    status:
+      candidate.displayStatus === 'In progress'
+        ? 'in-progress'
+        : 'pending',
+    dueDate: candidate.localDate,
+    dueTime: attentionTime,
+    estimatedMinutes: null,
+    assignedTo: 'Routine',
+  };
+
+  return {
+    item,
+    source: 'routine',
+    score: getRoutineScore(candidate),
+    reasons: [
+      'Household routine',
+      candidate.displayStatus,
+      `${candidate.completedSteps} of ${candidate.totalSteps} steps complete`,
+    ],
+    deduplicationKey:
+      `routine:${candidate.occurrenceId}`,
+    presentation: {
+      statusLabel: candidate.displayStatus,
+      metadata,
+      chipVariant:
+        getRoutineChipVariant(candidate),
+    },
+    action: {
+      type: 'open-routine',
+      routineId: candidate.routineId,
+      occurrenceId: candidate.occurrenceId,
+    },
+    routineSortMinutes: attentionTime
+      ? timeToMinutes(attentionTime)
+      : Number.POSITIVE_INFINITY,
+    routineTieKey:
+      `${candidate.title}\u0000${candidate.occurrenceId}`,
+  };
+}
+
+function compareRoutineCandidates(
+  first: BrainCandidate,
+  second: BrainCandidate
+): number {
+  const scoreDifference =
+    second.score - first.score;
+
+  if (scoreDifference !== 0) {
+    return scoreDifference;
+  }
+
+  const timeDifference =
+    (first.routineSortMinutes ??
+      Number.POSITIVE_INFINITY) -
+    (second.routineSortMinutes ??
+      Number.POSITIVE_INFINITY);
+
+  if (timeDifference !== 0) {
+    return timeDifference;
+  }
+
+  return (
+    first.routineTieKey ?? ''
+  ).localeCompare(
+    second.routineTieKey ?? ''
+  );
+}
+
 function isEligibleFocusItem(
   item: FocusItem,
   today: string
@@ -750,6 +959,17 @@ export function generateTodayFocus(
     )
     .map(scoreWeatherInsight);    
 
+  const routineCandidates =
+    removeDuplicates(
+      input.routineCandidates
+        .filter(isEligibleRoutineCandidate)
+        .map(scoreRoutineCandidate)
+        .sort(compareRoutineCandidates)
+    ).slice(
+      0,
+      BrainRules.ROUTINE.MAX_CANDIDATES
+    );
+
       
   const candidates =
     removeDuplicates([
@@ -758,6 +978,7 @@ export function generateTodayFocus(
       ...prayerCandidates,
       ...contextCandidates,
       ...weatherCandidates,
+      ...routineCandidates,
     ])
       .sort(compareCandidates)
       .slice(
@@ -781,6 +1002,8 @@ export function generateTodayFocus(
     source: candidate.source,
     score: candidate.score,
     reasons: candidate.reasons,
+    presentation: candidate.presentation,
+    action: candidate.action,
   }));
   
   logBrainDecisions(decisions);

@@ -40,6 +40,7 @@
 
 .todays-focus__item-main {
   display: flex;
+  flex: 1;
   align-items: center;
 
   gap: 12px;
@@ -50,6 +51,27 @@
 
   transition:
     color var(--ey-transition-normal);
+}
+
+.todays-focus__item-link {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ey-control-radius);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.todays-focus__item-link:hover
+  .todays-focus__item-title {
+  color: var(--ey-accent-primary);
+}
+
+.todays-focus__item-link:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
 }
 
 .todays-focus__item-main svg {
@@ -89,7 +111,8 @@
 }
 
 .todays-focus__item-duration,
-.todays-focus__item-source {
+.todays-focus__item-source,
+.todays-focus__routine-meta {
   color: var(--ey-text-muted);
 
   font-size: 0.72rem;
@@ -279,7 +302,9 @@
 :where(:root[data-display-profile='compact'])
   .todays-focus__item-duration,
 :where(:root[data-display-profile='compact'])
-  .todays-focus__item-source {
+  .todays-focus__item-source,
+:where(:root[data-display-profile='compact'])
+  .todays-focus__routine-meta {
   font-size: 0.65rem;
 }
 

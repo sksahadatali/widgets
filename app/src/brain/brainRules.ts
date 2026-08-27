@@ -22,4 +22,14 @@ export const BrainRules = {
     EVENING: 10,
     WEEKEND_RAEN: 10,
   },
+
+  ROUTINE: {
+    OVERDUE: 145,
+    IN_PROGRESS: 135,
+    DUE: 125,
+    UPCOMING: 110,
+    TODAY: 80,
+    UPCOMING_HORIZON_MINUTES: 120,
+    MAX_CANDIDATES: 3,
+  },
 } as const;
