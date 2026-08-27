@@ -507,6 +507,7 @@ describe('routine candidates in Today Brain', () => {
       brainInput({
         focusItems: [
           task('High overdue task', {
+            category: 'health',
             priority: 'high',
             dueDate: '2026-08-30',
           }),
