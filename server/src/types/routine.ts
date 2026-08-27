@@ -29,20 +29,42 @@ export type RoutineDefinition = {
   updatedAt: string;
 };
 
+export type RoutineOccurrenceSnapshot = {
+  title: string;
+  ownerProfileId: string;
+  schedule: RoutineSchedule;
+  steps: RoutineStep[];
+  definitionUpdatedAt: string;
+  capturedAt: string;
+  source: 'captured' | 'legacy-migration';
+};
+
 export type RoutineOccurrence = {
   id: string;
   routineId: string;
   localDate: string;
   timeZone: string;
+  snapshot: RoutineOccurrenceSnapshot;
   completedSteps: Record<string, string>;
   completedAt: string | null;
   updatedAt: string;
 };
 
 export type RoutineStoreData = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   routines: RoutineDefinition[];
   occurrences: RoutineOccurrence[];
+};
+
+export type LegacyRoutineOccurrence = Omit<
+  RoutineOccurrence,
+  'snapshot'
+>;
+
+export type LegacyRoutineStoreData = {
+  schemaVersion: 1;
+  routines: RoutineDefinition[];
+  occurrences: LegacyRoutineOccurrence[];
 };
 
 export type RoutineDefinitionInput = {
@@ -58,4 +80,8 @@ export type RoutineOccurrenceUpdate = {
   timeZone: string;
   stepId: string;
   completed: boolean;
+};
+
+export type RoutineMaterializationInput = {
+  timeZone: string;
 };

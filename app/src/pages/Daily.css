@@ -209,7 +209,7 @@
   background: var(--ey-bg-card-secondary);
 }
 
-.routine-card--complete {
+.routine-card--completed {
   border-left-color: var(--ey-success);
 }
 
@@ -231,7 +231,7 @@
   font-size: var(--ey-font-sm);
 }
 
-.routine-card--complete .routine-card__status {
+.routine-card--completed .routine-card__status {
   border-color: var(--ey-border-chip-success);
   background: var(--ey-success-soft);
   color: var(--ey-success);
