@@ -1,6 +1,27 @@
-import { useEffect, useState } from "react";
-import { getTodayFocus } from "../services/focusService";
-import type { BrainResult } from "../brain/types";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  generateTodayFocus,
+} from '../brain/todayBrain';
+import type {
+  BrainInput,
+  BrainResult,
+} from '../brain/types';
+import {
+  useRoutineContext,
+} from '../routines/useRoutineContext';
+import {
+  getTodayFocusSources,
+} from '../services/focusService';
+
+type FocusSources = Omit<
+  BrainInput,
+  'routineCandidates'
+>;
 
 interface UseFocusResult {
   brain: BrainResult | null;
@@ -10,32 +31,58 @@ interface UseFocusResult {
 }
 
 export function useFocus(): UseFocusResult {
-  const [brain, setBrain] =
-  useState<BrainResult | null>(
-    null
-  );
+  const {
+    routineAttentionCandidates,
+  } = useRoutineContext();
+  const [sources, setSources] =
+    useState<FocusSources | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFocus = async (): Promise<void> => {
+  const loadFocus = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      const result = await getTodayFocus();
+      const result =
+        await getTodayFocusSources();
 
-      setBrain(result);
+      setSources(result);
     } catch (err) {
       console.error("Failed to load Today's Focus:", err);
       setError("Unable to load today's focus.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    void loadFocus();
-  }, []);
+    const initialLoadId = window.setTimeout(
+      () => void loadFocus(),
+      0
+    );
+
+    return () => {
+      window.clearTimeout(initialLoadId);
+    };
+  }, [loadFocus]);
+
+  const brain = useMemo<BrainResult | null>(
+    () => sources
+      ? generateTodayFocus(
+        {
+          ...sources,
+          routineCandidates:
+            routineAttentionCandidates,
+        },
+        new Date()
+      )
+      : null,
+    [
+      routineAttentionCandidates,
+      sources,
+    ]
+  );
 
   return {
     brain,

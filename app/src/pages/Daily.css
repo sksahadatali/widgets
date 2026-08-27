@@ -209,6 +209,36 @@
   background: var(--ey-bg-card-secondary);
 }
 
+.routine-card--focus-target {
+  animation:
+    routine-focus-target 2.4s ease-out;
+}
+
+.routine-card--focus-target:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
+}
+
+@keyframes routine-focus-target {
+  0%,
+  35% {
+    border-color: var(--ey-accent-primary);
+    box-shadow:
+      0 0 0 3px var(--ey-accent-soft);
+  }
+
+  100% {
+    border-color: var(--ey-border-default);
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routine-card--focus-target {
+    animation-duration: 0.01ms;
+  }
+}
+
 .routine-card--completed {
   border-left-color: var(--ey-success);
 }

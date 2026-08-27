@@ -258,6 +258,8 @@ Each scheduled active routine is materialised once for the current household-loc
 
 Routine status is derived from the configured household IANA timezone and is never stored. Untimed routines show **Today**; timed routines move through **Upcoming**, **Due** and **Overdue**; fully completed occurrences show **Completed**. A partially completed due routine may display **In progress**.
 
+Today's Focus can surface incomplete routine occurrences that require attention without duplicating recurrence, profile visibility or completion logic. Overdue, Due, In-progress and untimed Today routines are eligible; Upcoming routines enter the shared ranking only within two hours of their snapshotted start time. At most three routine candidates enter the existing four-item Focus ranking, so routines continue to compete with Tasks, Calendar, Prayer, Weather and context signals. Selecting a routine Focus item opens its exact materialised occurrence in Daily. This attention state is derived in memory and creates no Focus cache, schema change or additional persistence.
+
 Demo mode is isolated from the household store. It starts with safe tracked schema-v2 examples and saves Demo changes only in the browser's `ey-os-demo-routines-v2` local-storage entry. A valid older `ey-os-demo-routines-v1` entry is migrated independently; Household mode never reads either Demo entry.
 
 ### Restoring the routines backup

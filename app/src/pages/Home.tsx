@@ -9,12 +9,25 @@ import Calendar from '../components/modules/Calendar/Calendar';
 
 import './Home.css';
 
-function Home() {
+type HomeProps = {
+  onOpenRoutine: (
+    routineId: string,
+    occurrenceId: string
+  ) => void;
+};
+
+function Home({
+  onOpenRoutine,
+}: HomeProps) {
 
   return (
     <main className="home">
       <div className="home__brief"><TodaysBrief /></div>
-      <div className="home__focus"><TodaysFocus /></div>
+      <div className="home__focus">
+        <TodaysFocus
+          onOpenRoutine={onOpenRoutine}
+        />
+      </div>
       <div className="home__status"><QuickStatus /></div>
       <div className="home__due-soon"><DueSoon /></div>
       <div className="home__tasks"><Tasks /></div>

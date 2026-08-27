@@ -30,6 +30,7 @@ import {
   getZonedDateInfo,
 } from './recurrence';
 import {
+  selectRoutineAttentionCandidates,
   selectVisibleTodayRoutines,
 } from './routineSelectors';
 import {
@@ -170,6 +171,22 @@ export function RoutineProvider({
     ]
   );
 
+  const routineAttentionCandidates = useMemo(
+    () => error
+      ? []
+      : selectRoutineAttentionCandidates({
+        routines: todayRoutines,
+        occurrenceByRoutineId,
+        dateInfo,
+      }),
+    [
+      dateInfo,
+      error,
+      occurrenceByRoutineId,
+      todayRoutines,
+    ]
+  );
+
   const runMutation = useCallback(
     async (
       mutation: () => Promise<void>
@@ -239,6 +256,7 @@ export function RoutineProvider({
     () => ({
       routines: data.routines,
       todayRoutines,
+      routineAttentionCandidates,
       occurrenceByRoutineId:
         occurrenceByRoutineId as ReadonlyMap<
           string,
@@ -257,6 +275,7 @@ export function RoutineProvider({
     [
       data.routines,
       todayRoutines,
+      routineAttentionCandidates,
       occurrenceByRoutineId,
       dateInfo,
       timeZone,

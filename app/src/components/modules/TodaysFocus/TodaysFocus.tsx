@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronUp,
   Circle,
+  Clock3,
   Flag,
   Target
 } from 'lucide-react';
@@ -38,7 +39,16 @@ function getPriorityVariant(
   }
 }
 
-function TodaysFocus() {
+type TodaysFocusProps = {
+  onOpenRoutine: (
+    routineId: string,
+    occurrenceId: string
+  ) => void;
+};
+
+function TodaysFocus({
+  onOpenRoutine,
+}: TodaysFocusProps) {
   const {
     brain,
     loading,
@@ -111,45 +121,46 @@ function TodaysFocus() {
             const {
               item,
               reasons,
+              presentation,
+              action,
             } = decision;
 
             const isExpanded =
               expandedDecisionId ===
               item.id;
 
-            return (
-              <div
-                className={`todays-focus__item-wrapper ${
-                  item.status ===
-                  'completed'
-                    ? 'todays-focus__item-wrapper--completed'
-                    : ''
-                }`}
-                key={item.id}
-              >
-                <div className="todays-focus__item">
-                  <div className="todays-focus__item-main">
-                    {item.status ===
-                    'completed' ? (
-                      <CheckCircle2
-                        size={20}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Circle
-                        size={20}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
-                    )}
+            const itemMainContent = (
+              <>
+                {item.status ===
+                'completed' ? (
+                  <CheckCircle2
+                    size={20}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Circle
+                    size={20}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                )}
 
-                    <div className="todays-focus__text">
-                      <span className="todays-focus__item-title">
-                        {item.title}
+                <div className="todays-focus__text">
+                  <span
+                    className="todays-focus__item-title"
+                    title={item.title}
+                  >
+                    {item.title}
+                  </span>
+
+                  <div className="todays-focus__item-meta">
+                    {presentation ? (
+                      <span className="todays-focus__routine-meta">
+                        {presentation.metadata.join(' · ')}
                       </span>
-
-                      <div className="todays-focus__item-meta">
+                    ) : (
+                      <>
                         {item.estimatedMinutes !==
                           null && (
                           <span className="todays-focus__item-duration">
@@ -166,29 +177,77 @@ function TodaysFocus() {
                             decision.source
                           }
                         </span>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
+                </div>
+              </>
+            );
+
+            return (
+              <div
+                className={`todays-focus__item-wrapper ${
+                  item.status ===
+                  'completed'
+                    ? 'todays-focus__item-wrapper--completed'
+                    : ''
+                }`}
+                key={item.id}
+              >
+                <div className="todays-focus__item">
+                  {action?.type === 'open-routine' ? (
+                    <button
+                      type="button"
+                      className="todays-focus__item-main todays-focus__item-link"
+                      aria-label={`Open ${item.title} in Daily`}
+                      onClick={() =>
+                        onOpenRoutine(
+                          action.routineId,
+                          action.occurrenceId
+                        )
+                      }
+                    >
+                      {itemMainContent}
+                    </button>
+                  ) : (
+                    <div className="todays-focus__item-main">
+                      {itemMainContent}
+                    </div>
+                  )}
 
                   <div className="todays-focus__actions">
                     <StatusChip
                       label={
-                        item.priority
-                          .charAt(0)
-                          .toUpperCase() +
-                        item.priority.slice(
-                          1
+                        presentation?.statusLabel ??
+                        (
+                          item.priority
+                            .charAt(0)
+                            .toUpperCase() +
+                          item.priority.slice(
+                            1
+                          )
                         )
                       }
-                      variant={getPriorityVariant(
-                        item.priority
-                      )}
+                      variant={
+                        presentation?.chipVariant ??
+                        getPriorityVariant(
+                          item.priority
+                        )
+                      }
                       icon={
-                        <Flag
+                        presentation ? (
+                          <Clock3
+                            size={14}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Flag
                           size={14}
                           strokeWidth={2}
                           aria-hidden="true"
-                        />
+                          />
+                        )
                       }
                     />
 

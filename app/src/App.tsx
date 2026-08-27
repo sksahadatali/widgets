@@ -25,6 +25,27 @@ import {
 function App() {
   const [page, setPage] =
     useState<SidebarPage>('Home');
+  const [dailyRoutineTarget, setDailyRoutineTarget] =
+    useState<{
+      routineId: string;
+      occurrenceId: string;
+    } | null>(null);
+
+  const navigate = (nextPage: SidebarPage) => {
+    setDailyRoutineTarget(null);
+    setPage(nextPage);
+  };
+
+  const openRoutine = (
+    routineId: string,
+    occurrenceId: string
+  ) => {
+    setDailyRoutineTarget({
+      routineId,
+      occurrenceId,
+    });
+    setPage('Daily');
+  };
 
   return (
     <ThemeProvider>
@@ -34,14 +55,16 @@ function App() {
             <div className="app-shell">
               <Sidebar
                 page={page}
-                onNavigate={setPage}
+                onNavigate={navigate}
               />
 
               <div className="app-main">
                 <Header />
 
               {page === 'Home' && (
-                <Home />
+                <Home
+                  onOpenRoutine={openRoutine}
+                />
               )}
 
               {page === 'Settings' && (
@@ -49,7 +72,9 @@ function App() {
               )}
 
               {page === 'Daily' && (
-                <Daily />
+                <Daily
+                  routineTarget={dailyRoutineTarget}
+                />
               )}
 
               {page === 'Personal' && (
