@@ -18,6 +18,9 @@ import {
 import {
   HouseholdProfileProvider,
 } from './household/HouseholdProfileContext';
+import {
+  RoutineProvider,
+} from './routines/RoutineProvider';
 
 function App() {
   const [page, setPage] =
@@ -27,14 +30,15 @@ function App() {
     <ThemeProvider>
       <DisplayProfileProvider>
         <HouseholdProfileProvider>
-          <div className="app-shell">
-            <Sidebar
-              page={page}
-              onNavigate={setPage}
-            />
+          <RoutineProvider>
+            <div className="app-shell">
+              <Sidebar
+                page={page}
+                onNavigate={setPage}
+              />
 
-            <div className="app-main">
-              <Header />
+              <div className="app-main">
+                <Header />
 
               {page === 'Home' && (
                 <Home />
@@ -80,8 +84,9 @@ function App() {
                   <p>Coming soon.</p>
                 </div>
               )}
+              </div>
             </div>
-          </div>
+          </RoutineProvider>
         </HouseholdProfileProvider>
       </DisplayProfileProvider>
     </ThemeProvider>

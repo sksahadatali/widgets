@@ -6,6 +6,13 @@ import type {
   RoutineOccurrence,
 } from '../types/routine';
 import {
+  createRoutineSnapshot,
+  type DemoRoutineStore,
+  type LegacyDemoStore,
+  materializeDemoRoutines,
+  migrateLegacyDemoStore,
+} from '../routines/demoRoutineStore';
+import {
   getAppMode,
 } from './householdConfigService';
 
@@ -13,6 +20,8 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   'http://localhost:3001';
 const DEMO_STORAGE_KEY =
+  'ey-os-demo-routines-v2';
+const LEGACY_DEMO_STORAGE_KEY =
   'ey-os-demo-routines-v1';
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -29,6 +38,11 @@ type RoutineApiResponse =
   | {
     success: true;
     occurrence: RoutineOccurrence;
+  }
+  | {
+    success: true;
+    localDate: string;
+    materializedCount: number;
   }
   | {
     success: true;
@@ -87,6 +101,28 @@ function isRoutineOccurrence(
     typeof value.routineId === 'string' &&
     typeof value.localDate === 'string' &&
     typeof value.timeZone === 'string' &&
+    isRecord(value.snapshot) &&
+    typeof value.snapshot.title === 'string' &&
+    typeof value.snapshot.ownerProfileId === 'string' &&
+    isRecord(value.snapshot.schedule) &&
+    Array.isArray(
+      value.snapshot.schedule.daysOfWeek
+    ) &&
+    Array.isArray(value.snapshot.steps) &&
+    value.snapshot.steps.length > 0 &&
+    value.snapshot.steps.every(step =>
+      isRecord(step) &&
+      typeof step.id === 'string' &&
+      Boolean(step.id) &&
+      typeof step.title === 'string'
+    ) &&
+    typeof value.snapshot.definitionUpdatedAt ===
+      'string' &&
+    typeof value.snapshot.capturedAt === 'string' &&
+    (
+      value.snapshot.source === 'captured' ||
+      value.snapshot.source === 'legacy-migration'
+    ) &&
     isRecord(value.completedSteps) &&
     Object.values(value.completedSteps).every(
       completedAt =>
@@ -105,6 +141,7 @@ function isRoutineData(
 ): value is RoutineData {
   return (
     isRecord(value) &&
+    value.schemaVersion === 2 &&
     Array.isArray(value.routines) &&
     value.routines.every(isRoutineDefinition) &&
     Array.isArray(value.occurrences) &&
@@ -112,29 +149,79 @@ function isRoutineData(
   );
 }
 
-function cloneExampleData(): RoutineData {
-  return structuredClone(
-    exampleStore as RoutineData
+function isLegacyDemoStore(
+  value: unknown
+): value is LegacyDemoStore {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    !Array.isArray(value.routines) ||
+    !value.routines.every(isRoutineDefinition) ||
+    !Array.isArray(value.occurrences)
+  ) {
+    return false;
+  }
+
+  return value.occurrences.every(occurrence =>
+    isRecord(occurrence) &&
+    typeof occurrence.id === 'string' &&
+    typeof occurrence.routineId === 'string' &&
+    typeof occurrence.localDate === 'string' &&
+    typeof occurrence.timeZone === 'string' &&
+    isRecord(occurrence.completedSteps) &&
+    (
+      occurrence.completedAt === null ||
+      typeof occurrence.completedAt === 'string'
+    ) &&
+    typeof occurrence.updatedAt === 'string'
   );
 }
 
-function readDemoData(): RoutineData {
+function cloneExampleData(): DemoRoutineStore {
+  return structuredClone(
+    exampleStore as DemoRoutineStore
+  );
+}
+
+function readDemoData(): DemoRoutineStore {
   const stored = window.localStorage.getItem(
     DEMO_STORAGE_KEY
   );
 
-  if (!stored) {
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+
+      if (!isRoutineData(parsed)) {
+        throw new Error('Invalid demo data');
+      }
+
+      return parsed as DemoRoutineStore;
+    } catch {
+      throw new Error(
+        'Demo routine data is invalid. Clear this site\'s local storage to restore the safe examples.'
+      );
+    }
+  }
+
+  const legacyStored = window.localStorage.getItem(
+    LEGACY_DEMO_STORAGE_KEY
+  );
+
+  if (!legacyStored) {
     return cloneExampleData();
   }
 
   try {
-    const parsed = JSON.parse(stored) as unknown;
+    const parsed = JSON.parse(legacyStored) as unknown;
 
-    if (!isRoutineData(parsed)) {
-      throw new Error('Invalid demo data');
+    if (!isLegacyDemoStore(parsed)) {
+      throw new Error('Invalid legacy demo data');
     }
 
-    return parsed;
+    const migrated = migrateLegacyDemoStore(parsed);
+    writeDemoData(migrated);
+    return migrated;
   } catch {
     throw new Error(
       'Demo routine data is invalid. Clear this site\'s local storage to restore the safe examples.'
@@ -142,7 +229,7 @@ function readDemoData(): RoutineData {
   }
 }
 
-function writeDemoData(data: RoutineData): void {
+function writeDemoData(data: DemoRoutineStore): void {
   window.localStorage.setItem(
     DEMO_STORAGE_KEY,
     JSON.stringify(data)
@@ -199,6 +286,42 @@ async function requestHousehold(
   } finally {
     window.clearTimeout(timeoutId);
   }
+}
+
+export async function materializeTodayRoutines(
+  timeZone: string,
+  now = new Date()
+): Promise<string> {
+  if (getAppMode() === 'demo') {
+    const data = readDemoData();
+    const materialized = materializeDemoRoutines(
+      data,
+      timeZone,
+      now
+    );
+
+    if (materialized.materializedCount > 0) {
+      writeDemoData(materialized.store);
+    }
+
+    return materialized.localDate;
+  }
+
+  const response = await requestHousehold(
+    '/api/routines/occurrences/today',
+    {
+      method: 'POST',
+      body: JSON.stringify({ timeZone }),
+    }
+  );
+
+  if (!('localDate' in response)) {
+    throw new Error(
+      'The household routines service returned an invalid materialisation response.'
+    );
+  }
+
+  return response.localDate;
 }
 
 export async function loadRoutines(
@@ -338,13 +461,31 @@ export async function updateRoutineStep(
       occurrence =>
         occurrence.id === occurrenceId
     );
+    const now = new Date().toISOString();
+    const snapshot =
+      existing?.snapshot ??
+      createRoutineSnapshot(
+        routine,
+        now,
+        'captured'
+      );
+
+    if (
+      !snapshot.steps.some(
+        step => step.id === stepId
+      )
+    ) {
+      throw new Error(
+        'Routine step was not found in this occurrence.'
+      );
+    }
+
     const wasCompleteBeforeUpdate =
-      routine.steps.every(step =>
+      snapshot.steps.every(step =>
         Boolean(
           existing?.completedSteps[step.id]
         )
       );
-    const now = new Date().toISOString();
     const completedSteps = {
       ...(existing?.completedSteps ?? {}),
     };
@@ -355,17 +496,18 @@ export async function updateRoutineStep(
       delete completedSteps[stepId];
     }
 
-    const allCurrentStepsComplete =
-      routine.steps.every(step =>
+    const allSnapshotStepsComplete =
+      snapshot.steps.every(step =>
         Boolean(completedSteps[step.id])
       );
     const occurrence: RoutineOccurrence = {
       id: occurrenceId,
       routineId: routine.id,
       localDate,
-      timeZone,
+      timeZone: existing?.timeZone ?? timeZone,
+      snapshot,
       completedSteps,
-      completedAt: allCurrentStepsComplete
+      completedAt: allSnapshotStepsComplete
         ? wasCompleteBeforeUpdate
           ? existing?.completedAt ?? now
           : now

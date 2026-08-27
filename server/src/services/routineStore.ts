@@ -1,6 +1,4 @@
-import {
-  constants,
-} from 'node:fs';
+import { constants } from 'node:fs';
 import {
   access,
   copyFile,
@@ -10,38 +8,59 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises';
-import {
-  dirname,
-} from 'node:path';
-import {
-  fileURLToPath,
-} from 'node:url';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type {
   IsoWeekday,
+  LegacyRoutineOccurrence,
+  LegacyRoutineStoreData,
   RoutineDefinition,
   RoutineDefinitionInput,
+  RoutineMaterializationInput,
   RoutineOccurrence,
+  RoutineOccurrenceSnapshot,
   RoutineOccurrenceUpdate,
+  RoutineSchedule,
+  RoutineStep,
   RoutineStoreData,
 } from '../types/routine.js';
 
-const DEFAULT_STORE_PATH =
-  fileURLToPath(
-    new URL(
-      '../../data/routines.local.json',
-      import.meta.url
-    )
-  );
+const DEFAULT_STORE_PATH = fileURLToPath(
+  new URL(
+    '../../data/routines.local.json',
+    import.meta.url
+  )
+);
 
 const EMPTY_STORE: RoutineStoreData = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   routines: [],
   occurrences: [],
 };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const WEEKDAY_BY_NAME: Record<string, IsoWeekday> = {
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+  Sun: 7,
+};
+
+type LoadedStore = {
+  store: RoutineStoreData;
+  migrated: boolean;
+};
+
+type StoreUpdate<T> = {
+  store: RoutineStoreData;
+  result: T;
+  changed?: boolean;
+};
 
 function isLocalDate(value: unknown): value is string {
   if (
@@ -51,8 +70,9 @@ function isLocalDate(value: unknown): value is string {
     return false;
   }
 
-  const [year, month, day] =
-    value.split('-').map(Number);
+  const [year, month, day] = value
+    .split('-')
+    .map(Number);
   const candidate = new Date(
     Date.UTC(year, month - 1, day)
   );
@@ -114,102 +134,163 @@ function isTimeOrNull(
   );
 }
 
-function isRoutineDefinition(
+function isRoutineSchedule(
   value: unknown
-): value is RoutineDefinition {
+): value is RoutineSchedule {
   if (!isRecord(value)) {
     return false;
   }
 
-  const schedule = value.schedule;
-  const steps = value.steps;
-
-  if (
-    typeof value.id !== 'string' ||
-    !value.id.trim() ||
-    typeof value.title !== 'string' ||
-    !value.title.trim() ||
-    typeof value.ownerProfileId !== 'string' ||
-    !value.ownerProfileId.trim() ||
-    typeof value.active !== 'boolean' ||
-    !isRecord(schedule) ||
-    !Array.isArray(schedule.daysOfWeek) ||
-    schedule.daysOfWeek.length === 0 ||
-    !schedule.daysOfWeek.every(
+  return (
+    Array.isArray(value.daysOfWeek) &&
+    value.daysOfWeek.length > 0 &&
+    value.daysOfWeek.every(
       day =>
         Number.isInteger(day) &&
         day >= 1 &&
         day <= 7
-    ) ||
-    new Set(schedule.daysOfWeek).size !==
-      schedule.daysOfWeek.length ||
-    !isTimeOrNull(schedule.startTime) ||
-    !isTimeOrNull(schedule.endTime) ||
+    ) &&
+    new Set(value.daysOfWeek).size ===
+      value.daysOfWeek.length &&
+    isTimeOrNull(value.startTime) &&
+    isTimeOrNull(value.endTime) &&
     (
-      schedule.endTime !== null &&
+      value.endTime === null ||
       (
-        schedule.startTime === null ||
-        schedule.endTime <= schedule.startTime
+        value.startTime !== null &&
+        value.endTime > value.startTime
       )
-    ) ||
-    !Array.isArray(steps) ||
-    steps.length === 0 ||
-    !steps.every(
+    )
+  );
+}
+
+function isRoutineSteps(
+  value: unknown
+): value is RoutineStep[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
       step =>
         isRecord(step) &&
         typeof step.id === 'string' &&
         Boolean(step.id.trim()) &&
         typeof step.title === 'string' &&
         Boolean(step.title.trim())
-    ) ||
+    ) &&
     new Set(
-      steps.map(step =>
+      value.map(step =>
         isRecord(step)
           ? step.id
           : undefined
       )
-    ).size !== steps.length ||
-    !isIsoTimestamp(value.createdAt) ||
-    !isIsoTimestamp(value.updatedAt)
-  ) {
-    return false;
-  }
+    ).size === value.length
+  );
+}
 
-  return true;
+function isRoutineDefinition(
+  value: unknown
+): value is RoutineDefinition {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    Boolean(value.id.trim()) &&
+    typeof value.title === 'string' &&
+    Boolean(value.title.trim()) &&
+    typeof value.ownerProfileId === 'string' &&
+    Boolean(value.ownerProfileId.trim()) &&
+    typeof value.active === 'boolean' &&
+    isRoutineSchedule(value.schedule) &&
+    isRoutineSteps(value.steps) &&
+    isIsoTimestamp(value.createdAt) &&
+    isIsoTimestamp(value.updatedAt)
+  );
+}
+
+function isOccurrenceBase(
+  value: unknown
+): value is LegacyRoutineOccurrence {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.routineId === 'string' &&
+    Boolean(value.routineId.trim()) &&
+    isLocalDate(value.localDate) &&
+    value.id ===
+      `${value.routineId}@${value.localDate}` &&
+    typeof value.timeZone === 'string' &&
+    Boolean(value.timeZone.trim()) &&
+    isRecord(value.completedSteps) &&
+    Object.entries(value.completedSteps).every(
+      ([stepId, completedAt]) =>
+        Boolean(stepId.trim()) &&
+        isIsoTimestamp(completedAt)
+    ) &&
+    (
+      value.completedAt === null ||
+      isIsoTimestamp(value.completedAt)
+    ) &&
+    isIsoTimestamp(value.updatedAt)
+  );
+}
+
+function isOccurrenceSnapshot(
+  value: unknown
+): value is RoutineOccurrenceSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value.title === 'string' &&
+    Boolean(value.title.trim()) &&
+    typeof value.ownerProfileId === 'string' &&
+    Boolean(value.ownerProfileId.trim()) &&
+    isRoutineSchedule(value.schedule) &&
+    isRoutineSteps(value.steps) &&
+    isIsoTimestamp(value.definitionUpdatedAt) &&
+    isIsoTimestamp(value.capturedAt) &&
+    (
+      value.source === 'captured' ||
+      value.source === 'legacy-migration'
+    )
+  );
 }
 
 function isRoutineOccurrence(
   value: unknown
 ): value is RoutineOccurrence {
-  if (!isRecord(value)) {
-    return false;
-  }
+  return (
+    isRecord(value) &&
+    isOccurrenceSnapshot(value.snapshot) &&
+    isOccurrenceBase(value)
+  );
+}
+
+function validateStoreRelationships(
+  routines: RoutineDefinition[],
+  occurrences: Array<{
+    id: string;
+    routineId: string;
+  }>
+): void {
+  const routineIds = routines.map(
+    routine => routine.id
+  );
+  const occurrenceIds = occurrences.map(
+    occurrence => occurrence.id
+  );
+  const routineIdSet = new Set(routineIds);
 
   if (
-    typeof value.id !== 'string' ||
-    typeof value.routineId !== 'string' ||
-    !value.routineId.trim() ||
-    !isLocalDate(value.localDate) ||
-    value.id !==
-      `${value.routineId}@${value.localDate}` ||
-    typeof value.timeZone !== 'string' ||
-    !value.timeZone.trim() ||
-    !isRecord(value.completedSteps) ||
-    !Object.entries(value.completedSteps).every(
-      ([stepId, completedAt]) =>
-        Boolean(stepId.trim()) &&
-        isIsoTimestamp(completedAt)
-    ) ||
-    !(
-      value.completedAt === null ||
-      isIsoTimestamp(value.completedAt)
-    ) ||
-    !isIsoTimestamp(value.updatedAt)
+    routineIdSet.size !== routineIds.length ||
+    new Set(occurrenceIds).size !== occurrenceIds.length ||
+    occurrences.some(
+      occurrence =>
+        !routineIdSet.has(occurrence.routineId)
+    )
   ) {
-    return false;
+    throw new RoutineStoreCorruptError(
+      'The local routines store contains invalid relationships or duplicate IDs. It was not changed.'
+    );
   }
-
-  return true;
 }
 
 export function validateRoutineStore(
@@ -217,7 +298,7 @@ export function validateRoutineStore(
 ): RoutineStoreData {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 1 ||
+    value.schemaVersion !== 2 ||
     !Array.isArray(value.routines) ||
     !value.routines.every(isRoutineDefinition) ||
     !Array.isArray(value.occurrences) ||
@@ -228,23 +309,94 @@ export function validateRoutineStore(
     );
   }
 
-  const routineIds = value.routines.map(
-    routine => routine.id
-  );
-  const occurrenceIds = value.occurrences.map(
-    occurrence => occurrence.id
+  validateStoreRelationships(
+    value.routines,
+    value.occurrences
   );
 
+  return value as RoutineStoreData;
+}
+
+export function validateLegacyRoutineStore(
+  value: unknown
+): LegacyRoutineStoreData {
   if (
-    new Set(routineIds).size !== routineIds.length ||
-    new Set(occurrenceIds).size !== occurrenceIds.length
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    !Array.isArray(value.routines) ||
+    !value.routines.every(isRoutineDefinition) ||
+    !Array.isArray(value.occurrences) ||
+    !value.occurrences.every(isOccurrenceBase)
   ) {
     throw new RoutineStoreCorruptError(
-      'The local routines store contains duplicate IDs. It was not changed.'
+      'The local routines store is malformed. It was not changed.'
     );
   }
 
-  return value as RoutineStoreData;
+  validateStoreRelationships(
+    value.routines,
+    value.occurrences
+  );
+
+  return value as LegacyRoutineStoreData;
+}
+
+function createSnapshot(
+  routine: RoutineDefinition,
+  capturedAt: string,
+  source: RoutineOccurrenceSnapshot['source']
+): RoutineOccurrenceSnapshot {
+  return {
+    title: routine.title,
+    ownerProfileId: routine.ownerProfileId,
+    schedule: structuredClone(routine.schedule),
+    steps: structuredClone(routine.steps),
+    definitionUpdatedAt: routine.updatedAt,
+    capturedAt,
+    source,
+  };
+}
+
+export function migrateLegacyRoutineStore(
+  legacyStore: LegacyRoutineStoreData,
+  migratedAt = new Date().toISOString()
+): RoutineStoreData {
+  const routineById = new Map(
+    legacyStore.routines.map(routine => [
+      routine.id,
+      routine,
+    ])
+  );
+  const migrated: RoutineStoreData = {
+    schemaVersion: 2,
+    routines: structuredClone(
+      legacyStore.routines
+    ),
+    occurrences: legacyStore.occurrences.map(
+      occurrence => {
+        const routine = routineById.get(
+          occurrence.routineId
+        );
+
+        if (!routine) {
+          throw new RoutineStoreCorruptError(
+            'The local routines store contains an occurrence without a routine. It was not changed.'
+          );
+        }
+
+        return {
+          ...structuredClone(occurrence),
+          snapshot: createSnapshot(
+            routine,
+            migratedAt,
+            'legacy-migration'
+          ),
+        };
+      }
+    ),
+  };
+
+  return validateRoutineStore(migrated);
 }
 
 function normalizeDefinitionInput(
@@ -327,6 +479,76 @@ function normalizeDefinitionInput(
   return normalized;
 }
 
+function normalizeTimeZone(
+  input: unknown
+): string {
+  if (
+    !isRecord(input) ||
+    typeof input.timeZone !== 'string' ||
+    !input.timeZone.trim()
+  ) {
+    throw new RoutineStoreError(
+      'Routine materialisation timezone is invalid.'
+    );
+  }
+
+  const timeZone = input.timeZone.trim();
+
+  try {
+    new Intl.DateTimeFormat(
+      'en-GB',
+      { timeZone }
+    ).format(new Date());
+  } catch {
+    throw new RoutineStoreError(
+      'Routine materialisation timezone is invalid.'
+    );
+  }
+
+  return timeZone;
+}
+
+function getZonedDate(
+  instant: Date,
+  timeZone: string
+): {
+  localDate: string;
+  weekday: IsoWeekday;
+} {
+  const parts = new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+    }
+  ).formatToParts(instant);
+  const part = (
+    type: Intl.DateTimeFormatPartTypes
+  ) => parts.find(
+    candidate => candidate.type === type
+  )?.value;
+  const year = part('year');
+  const month = part('month');
+  const day = part('day');
+  const weekday = WEEKDAY_BY_NAME[
+    part('weekday') ?? ''
+  ];
+
+  if (!year || !month || !day || !weekday) {
+    throw new RoutineStoreError(
+      'Unable to determine the household routine date.'
+    );
+  }
+
+  return {
+    localDate: `${year}-${month}-${day}`,
+    weekday,
+  };
+}
+
 async function fileExists(
   filePath: string
 ): Promise<boolean> {
@@ -352,7 +574,7 @@ export class RoutineFileStore {
   }
 
   private async readExisting(): Promise<
-    RoutineStoreData | null
+    LoadedStore | null
   > {
     let raw: string;
 
@@ -372,26 +594,44 @@ export class RoutineFileStore {
       throw error;
     }
 
-    try {
-      return validateRoutineStore(
-        JSON.parse(raw) as unknown
-      );
-    } catch (error) {
-      if (error instanceof RoutineStoreCorruptError) {
-        throw error;
-      }
+    let parsed: unknown;
 
+    try {
+      parsed = JSON.parse(raw) as unknown;
+    } catch {
       throw new RoutineStoreCorruptError(
         'The local routines store is malformed. It was not changed.'
       );
     }
+
+    if (
+      isRecord(parsed) &&
+      parsed.schemaVersion === 1
+    ) {
+      const legacy =
+        validateLegacyRoutineStore(parsed);
+      const migrated =
+        migrateLegacyRoutineStore(legacy);
+
+      await this.replace(migrated, true);
+
+      return {
+        store: migrated,
+        migrated: true,
+      };
+    }
+
+    return {
+      store: validateRoutineStore(parsed),
+      migrated: false,
+    };
   }
 
   async read(): Promise<RoutineStoreData> {
     const existing = await this.readExisting();
 
     if (existing) {
-      return existing;
+      return structuredClone(existing.store);
     }
 
     await this.replace(EMPTY_STORE, false);
@@ -461,7 +701,7 @@ export class RoutineFileStore {
   private async mutate<T>(
     update: (
       store: RoutineStoreData
-    ) => { store: RoutineStoreData; result: T }
+    ) => StoreUpdate<T>
   ): Promise<T> {
     let operationResult: T | undefined;
     let operationError: unknown;
@@ -472,7 +712,7 @@ export class RoutineFileStore {
         try {
           const existing =
             await this.readExisting();
-          const current = existing ??
+          const current = existing?.store ??
             structuredClone(EMPTY_STORE);
           const updated = update(
             structuredClone(current)
@@ -480,10 +720,13 @@ export class RoutineFileStore {
 
           validateRoutineStore(updated.store);
 
-          await this.replace(
-            updated.store,
-            existing !== null
-          );
+          if (updated.changed !== false) {
+            await this.replace(
+              updated.store,
+              existing !== null &&
+                !existing.migrated
+            );
+          }
 
           operationResult = updated.result;
         } catch (error) {
@@ -610,6 +853,73 @@ export class RoutineFileStore {
     });
   }
 
+  async materializeToday(
+    input: RoutineMaterializationInput | unknown,
+    now = new Date()
+  ): Promise<{
+    localDate: string;
+    materializedCount: number;
+  }> {
+    const timeZone = normalizeTimeZone(input);
+    const { localDate, weekday } =
+      getZonedDate(now, timeZone);
+    const capturedAt = now.toISOString();
+
+    return this.mutate(store => {
+      const existingIds = new Set(
+        store.occurrences.map(
+          occurrence => occurrence.id
+        )
+      );
+      const newOccurrences = store.routines
+        .filter(
+          routine =>
+            routine.active &&
+            routine.schedule.daysOfWeek.includes(
+              weekday
+            )
+        )
+        .filter(
+          routine =>
+            !existingIds.has(
+              `${routine.id}@${localDate}`
+            )
+        )
+        .map<RoutineOccurrence>(routine => ({
+          id: `${routine.id}@${localDate}`,
+          routineId: routine.id,
+          localDate,
+          timeZone,
+          snapshot: createSnapshot(
+            routine,
+            capturedAt,
+            'captured'
+          ),
+          completedSteps: {},
+          completedAt: null,
+          updatedAt: capturedAt,
+        }));
+
+      return {
+        store: newOccurrences.length === 0
+          ? store
+          : {
+            ...store,
+            occurrences: [
+              ...store.occurrences,
+              ...newOccurrences,
+            ],
+          },
+        result: {
+          localDate,
+          materializedCount:
+            newOccurrences.length,
+        },
+        changed: newOccurrences.length > 0,
+      };
+    });
+  }
+
   async updateOccurrence(
     routineId: string,
     update: unknown,
@@ -659,24 +969,32 @@ export class RoutineFileStore {
         );
       }
 
-      if (
-        !routine.steps.some(
-          step => step.id === update.stepId
-        )
-      ) {
-        throw new RoutineStoreError(
-          'Routine step was not found.'
-        );
-      }
-
       const occurrenceId =
         `${routineId}@${normalizedUpdate.localDate}`;
       const existing = store.occurrences.find(
         occurrence =>
           occurrence.id === occurrenceId
       );
+      const snapshot =
+        existing?.snapshot ??
+        createSnapshot(
+          routine,
+          now,
+          'captured'
+        );
+
+      if (
+        !snapshot.steps.some(
+          step => step.id === normalizedUpdate.stepId
+        )
+      ) {
+        throw new RoutineStoreError(
+          'Routine step was not found in this occurrence.'
+        );
+      }
+
       const wasCompleteBeforeUpdate =
-        routine.steps.every(
+        snapshot.steps.every(
           step => Boolean(
             existing?.completedSteps[step.id]
           )
@@ -691,8 +1009,8 @@ export class RoutineFileStore {
         delete completedSteps[normalizedUpdate.stepId];
       }
 
-      const allCurrentStepsComplete =
-        routine.steps.every(
+      const allSnapshotStepsComplete =
+        snapshot.steps.every(
           step => Boolean(completedSteps[step.id])
         );
 
@@ -700,9 +1018,12 @@ export class RoutineFileStore {
         id: occurrenceId,
         routineId,
         localDate: normalizedUpdate.localDate,
-        timeZone: normalizedUpdate.timeZone.trim(),
+        timeZone:
+          existing?.timeZone ??
+          normalizedUpdate.timeZone.trim(),
+        snapshot,
         completedSteps,
-        completedAt: allCurrentStepsComplete
+        completedAt: allSnapshotStepsComplete
           ? wasCompleteBeforeUpdate
             ? existing?.completedAt ?? now
             : now

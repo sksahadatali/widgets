@@ -101,6 +101,25 @@ router.post('/', async (request, response) => {
   }
 });
 
+router.post(
+  '/occurrences/today',
+  async (request, response) => {
+    try {
+      const result =
+        await routineStore.materializeToday(
+          request.body as unknown
+        );
+
+      response.json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      sendRoutineError(error, response);
+    }
+  }
+);
+
 router.patch('/:id', async (request, response) => {
   try {
     const routine =

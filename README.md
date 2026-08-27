@@ -252,7 +252,13 @@ server/data/routines.local.json.bak
 
 Both files, and temporary atomic-write files, are ignored. Writes validate the current store, write a temporary file, retain the backup and atomically rename the temporary file. If the primary store is malformed, the API returns a clear error and does not overwrite it.
 
-Demo mode is isolated from this household store. It starts with safe tracked examples and saves Demo changes only in the browser's `ey-os-demo-routines-v1` local-storage entry.
+The current routine store uses schema version 2. When a valid schema-v1 primary is first opened, the backend automatically creates immutable occurrence snapshots and atomically migrates the primary to v2. Existing completion timestamps and `completedAt` values are preserved. The valid pre-migration v1 primary is retained as the `.bak` recovery point and is not rotated during that migration operation. Normal backup rotation resumes only after the migrated v2 primary has subsequently been loaded and validated. A malformed v1 or v2 primary is never migrated or overwritten.
+
+Each scheduled active routine is materialised once for the current household-local date, regardless of the selected profile. Its title, assignment, schedule and ordered steps are snapshotted and remain fixed. Definition edits apply to the next occurrence that has not yet been materialised. Completion timestamps remain editable through checklist completion and reopening. Days when eY OS was not running are not fabricated or backfilled.
+
+Routine status is derived from the configured household IANA timezone and is never stored. Untimed routines show **Today**; timed routines move through **Upcoming**, **Due** and **Overdue**; fully completed occurrences show **Completed**. A partially completed due routine may display **In progress**.
+
+Demo mode is isolated from the household store. It starts with safe tracked schema-v2 examples and saves Demo changes only in the browser's `ey-os-demo-routines-v2` local-storage entry. A valid older `ey-os-demo-routines-v1` entry is migrated independently; Household mode never reads either Demo entry.
 
 ### Restoring the routines backup
 
@@ -261,7 +267,9 @@ Demo mode is isolated from this household store. It starts with safe tracked exa
 3. Copy `server/data/routines.local.json.bak` to `server/data/routines.local.json`.
 4. Restart `npm run dev`, open **Daily**, and verify the recovered routines before making further changes.
 
-Phase 1 intentionally preserves all occurrence history and applies no automatic retention or pruning. The local store can therefore grow without limit over time. A future retention policy can operate on the persistence layer without changing the routine or occurrence domain model.
+If the restored backup is the protected schema-v1 migration copy, startup validates and migrates it to schema v2 again.
+
+Occurrence history remains unpruned. The local store can therefore grow without limit over time, and immutable snapshots increase that growth. A future retention policy can operate in the persistence layer without changing the routine or occurrence domain model.
 
 Deactivation is the normal non-destructive way to stop a routine. Permanent deletion requires confirmation and removes both the routine definition and every recorded occurrence for it.
 

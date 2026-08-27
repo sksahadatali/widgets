@@ -2,7 +2,7 @@ import type {
   IsoWeekday,
   RoutineDefinition,
   RoutineOccurrence,
-  RoutineWindowState,
+  RoutineTimeStatus,
 } from '../types/routine';
 
 export type ZonedDateInfo = {
@@ -93,23 +93,63 @@ export function timeToMinutes(
 
 export function isRoutineScheduledToday(
   routine: RoutineDefinition,
-  dateInfo: ZonedDateInfo
+  dateInfo: ZonedDateInfo,
+  occurrence?: RoutineOccurrence
 ): boolean {
+  const schedule =
+    occurrence?.snapshot.schedule ??
+    routine.schedule;
+
   return (
     routine.active &&
-    routine.schedule.daysOfWeek.includes(
+    schedule.daysOfWeek.includes(
       dateInfo.weekday
     )
   );
+}
+
+export function getOccurrenceRoutine(
+  routine: RoutineDefinition,
+  occurrence: RoutineOccurrence | undefined
+): RoutineDefinition {
+  if (!occurrence) {
+    return routine;
+  }
+
+  return {
+    ...routine,
+    title: occurrence.snapshot.title,
+    ownerProfileId:
+      occurrence.snapshot.ownerProfileId,
+    schedule: occurrence.snapshot.schedule,
+    steps: occurrence.snapshot.steps,
+  };
+}
+
+export function getCompletedStepCount(
+  routine: RoutineDefinition,
+  occurrence: RoutineOccurrence | undefined
+): number {
+  const steps =
+    occurrence?.snapshot.steps ??
+    routine.steps;
+
+  return steps.filter(step =>
+    Boolean(occurrence?.completedSteps[step.id])
+  ).length;
 }
 
 export function isRoutineComplete(
   routine: RoutineDefinition,
   occurrence: RoutineOccurrence | undefined
 ): boolean {
+  const steps =
+    occurrence?.snapshot.steps ??
+    routine.steps;
+
   return (
-    routine.steps.length > 0 &&
-    routine.steps.every(step =>
+    steps.length > 0 &&
+    steps.every(step =>
       Boolean(
         occurrence?.completedSteps[step.id]
       )
@@ -117,17 +157,22 @@ export function isRoutineComplete(
   );
 }
 
-export function getRoutineWindowState(
+export function getRoutineTimeStatus(
   routine: RoutineDefinition,
   occurrence: RoutineOccurrence | undefined,
   dateInfo: ZonedDateInfo
-): RoutineWindowState {
+): RoutineTimeStatus {
   if (isRoutineComplete(routine, occurrence)) {
-    return 'complete';
+    return 'completed';
   }
 
   const { startTime, endTime } =
+    occurrence?.snapshot.schedule ??
     routine.schedule;
+
+  if (!startTime) {
+    return 'today';
+  }
 
   if (
     startTime &&
@@ -145,7 +190,7 @@ export function getRoutineWindowState(
     return 'overdue';
   }
 
-  return 'current';
+  return 'due';
 }
 
 export function getOccurrenceId(

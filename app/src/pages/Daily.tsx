@@ -29,7 +29,8 @@ import {
   useRoutines,
 } from '../hooks/useRoutines';
 import {
-  getRoutineWindowState,
+  getCompletedStepCount,
+  getRoutineTimeStatus,
   isRoutineComplete,
 } from '../routines/recurrence';
 import type {
@@ -38,7 +39,7 @@ import type {
   RoutineDefinitionInput,
   RoutineOccurrence,
   RoutineStep,
-  RoutineWindowState,
+  RoutineTimeStatus,
 } from '../types/routine';
 
 import './Daily.css';
@@ -62,22 +63,26 @@ const WEEKDAYS: Array<{
 ];
 
 const STATUS_DETAILS: Record<
-  RoutineWindowState,
+  RoutineTimeStatus,
   { label: string; icon: typeof Clock3 }
 > = {
+  today: {
+    label: 'Today',
+    icon: CalendarClock,
+  },
   upcoming: {
     label: 'Upcoming',
     icon: Clock3,
   },
-  current: {
-    label: 'Now',
+  due: {
+    label: 'Due',
     icon: CalendarClock,
   },
   overdue: {
-    label: 'Still incomplete',
+    label: 'Overdue',
     icon: AlertTriangle,
   },
-  complete: {
+  completed: {
     label: 'Completed',
     icon: CheckCircle2,
   },
@@ -122,7 +127,7 @@ function RoutineChecklist({
 }: {
   routine: RoutineDefinition;
   occurrence: RoutineOccurrence | undefined;
-  status: RoutineWindowState;
+  status: RoutineTimeStatus;
   disabled: boolean;
   onStepChange: (
     routine: RoutineDefinition,
@@ -133,11 +138,14 @@ function RoutineChecklist({
   const StatusIcon =
     STATUS_DETAILS[status].icon;
   const completedCount =
-    routine.steps.filter(step =>
-      Boolean(
-        occurrence?.completedSteps[step.id]
-      )
-    ).length;
+    getCompletedStepCount(
+      routine,
+      occurrence
+    );
+  const statusLabel =
+    status === 'due' && completedCount > 0
+      ? 'In progress'
+      : STATUS_DETAILS[status].label;
 
   return (
     <article
@@ -154,7 +162,7 @@ function RoutineChecklist({
             size={18}
             aria-hidden="true"
           />
-          {STATUS_DETAILS[status].label}
+          {statusLabel}
         </span>
       </header>
 
@@ -877,7 +885,7 @@ function Daily() {
                           routine.id
                         );
                       const status =
-                        getRoutineWindowState(
+                        getRoutineTimeStatus(
                           routine,
                           occurrence,
                           dateInfo

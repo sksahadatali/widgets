@@ -37,11 +37,22 @@ export type RoutineDefinitionInput = {
   steps: RoutineStep[];
 };
 
+export type RoutineOccurrenceSnapshot = {
+  title: string;
+  ownerProfileId: string;
+  schedule: RoutineSchedule;
+  steps: RoutineStep[];
+  definitionUpdatedAt: string;
+  capturedAt: string;
+  source: 'captured' | 'legacy-migration';
+};
+
 export type RoutineOccurrence = {
   id: string;
   routineId: string;
   localDate: string;
   timeZone: string;
+  snapshot: RoutineOccurrenceSnapshot;
   completedSteps: Record<string, string>;
   completedAt: string | null;
   updatedAt: string;
@@ -52,8 +63,9 @@ export type RoutineData = {
   occurrences: RoutineOccurrence[];
 };
 
-export type RoutineWindowState =
+export type RoutineTimeStatus =
+  | 'today'
   | 'upcoming'
-  | 'current'
+  | 'due'
   | 'overdue'
-  | 'complete';
+  | 'completed';
