@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Clock3,
   Edit3,
+  History as HistoryIcon,
   Plus,
   RefreshCw,
   Trash2,
@@ -42,12 +43,14 @@ import type {
   RoutineStep,
   RoutineTimeStatus,
 } from '../types/routine';
+import RoutineHistory from '../components/routines/RoutineHistory/RoutineHistory';
 
 import './Daily.css';
 
 type DailyTab =
   | 'today'
-  | 'manage';
+  | 'manage'
+  | 'history';
 
 const WEEKDAYS: Array<{
   id: IsoWeekday;
@@ -865,6 +868,29 @@ function Daily({
           <CalendarClock size={20} aria-hidden="true" />
           Manage Routines
         </button>
+
+        <button
+          type="button"
+          id="daily-tab-history"
+          role="tab"
+          aria-controls="daily-panel-history"
+          aria-selected={tab === 'history'}
+          className={
+            tab === 'history'
+              ? 'daily-tab daily-tab--active'
+              : 'daily-tab'
+          }
+          onClick={() => {
+            setTab('history');
+            setEditorRoutine(undefined);
+          }}
+        >
+          <HistoryIcon
+            size={20}
+            aria-hidden="true"
+          />
+          History
+        </button>
       </div>
 
       {error && (
@@ -1154,6 +1180,19 @@ function Daily({
               )}
             </>
           )}
+        </section>
+      )}
+
+      {tab === 'history' && (
+        <section
+          id="daily-panel-history"
+          className="daily-workspace"
+          role="tabpanel"
+          aria-labelledby="daily-tab-history"
+        >
+          <RoutineHistory
+            householdToday={dateInfo.localDate}
+          />
         </section>
       )}
 

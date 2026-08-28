@@ -233,10 +233,11 @@ Do not store API keys, OAuth tokens, passwords or other credentials in the house
 
 ## Family Routines
 
-The Daily area provides two shared routine views:
+The Daily area provides three shared routine views:
 
 - **Today** shows scheduled Family routines and, when a household member is selected, that member's routines alongside Family routines.
 - **Manage Routines** creates, edits, activates, deactivates and permanently deletes routine definitions.
+- **History** lazily loads past materialised occurrences and derives recorded progress from their immutable snapshots. It never fabricates records for dates when eY OS was not running.
 
 Household mode stores real routine definitions and occurrence completion history in:
 
@@ -260,7 +261,15 @@ Routine status is derived from the configured household IANA timezone and is nev
 
 Today's Focus can surface incomplete routine occurrences that require attention without duplicating recurrence, profile visibility or completion logic. Overdue, Due, In-progress and untimed Today routines are eligible; Upcoming routines enter the shared ranking only within two hours of their snapshotted start time. At most three routine candidates enter the existing four-item Focus ranking, so routines continue to compete with Tasks, Calendar, Prayer, Weather and context signals. Selecting a routine Focus item opens its exact materialised occurrence in Daily. This attention state is derived in memory and creates no Focus cache, schema change or additional persistence.
 
+Routine History remains entirely on schema version 2. It reads the existing occurrence archive only while the History tab is open and keeps Household history in memory only. Historical title, assignment ID, schedule and ordered steps always come from the immutable occurrence snapshot. Completed means every captured step is currently complete; Partial means some but not all captured steps are complete; Missed means a past recorded occurrence has no completed captured steps. Today is excluded from historical outcome metrics.
+
+The History summary uses the explicit label **Recorded completion rate** because its denominator contains only past materialised occurrences. A date with no occurrence is not counted as Missed: it may simply mean eY OS was not running. History therefore describes recorded routine activity, not complete schedule adherence. Streaks, adherence scores and perfect-day metrics are intentionally unsupported by the current no-backfill model.
+
+History follows the selected Household Profile using each occurrence's snapshotted assignment. Family sees Family plus configured member history; an individual sees Family plus their own history. Profile selection remains context rather than authentication or authorization.
+
 Demo mode is isolated from the household store. It starts with safe tracked schema-v2 examples and saves Demo changes only in the browser's `ey-os-demo-routines-v2` local-storage entry. A valid older `ey-os-demo-routines-v1` entry is migrated independently; Household mode never reads either Demo entry.
+
+Fresh Demo mode is not seeded with manufactured history. Demo History therefore contains only synthetic occurrences that the Demo session has actually materialised and retained in its isolated browser store.
 
 ### Restoring the routines backup
 
@@ -271,7 +280,7 @@ Demo mode is isolated from the household store. It starts with safe tracked sche
 
 If the restored backup is the protected schema-v1 migration copy, startup validates and migrates it to schema v2 again.
 
-Occurrence history remains unpruned. The local store can therefore grow without limit over time, and immutable snapshots increase that growth. A future retention policy can operate in the persistence layer without changing the routine or occurrence domain model.
+Occurrence history remains unpruned. The local store can therefore grow without limit over time, and immutable snapshots increase that growth. History initially renders at most 50 matching records and offers an accessible **Show more** control, but this does not reduce the underlying JSON-store size. A future retention or storage policy can operate in the persistence layer without changing the routine or occurrence domain model.
 
 Deactivation is the normal non-destructive way to stop a routine. Permanent deletion requires confirmation and removes both the routine definition and every recorded occurrence for it.
 
