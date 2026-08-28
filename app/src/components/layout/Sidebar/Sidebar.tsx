@@ -2,6 +2,7 @@ import {
   Building2,
   CalendarDays,
   Home,
+  Gift,
   Plus,
   Quote,
   Settings,
@@ -14,6 +15,7 @@ import './Sidebar.css';
 type SidebarPage =
   | 'Home'
   | 'Daily'
+  | 'Rewards'
   | 'Personal'
   | 'RAEN'
   | 'AYANOH'
@@ -39,6 +41,10 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Daily',
     icon: CalendarDays,
+  },
+  {
+    label: 'Rewards',
+    icon: Gift,
   },
   {
     label: 'Personal',

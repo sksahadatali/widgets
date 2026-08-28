@@ -1,9 +1,18 @@
 import type {
+  ManualAwardInput,
+  RewardReversalInput,
   RewardStoreData,
 } from '../types/reward';
 import {
+  appendDemoManualAward,
   getDemoRewardStore,
+  reverseDemoManualAward,
 } from '../rewards/demoRewardStore';
+import {
+  createManualAwardEventKey,
+  createManualReversalEventKey,
+  validateManualAward,
+} from '../rewards/manualRewards';
 import {
   getAppMode,
 } from './householdConfigService';
@@ -16,6 +25,11 @@ const REQUEST_TIMEOUT_MS = 15000;
 type RewardApiResponse =
   | {
     success: true;
+    transaction: unknown;
+    created: boolean;
+  }
+  | {
+    success: true;
     store: RewardStoreData;
     balances: Record<string, number>;
   }
@@ -24,13 +38,10 @@ type RewardApiResponse =
     error: string;
   };
 
-export async function loadRewards(): Promise<
-  RewardStoreData
-> {
-  if (getAppMode() === 'demo') {
-    return getDemoRewardStore();
-  }
-
+async function requestRewards(
+  path: string,
+  init?: RequestInit
+): Promise<RewardApiResponse> {
   const controller = new AbortController();
   const timeout = window.setTimeout(
     () => controller.abort(),
@@ -39,25 +50,102 @@ export async function loadRewards(): Promise<
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/rewards`,
-      { signal: controller.signal }
+      `${API_BASE_URL}${path}`,
+      { ...init, signal: controller.signal }
     );
     const payload =
       await response.json() as RewardApiResponse;
 
     if (!response.ok || !payload.success) {
       throw new Error(
-        'Rewards are unavailable.'
+        payload.success
+          ? 'Rewards are unavailable.'
+          : payload.error
       );
     }
 
-    return payload.store;
+    return payload;
   } catch (error) {
     throw new Error(
-      'Rewards are unavailable.',
+      error instanceof Error
+        ? error.message
+        : 'Rewards are unavailable.',
       { cause: error }
     );
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+export async function loadRewards(): Promise<
+  RewardStoreData
+> {
+  if (getAppMode() === 'demo') {
+    return getDemoRewardStore();
+  }
+
+  const payload = await requestRewards(
+    '/api/rewards'
+  );
+
+  if (!('store' in payload)) {
+    throw new Error('Rewards are unavailable.');
+  }
+
+  return payload.store;
+}
+
+export async function createManualAward(
+  input: ManualAwardInput
+): Promise<void> {
+  const normalized = validateManualAward(input);
+
+  if (getAppMode() === 'demo') {
+    appendDemoManualAward(normalized);
+    return;
+  }
+
+  await requestRewards('/api/rewards/awards', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      profileId: normalized.profileId,
+      amount: normalized.amount,
+      category: normalized.category,
+      reason: normalized.reason,
+      source: {
+        kind: 'manual-parent-award',
+        eventKey: createManualAwardEventKey(
+          normalized.requestId
+        ),
+      },
+      actorProfileId: normalized.actorProfileId,
+      timeZone: normalized.timeZone,
+    }),
+  });
+}
+
+export async function reverseManualAward(
+  input: RewardReversalInput
+): Promise<void> {
+  if (getAppMode() === 'demo') {
+    reverseDemoManualAward(input);
+    return;
+  }
+
+  await requestRewards(
+    `/api/rewards/transactions/${encodeURIComponent(input.transactionId)}/reversal`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventKey: createManualReversalEventKey(
+          input.requestId
+        ),
+        reason: 'Manual award reversed',
+        actorProfileId: input.actorProfileId,
+        timeZone: input.timeZone,
+      }),
+    }
+  );
 }

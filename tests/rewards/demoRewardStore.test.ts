@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
 import {
+  appendDemoManualAward,
   getDemoRewardStore,
+  resetDemoRewardStore,
+  reverseDemoManualAward,
   validateDemoRewardStore,
 } from '../../app/src/rewards/demoRewardStore.ts';
 
@@ -54,5 +57,40 @@ describe('Demo reward store', () => {
       }),
       /Safe Demo reward data is invalid/
     );
+  });
+
+  it('keeps disposable mutations isolated and idempotent', () => {
+    resetDemoRewardStore();
+    const input = {
+      profileId: 'child-1',
+      amount: 10,
+      category: 'achievement' as const,
+      reason: 'Safe example achievement',
+      actorProfileId: 'adult-1',
+      timeZone: 'Europe/London',
+      requestId: 'demo-request-1',
+    };
+    const first = appendDemoManualAward(input);
+    const retry = appendDemoManualAward(input);
+
+    assert.equal(first.id, retry.id);
+    assert.equal(getDemoRewardStore().transactions.length, 2);
+
+    const reversalInput = {
+      transactionId: first.id,
+      actorProfileId: 'adult-1',
+      timeZone: 'Europe/London',
+      requestId: 'demo-reversal-1',
+    };
+    const reversal = reverseDemoManualAward(reversalInput);
+    const reversalRetry = reverseDemoManualAward(reversalInput);
+
+    assert.equal(reversal.id, reversalRetry.id);
+    assert.equal(reversal.amount, -10);
+    assert.throws(() => reverseDemoManualAward({
+      ...reversalInput,
+      requestId: 'demo-reversal-2',
+    }));
+    resetDemoRewardStore();
   });
 });

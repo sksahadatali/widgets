@@ -8,6 +8,7 @@ import Sidebar, {
 import Home from './pages/Home';
 import Daily from './pages/Daily';
 import Settings from './pages/Settings';
+import Rewards from './pages/Rewards';
 
 import {
   ThemeProvider,
@@ -21,6 +22,9 @@ import {
 import {
   RoutineProvider,
 } from './routines/RoutineProvider';
+import {
+  RewardProvider,
+} from './rewards/RewardProvider';
 
 function App() {
   const [page, setPage] =
@@ -51,7 +55,8 @@ function App() {
     <ThemeProvider>
       <DisplayProfileProvider>
         <HouseholdProfileProvider>
-          <RoutineProvider>
+          <RewardProvider>
+            <RoutineProvider>
             <div className="app-shell">
               <Sidebar
                 page={page}
@@ -75,6 +80,10 @@ function App() {
                 <Daily
                   routineTarget={dailyRoutineTarget}
                 />
+              )}
+
+              {page === 'Rewards' && (
+                <Rewards />
               )}
 
               {page === 'Personal' && (
@@ -111,7 +120,8 @@ function App() {
               )}
               </div>
             </div>
-          </RoutineProvider>
+            </RoutineProvider>
+          </RewardProvider>
         </HouseholdProfileProvider>
       </DisplayProfileProvider>
     </ThemeProvider>
