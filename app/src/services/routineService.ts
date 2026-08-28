@@ -359,6 +359,27 @@ export async function loadRoutines(
   };
 }
 
+export async function loadRoutineHistory(): Promise<
+  RoutineOccurrence[]
+> {
+  if (getAppMode() === 'demo') {
+    return structuredClone(
+      readDemoData().occurrences
+    );
+  }
+
+  const response =
+    await requestHousehold('/api/routines');
+
+  if (!('occurrences' in response)) {
+    throw new Error(
+      'The household routines service returned an invalid history response.'
+    );
+  }
+
+  return response.occurrences;
+}
+
 export async function createRoutine(
   input: RoutineDefinitionInput
 ): Promise<void> {
