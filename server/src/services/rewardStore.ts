@@ -232,7 +232,21 @@ function isRewardSource(
         ]) &&
         isNonEmptyText(value.routineId) &&
         isNonEmptyText(value.occurrenceId) &&
-        isNonEmptyText(value.label)
+        isNonEmptyText(value.label) &&
+        value.eventKey.startsWith(
+          `routine-occurrence:${value.occurrenceId}:completion:`
+        ) &&
+        /^\d+$/.test(
+          value.eventKey.slice(
+            `routine-occurrence:${value.occurrenceId}:completion:`.length
+          )
+        ) &&
+        Number(value.eventKey.slice(
+          `routine-occurrence:${value.occurrenceId}:completion:`.length
+        )) > 0 &&
+        Number.isSafeInteger(Number(value.eventKey.slice(
+          `routine-occurrence:${value.occurrenceId}:completion:`.length
+        )))
       );
     case 'job-completion':
       return (
@@ -476,6 +490,30 @@ function validateRelationships(
 
       reversedTargets.add(target.id);
     }
+  }
+
+  const activeRoutineOccurrenceIds = new Set<string>();
+  for (const transaction of transactions) {
+    if (
+      transaction.entryType !== 'award' ||
+      transaction.source.kind !== 'routine-completion' ||
+      reversedTargets.has(transaction.id)
+    ) {
+      continue;
+    }
+
+    if (
+      activeRoutineOccurrenceIds.has(
+        transaction.source.occurrenceId
+      )
+    ) {
+      throw new RewardStoreCorruptError(
+        'The local rewards store contains multiple active awards for one Routine occurrence. It was not changed.'
+      );
+    }
+    activeRoutineOccurrenceIds.add(
+      transaction.source.occurrenceId
+    );
   }
 }
 

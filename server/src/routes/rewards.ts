@@ -106,6 +106,18 @@ router.post(
   '/transactions/:id/reversal',
   async (request, response) => {
     try {
+      const current = await rewardStore.read();
+      const target = current.transactions.find(
+        transaction => transaction.id === request.params.id
+      );
+      if (
+        target &&
+        target.source.kind !== 'manual-parent-award'
+      ) {
+        throw new RewardStoreError(
+          'Automatic Rewards are controlled by their source occurrence.'
+        );
+      }
       const result =
         await rewardStore.reverseTransaction(
           randomUUID(),

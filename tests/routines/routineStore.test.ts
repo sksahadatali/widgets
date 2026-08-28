@@ -110,7 +110,7 @@ describe('RoutineFileStore', () => {
     } = await makeStore();
 
     assert.deepEqual(await store.read(), {
-      schemaVersion: 2,
+      schemaVersion: 3,
       routines: [],
       occurrences: [],
     });
@@ -121,7 +121,7 @@ describe('RoutineFileStore', () => {
     ]);
   });
 
-  it('migrates a valid v1 store to v2 while preserving completion timestamps', async () => {
+  it('migrates a valid v1 store to v3 without retroactive rewards', async () => {
     const {
       filePath,
       store,
@@ -135,7 +135,10 @@ describe('RoutineFileStore', () => {
     const migrated = await store.read();
     const occurrence = migrated.occurrences[0];
 
-    assert.equal(migrated.schemaVersion, 2);
+    assert.equal(migrated.schemaVersion, 3);
+    assert.equal(migrated.routines[0].reward, null);
+    assert.equal(occurrence.rewardContract, null);
+    assert.equal(occurrence.completionSequence, 1);
     assert.deepEqual(
       occurrence.completedSteps,
       legacy.occurrences[0].completedSteps
@@ -180,7 +183,7 @@ describe('RoutineFileStore', () => {
     );
     assert.equal(
       (await store.read()).schemaVersion,
-      2
+      3
     );
     assert.equal(
       await readFile(store.backupPath, 'utf8'),

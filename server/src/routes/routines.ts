@@ -15,6 +15,9 @@ import {
   RoutineStoreError,
   routineStore,
 } from '../services/routineStore.js';
+import {
+  reconcileRoutineRewards,
+} from '../services/routineRewardReconciler.js';
 const router = Router();
 
 function sendRoutineError(
@@ -120,6 +123,19 @@ router.post(
   }
 );
 
+router.post('/rewards/reconcile', async (_request, response) => {
+  try {
+    const result = await reconcileRoutineRewards();
+    response.json({ success: true, ...result });
+  } catch {
+    console.error('Automatic Routine reward reconciliation failed.');
+    response.status(503).json({
+      success: false,
+      error: 'Automatic Routine rewards are pending reconciliation.',
+    });
+  }
+});
+
 router.patch('/:id', async (request, response) => {
   try {
     const routine =
@@ -161,9 +177,21 @@ router.patch(
           request.body as unknown
         );
 
+      let rewardReconciliation: 'complete' | 'pending' =
+        'complete';
+      try {
+        await reconcileRoutineRewards();
+      } catch {
+        rewardReconciliation = 'pending';
+        console.error(
+          'Automatic Routine reward reconciliation is pending.'
+        );
+      }
+
       response.json({
         success: true,
         occurrence,
+        rewardReconciliation,
       });
     } catch (error) {
       sendRoutineError(error, response);

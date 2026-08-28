@@ -18,6 +18,12 @@ export type RoutineSchedule = {
   endTime: string | null;
 };
 
+export type RoutineRewardContract = {
+  recipientProfileId: string;
+  currency: 'star';
+  amount: number;
+};
+
 export type RoutineDefinition = {
   id: string;
   title: string;
@@ -25,6 +31,7 @@ export type RoutineDefinition = {
   active: boolean;
   schedule: RoutineSchedule;
   steps: RoutineStep[];
+  reward: RoutineRewardContract | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -45,26 +52,44 @@ export type RoutineOccurrence = {
   localDate: string;
   timeZone: string;
   snapshot: RoutineOccurrenceSnapshot;
+  rewardContract: RoutineRewardContract | null;
+  completionSequence: number;
   completedSteps: Record<string, string>;
   completedAt: string | null;
   updatedAt: string;
 };
 
 export type RoutineStoreData = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   routines: RoutineDefinition[];
   occurrences: RoutineOccurrence[];
 };
 
+export type LegacyRoutineDefinition = Omit<
+  RoutineDefinition,
+  'reward'
+>;
+
 export type LegacyRoutineOccurrence = Omit<
   RoutineOccurrence,
-  'snapshot'
+  'snapshot' | 'rewardContract' | 'completionSequence'
 >;
 
 export type LegacyRoutineStoreData = {
   schemaVersion: 1;
-  routines: RoutineDefinition[];
+  routines: LegacyRoutineDefinition[];
   occurrences: LegacyRoutineOccurrence[];
+};
+
+export type LegacyRoutineOccurrenceV2 = Omit<
+  RoutineOccurrence,
+  'rewardContract' | 'completionSequence'
+>;
+
+export type LegacyRoutineStoreDataV2 = {
+  schemaVersion: 2;
+  routines: LegacyRoutineDefinition[];
+  occurrences: LegacyRoutineOccurrenceV2[];
 };
 
 export type RoutineDefinitionInput = {
@@ -73,6 +98,7 @@ export type RoutineDefinitionInput = {
   active: boolean;
   schedule: RoutineSchedule;
   steps: RoutineStep[];
+  reward: RoutineRewardContract | null;
 };
 
 export type RoutineOccurrenceUpdate = {

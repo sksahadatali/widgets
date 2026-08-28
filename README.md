@@ -253,7 +253,7 @@ server/data/routines.local.json.bak
 
 Both files, and temporary atomic-write files, are ignored. Writes validate the current store, write a temporary file, retain the backup and atomically rename the temporary file. If the primary store is malformed, the API returns a clear error and does not overwrite it.
 
-The current routine store uses schema version 2. When a valid schema-v1 primary is first opened, the backend automatically creates immutable occurrence snapshots and atomically migrates the primary to v2. Existing completion timestamps and `completedAt` values are preserved. The valid pre-migration v1 primary is retained as the `.bak` recovery point and is not rotated during that migration operation. Normal backup rotation resumes only after the migrated v2 primary has subsequently been loaded and validated. A malformed v1 or v2 primary is never migrated or overwritten.
+The current routine store uses schema version 3. A valid schema-v2 primary is automatically migrated to v3 by adding `reward: null` to definitions, `rewardContract: null` to existing occurrences and a completion sequence derived from the existing captured-step state. This is deliberately non-retroactive: migrated occurrences cannot create automatic Rewards. Valid schema-v1 stores first receive their immutable snapshots and then the same v3 defaults. Existing completion timestamps and `completedAt` values are preserved. The valid pre-migration primary is retained as the `.bak` recovery point and is not rotated during that migration operation. Normal backup rotation resumes only after the migrated v3 primary has subsequently been loaded and validated. A malformed or unsupported primary is never migrated or overwritten.
 
 Each scheduled active routine is materialised once for the current household-local date, regardless of the selected profile. Its title, assignment, schedule and ordered steps are snapshotted and remain fixed. Definition edits apply to the next occurrence that has not yet been materialised. Completion timestamps remain editable through checklist completion and reopening. Days when eY OS was not running are not fabricated or backfilled.
 
@@ -261,13 +261,13 @@ Routine status is derived from the configured household IANA timezone and is nev
 
 Today's Focus can surface incomplete routine occurrences that require attention without duplicating recurrence, profile visibility or completion logic. Overdue, Due, In-progress and untimed Today routines are eligible; Upcoming routines enter the shared ranking only within two hours of their snapshotted start time. At most three routine candidates enter the existing four-item Focus ranking, so routines continue to compete with Tasks, Calendar, Prayer, Weather and context signals. Selecting a routine Focus item opens its exact materialised occurrence in Daily. This attention state is derived in memory and creates no Focus cache, schema change or additional persistence.
 
-Routine History remains entirely on schema version 2. It reads the existing occurrence archive only while the History tab is open and keeps Household history in memory only. Historical title, assignment ID, schedule and ordered steps always come from the immutable occurrence snapshot. Completed means every captured step is currently complete; Partial means some but not all captured steps are complete; Missed means a past recorded occurrence has no completed captured steps. Today is excluded from historical outcome metrics.
+Routine History continues to read the same immutable occurrence snapshots in schema version 3. It reads the existing occurrence archive only while the History tab is open and keeps Household history in memory only. Historical title, assignment ID, schedule and ordered steps always come from the immutable occurrence snapshot. Completed means every captured step is currently complete; Partial means some but not all captured steps are complete; Missed means a past recorded occurrence has no completed captured steps. Today is excluded from historical outcome metrics.
 
 The History summary uses the explicit label **Recorded completion rate** because its denominator contains only past materialised occurrences. A date with no occurrence is not counted as Missed: it may simply mean eY OS was not running. History therefore describes recorded routine activity, not complete schedule adherence. Streaks, adherence scores and perfect-day metrics are intentionally unsupported by the current no-backfill model.
 
 History follows the selected Household Profile using each occurrence's snapshotted assignment. Family sees Family plus configured member history; an individual sees Family plus their own history. Profile selection remains context rather than authentication or authorization.
 
-Demo mode is isolated from the household store. It starts with safe tracked schema-v2 examples and saves Demo changes only in the browser's `ey-os-demo-routines-v2` local-storage entry. A valid older `ey-os-demo-routines-v1` entry is migrated independently; Household mode never reads either Demo entry.
+Demo mode is isolated from the household store. It starts with safe tracked schema-v3 examples and saves Demo changes only in the browser's `ey-os-demo-routines-v3` local-storage entry. Valid older `ey-os-demo-routines-v1` and `ey-os-demo-routines-v2` entries are migrated independently and non-retroactively; Household mode never reads any Demo entry.
 
 Fresh Demo mode is not seeded with manufactured history. Demo History therefore contains only synthetic occurrences that the Demo session has actually materialised and retained in its isolated browser store.
 
@@ -278,7 +278,7 @@ Fresh Demo mode is not seeded with manufactured history. Demo History therefore 
 3. Copy `server/data/routines.local.json.bak` to `server/data/routines.local.json`.
 4. Restart `npm run dev`, open **Daily**, and verify the recovered routines before making further changes.
 
-If the restored backup is the protected schema-v1 migration copy, startup validates and migrates it to schema v2 again.
+If the restored backup is a protected schema-v1 or schema-v2 migration copy, startup validates and migrates it to schema v3 again.
 
 Occurrence history remains unpruned. The local store can therefore grow without limit over time, and immutable snapshots increase that growth. History initially renders at most 50 matching records and offers an accessible **Show more** control, but this does not reduce the underlying JSON-store size. A future retention or storage policy can operate in the persistence layer without changing the routine or occurrence domain model.
 
@@ -301,6 +301,10 @@ The top-level Rewards workspace presents ledger-derived child balances and recen
 Manual Parent Awards accept a currently configured child recipient, an integer from 1 to 100, one of the six initial categories, and a required trimmed reason of at most 160 characters. The 1–100 limit belongs only to this operation; the underlying ledger retains its broader safe-integer bound. A stable `manual-award:<requestId>` event key is retained across retries. Household award reasons remain in the ignored server ledger and are not logged, sent to Today Brain, stored in browser storage or copied into Demo data.
 
 Demo mode uses an in-memory disposable copy of the tracked synthetic Rewards example. Demo mutations never call or fall back to the Household API and reset when the application restarts.
+
+Routine definitions may configure a 1–100 star automatic reward for a currently configured child. Each new materialised occurrence captures that recipient, currency and amount as an immutable `rewardContract`; later definition or profile changes cannot alter it. Existing migrated occurrences have a null contract and are never rewarded retroactively. Completing the whole captured checklist appends one deterministic Routine award. Reopening appends an exact reversal, and recompleting advances the occurrence completion sequence and appends a new award. At most one completion sequence for an occurrence may have an unreversed award.
+
+Routine and Rewards stores are intentionally independent rather than a cross-file transaction. A valid Routine completion or reopen is never rolled back when the Rewards store is unavailable. Idempotent reconciliation repairs pending awards or reversals after the mutation, when the Routine provider loads, and when the backend starts. Only occurrences with an explicit captured reward contract participate. Automatic awards use the captured stable recipient ID even if that member is later removed; they are never redirected to Family or another member.
 
 Every mutation is serialized within one backend process, rereads and validates the authoritative primary, validates the complete resulting ledger, writes a temporary file and atomically renames it. Before replacing an existing valid primary, the server retains one previous valid copy at:
 

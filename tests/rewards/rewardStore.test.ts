@@ -507,7 +507,7 @@ describe('Reward idempotency', () => {
     const { store } = await makeStore();
     const firstSource = {
       kind: 'routine-completion' as const,
-      eventKey: 'routine-occurrence:one',
+      eventKey: 'routine-occurrence:routine-1@2026-08-28:completion:1',
       routineId: 'routine-1',
       occurrenceId: 'routine-1@2026-08-28',
       label: 'Example routine',
@@ -516,7 +516,7 @@ describe('Reward idempotency', () => {
       label: 'Example routine',
       occurrenceId: 'routine-1@2026-08-28',
       routineId: 'routine-1',
-      eventKey: 'routine-occurrence:one',
+      eventKey: 'routine-occurrence:routine-1@2026-08-28:completion:1',
       kind: 'routine-completion' as const,
     };
 

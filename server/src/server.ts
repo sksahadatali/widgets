@@ -8,6 +8,7 @@ import tasksRouter from './routes/tasks.js';
 import petrolRouter from './routes/petrol.js';
 import routinesRouter from './routes/routines.js';
 import rewardsRouter from './routes/rewards.js';
+import { reconcileRoutineRewards } from './services/routineRewardReconciler.js';
 
 const app = express();
 
@@ -49,4 +50,9 @@ app.listen(env.port, () => {
   console.log(
     `eY OS Server running at http://localhost:${env.port}`
   );
+  void reconcileRoutineRewards().catch(() => {
+    console.error(
+      'Automatic Routine reward startup reconciliation is pending.'
+    );
+  });
 });

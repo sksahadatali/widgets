@@ -151,6 +151,24 @@
   white-space: nowrap;
 }
 
+.routine-card__badges,
+.routine-card__reward {
+  display: flex;
+  align-items: center;
+  gap: var(--ey-space-2);
+}
+
+.routine-card__reward {
+  color: var(--ey-accent-primary);
+  font-weight: 700;
+}
+
+.routine-editor__hint {
+  margin: var(--ey-space-2) 0 0;
+  color: var(--ey-text-secondary);
+  font-size: var(--ey-font-sm);
+}
+
 .routine-message {
   display: flex;
   align-items: center;

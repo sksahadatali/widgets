@@ -58,6 +58,20 @@ export function RewardProvider({
     return () => window.clearTimeout(loadId);
   }, [refresh]);
 
+  useEffect(() => {
+    const handleRewardsChanged = () => {
+      void refresh();
+    };
+    window.addEventListener(
+      'ey-rewards-changed',
+      handleRewardsChanged
+    );
+    return () => window.removeEventListener(
+      'ey-rewards-changed',
+      handleRewardsChanged
+    );
+  }, [refresh]);
+
   const runMutation = useCallback(
     async (
       mutation: () => Promise<void>

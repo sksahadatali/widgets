@@ -5,6 +5,10 @@ import type {
   RewardStoreData,
   RewardTransaction,
 } from '../types/reward';
+import type {
+  RoutineData,
+  RoutineOccurrence,
+} from '../types/routine';
 import {
   createManualAwardEventKey,
   createManualReversalEventKey,
@@ -102,6 +106,28 @@ export function validateDemoRewardStore(
     throw new Error(
       'Safe Demo reward data contains duplicate IDs.'
     );
+  }
+
+  const reversed = new Set(
+    transactions.flatMap(transaction =>
+      transaction.relation?.kind === 'reversal-of'
+        ? [transaction.relation.transactionId]
+        : []
+    )
+  );
+  const activeRoutineOccurrences = new Set<string>();
+  for (const transaction of transactions) {
+    if (
+      transaction.entryType !== 'award' ||
+      transaction.source.kind !== 'routine-completion' ||
+      reversed.has(transaction.id)
+    ) continue;
+    if (activeRoutineOccurrences.has(transaction.source.occurrenceId)) {
+      throw new Error(
+        'Safe Demo reward data has duplicate active Routine awards.'
+      );
+    }
+    activeRoutineOccurrences.add(transaction.source.occurrenceId);
   }
 
   return value as RewardStoreData;
@@ -262,6 +288,112 @@ export function reverseDemoManualAward(
   validateDemoRewardStore(demoStore);
 
   return structuredClone(reversal);
+}
+
+function routineAwardKey(
+  occurrence: RoutineOccurrence
+): string {
+  return `routine-occurrence:${occurrence.id}:completion:${occurrence.completionSequence}`;
+}
+
+function routineIsComplete(
+  occurrence: RoutineOccurrence
+): boolean {
+  return occurrence.snapshot.steps.every(step =>
+    Boolean(occurrence.completedSteps[step.id])
+  );
+}
+
+export function reconcileDemoRoutineRewards(
+  routines: RoutineData,
+  now = new Date()
+): void {
+  for (const occurrence of routines.occurrences) {
+    const contract = occurrence.rewardContract;
+    if (!contract) continue;
+
+    const expectedKey = routineAwardKey(occurrence);
+    const awards = demoStore.transactions.filter(transaction =>
+      transaction.entryType === 'award' &&
+      transaction.source.kind === 'routine-completion' &&
+      transaction.source.occurrenceId === occurrence.id
+    );
+    const active = awards.filter(award =>
+      !demoStore.transactions.some(transaction =>
+        transaction.relation?.kind === 'reversal-of' &&
+        transaction.relation.transactionId === award.id
+      )
+    );
+    const complete = routineIsComplete(occurrence);
+
+    for (const award of active) {
+      if (complete && award.source.eventKey === expectedKey) {
+        continue;
+      }
+      const match = award.source.eventKey.match(
+        /:completion:(\d+)$/
+      );
+      if (!match) throw new Error('Invalid Demo reward event.');
+      const eventKey =
+        `routine-occurrence:${occurrence.id}:completion:${match[1]}:reversal`;
+      if (demoStore.transactions.some(transaction =>
+        transaction.source.eventKey === eventKey
+      )) continue;
+
+      demoStore.transactions.push({
+        id: crypto.randomUUID(),
+        profileId: award.profileId,
+        entryType: 'reversal',
+        currency: 'star',
+        amount: -award.amount,
+        category: 'correction',
+        reason: 'Routine completion reopened',
+        source: {
+          kind: 'correction',
+          eventKey,
+          label: 'Reward reversal',
+        },
+        relation: {
+          kind: 'reversal-of',
+          transactionId: award.id,
+        },
+        actorProfileId: null,
+        createdAt: now.toISOString(),
+        localDate: getLocalDate(now, occurrence.timeZone),
+        timeZone: occurrence.timeZone,
+      });
+    }
+
+    if (!complete || occurrence.completionSequence < 1) continue;
+    const existing = demoStore.transactions.find(transaction =>
+      transaction.source.eventKey === expectedKey
+    );
+    if (existing) continue;
+
+    demoStore.transactions.push({
+      id: crypto.randomUUID(),
+      profileId: contract.recipientProfileId,
+      entryType: 'award',
+      currency: 'star',
+      amount: contract.amount,
+      category: 'routine',
+      reason: null,
+      source: {
+        kind: 'routine-completion',
+        eventKey: expectedKey,
+        routineId: occurrence.routineId,
+        occurrenceId: occurrence.id,
+        label: 'Routine completion',
+      },
+      relation: null,
+      actorProfileId: null,
+      createdAt: now.toISOString(),
+      localDate: getLocalDate(now, occurrence.timeZone),
+      timeZone: occurrence.timeZone,
+    });
+  }
+
+  validateDemoRewardStore(demoStore);
 }
 
 export function resetDemoRewardStore(): void {

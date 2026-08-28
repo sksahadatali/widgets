@@ -18,6 +18,12 @@ export type RoutineSchedule = {
   endTime: string | null;
 };
 
+export type RoutineRewardContract = {
+  recipientProfileId: string;
+  currency: 'star';
+  amount: number;
+};
+
 export type RoutineDefinition = {
   id: string;
   title: string;
@@ -25,6 +31,7 @@ export type RoutineDefinition = {
   active: boolean;
   schedule: RoutineSchedule;
   steps: RoutineStep[];
+  reward: RoutineRewardContract | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +42,7 @@ export type RoutineDefinitionInput = {
   active: boolean;
   schedule: RoutineSchedule;
   steps: RoutineStep[];
+  reward: RoutineRewardContract | null;
 };
 
 export type RoutineOccurrenceSnapshot = {
@@ -53,6 +61,8 @@ export type RoutineOccurrence = {
   localDate: string;
   timeZone: string;
   snapshot: RoutineOccurrenceSnapshot;
+  rewardContract: RoutineRewardContract | null;
+  completionSequence: number;
   completedSteps: Record<string, string>;
   completedAt: string | null;
   updatedAt: string;
