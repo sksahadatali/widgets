@@ -7,6 +7,7 @@ import nestRouter from './routes/nest.js';
 import tasksRouter from './routes/tasks.js';
 import petrolRouter from './routes/petrol.js';
 import routinesRouter from './routes/routines.js';
+import rewardsRouter from './routes/rewards.js';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/petrol', petrolRouter);
 app.use('/api/nest', nestRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/routines', routinesRouter);
+app.use('/api/rewards', rewardsRouter);
 
 app.get('/health', (_request, response) => {
   response.json({

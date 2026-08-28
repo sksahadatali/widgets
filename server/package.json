@@ -7,7 +7,8 @@
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "node dist/server.js",
-        "test:routines": "node --import tsx --test ../tests/routines/*.test.ts"
+        "test:routines": "node --import tsx --test ../tests/routines/*.test.ts",
+        "test:rewards": "node --import tsx --test ../tests/rewards/*.test.ts"
     },
     "dependencies": {
         "@notionhq/client": "^5.23.2",
