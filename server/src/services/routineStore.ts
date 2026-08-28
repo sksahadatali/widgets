@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import type {
   IsoWeekday,
   LegacyRoutineOccurrence,
+  LegacyRoutineStoreDataV2,
   LegacyRoutineStoreData,
   RoutineDefinition,
   RoutineDefinitionInput,
@@ -34,7 +35,7 @@ const DEFAULT_STORE_PATH = fileURLToPath(
 );
 
 const EMPTY_STORE: RoutineStoreData = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   routines: [],
   occurrences: [],
 };
@@ -202,9 +203,32 @@ function isRoutineDefinition(
     typeof value.active === 'boolean' &&
     isRoutineSchedule(value.schedule) &&
     isRoutineSteps(value.steps) &&
+    isRoutineReward(value.reward) &&
     isIsoTimestamp(value.createdAt) &&
     isIsoTimestamp(value.updatedAt)
   );
+}
+
+function isRoutineReward(
+  value: unknown
+): boolean {
+  return value === null || (
+    isRecord(value) &&
+    typeof value.recipientProfileId === 'string' &&
+    Boolean(value.recipientProfileId.trim()) &&
+    value.recipientProfileId !== 'family' &&
+    value.currency === 'star' &&
+    Number.isSafeInteger(value.amount) &&
+    Number(value.amount) >= 1 &&
+    Number(value.amount) <= 100
+  );
+}
+
+function isLegacyRoutineDefinition(
+  value: unknown
+): boolean {
+  return isRecord(value) &&
+    isRoutineDefinition({ ...value, reward: null });
 }
 
 function isOccurrenceBase(
@@ -260,12 +284,15 @@ function isRoutineOccurrence(
   return (
     isRecord(value) &&
     isOccurrenceSnapshot(value.snapshot) &&
+    isRoutineReward(value.rewardContract) &&
+    Number.isSafeInteger(value.completionSequence) &&
+    Number(value.completionSequence) >= 0 &&
     isOccurrenceBase(value)
   );
 }
 
 function validateStoreRelationships(
-  routines: RoutineDefinition[],
+  routines: Array<{ id: string }>,
   occurrences: Array<{
     id: string;
     routineId: string;
@@ -298,7 +325,7 @@ export function validateRoutineStore(
 ): RoutineStoreData {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 2 ||
+    value.schemaVersion !== 3 ||
     !Array.isArray(value.routines) ||
     !value.routines.every(isRoutineDefinition) ||
     !Array.isArray(value.occurrences) ||
@@ -324,7 +351,7 @@ export function validateLegacyRoutineStore(
     !isRecord(value) ||
     value.schemaVersion !== 1 ||
     !Array.isArray(value.routines) ||
-    !value.routines.every(isRoutineDefinition) ||
+    !value.routines.every(isLegacyRoutineDefinition) ||
     !Array.isArray(value.occurrences) ||
     !value.occurrences.every(isOccurrenceBase)
   ) {
@@ -341,8 +368,36 @@ export function validateLegacyRoutineStore(
   return value as LegacyRoutineStoreData;
 }
 
+export function validateLegacyRoutineStoreV2(
+  value: unknown
+): LegacyRoutineStoreDataV2 {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 2 ||
+    !Array.isArray(value.routines) ||
+    !value.routines.every(isLegacyRoutineDefinition) ||
+    !Array.isArray(value.occurrences) ||
+    !value.occurrences.every(occurrence =>
+      isRecord(occurrence) &&
+      isOccurrenceSnapshot(occurrence.snapshot) &&
+      isOccurrenceBase(occurrence)
+    )
+  ) {
+    throw new RoutineStoreCorruptError(
+      'The local routines store is malformed. It was not changed.'
+    );
+  }
+
+  validateStoreRelationships(
+    value.routines as LegacyRoutineStoreDataV2['routines'],
+    value.occurrences as LegacyRoutineStoreDataV2['occurrences']
+  );
+
+  return value as LegacyRoutineStoreDataV2;
+}
+
 function createSnapshot(
-  routine: RoutineDefinition,
+  routine: Omit<RoutineDefinition, 'reward'>,
   capturedAt: string,
   source: RoutineOccurrenceSnapshot['source']
 ): RoutineOccurrenceSnapshot {
@@ -360,14 +415,14 @@ function createSnapshot(
 export function migrateLegacyRoutineStore(
   legacyStore: LegacyRoutineStoreData,
   migratedAt = new Date().toISOString()
-): RoutineStoreData {
+): LegacyRoutineStoreDataV2 {
   const routineById = new Map(
     legacyStore.routines.map(routine => [
       routine.id,
       routine,
     ])
   );
-  const migrated: RoutineStoreData = {
+  const migrated: LegacyRoutineStoreDataV2 = {
     schemaVersion: 2,
     routines: structuredClone(
       legacyStore.routines
@@ -394,6 +449,30 @@ export function migrateLegacyRoutineStore(
         };
       }
     ),
+  };
+
+  return validateLegacyRoutineStoreV2(migrated);
+}
+
+export function migrateRoutineStoreV2(
+  legacyStore: LegacyRoutineStoreDataV2
+): RoutineStoreData {
+  const migrated: RoutineStoreData = {
+    schemaVersion: 3,
+    routines: legacyStore.routines.map(routine => ({
+      ...structuredClone(routine),
+      reward: null,
+    })),
+    occurrences: legacyStore.occurrences.map(occurrence => ({
+      ...structuredClone(occurrence),
+      rewardContract: null,
+      completionSequence:
+        occurrence.snapshot.steps.every(step =>
+          Boolean(occurrence.completedSteps[step.id])
+        )
+          ? 1
+          : 0,
+    })),
   };
 
   return validateRoutineStore(migrated);
@@ -460,10 +539,26 @@ function normalizeDefinitionInput(
           ? step.title.trim()
           : '',
     })),
+    reward: input.reward === null || input.reward === undefined
+      ? null
+      : isRecord(input.reward)
+        ? {
+          recipientProfileId:
+            typeof input.reward.recipientProfileId === 'string'
+              ? input.reward.recipientProfileId.trim()
+              : '',
+          currency: input.reward.currency,
+          amount: input.reward.amount,
+        }
+        : {
+          recipientProfileId: '',
+          currency: '__invalid__',
+          amount: 0,
+        },
   };
 
   const now = new Date().toISOString();
-  const candidate: RoutineDefinition = {
+  const candidate = {
     ...normalized,
     id: 'validation-id',
     createdAt: now,
@@ -476,7 +571,7 @@ function normalizeDefinitionInput(
     );
   }
 
-  return normalized;
+  return normalized as RoutineDefinitionInput;
 }
 
 function normalizeTimeZone(
@@ -610,8 +705,25 @@ export class RoutineFileStore {
     ) {
       const legacy =
         validateLegacyRoutineStore(parsed);
-      const migrated =
-        migrateLegacyRoutineStore(legacy);
+      const migrated = migrateRoutineStoreV2(
+        migrateLegacyRoutineStore(legacy)
+      );
+
+      await this.replace(migrated, true);
+
+      return {
+        store: migrated,
+        migrated: true,
+      };
+    }
+
+    if (
+      isRecord(parsed) &&
+      parsed.schemaVersion === 2
+    ) {
+      const migrated = migrateRoutineStoreV2(
+        validateLegacyRoutineStoreV2(parsed)
+      );
 
       await this.replace(migrated, true);
 
@@ -895,6 +1007,10 @@ export class RoutineFileStore {
             capturedAt,
             'captured'
           ),
+          rewardContract: structuredClone(
+            routine.reward
+          ),
+          completionSequence: 0,
           completedSteps: {},
           completedAt: null,
           updatedAt: capturedAt,
@@ -1022,6 +1138,16 @@ export class RoutineFileStore {
           existing?.timeZone ??
           normalizedUpdate.timeZone.trim(),
         snapshot,
+        rewardContract:
+          existing
+            ? existing.rewardContract
+            : structuredClone(routine.reward),
+        completionSequence:
+          (existing?.completionSequence ?? 0) +
+          (!wasCompleteBeforeUpdate &&
+          allSnapshotStepsComplete
+            ? 1
+            : 0),
         completedSteps,
         completedAt: allSnapshotStepsComplete
           ? wasCompleteBeforeUpdate

@@ -9,17 +9,24 @@ import {
   createRoutineSnapshot,
   type DemoRoutineStore,
   type LegacyDemoStore,
+  type LegacyDemoStoreV2,
   materializeDemoRoutines,
+  migrateDemoStoreV2,
   migrateLegacyDemoStore,
 } from '../routines/demoRoutineStore';
 import {
   getAppMode,
 } from './householdConfigService';
+import {
+  reconcileDemoRoutineRewards,
+} from '../rewards/demoRewardStore';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   'http://localhost:3001';
 const DEMO_STORAGE_KEY =
+  'ey-os-demo-routines-v3';
+const LEGACY_DEMO_STORAGE_KEY_V2 =
   'ey-os-demo-routines-v2';
 const LEGACY_DEMO_STORAGE_KEY =
   'ey-os-demo-routines-v1';
@@ -75,6 +82,16 @@ function isRoutineDefinition(
     typeof value.title === 'string' &&
     typeof value.ownerProfileId === 'string' &&
     typeof value.active === 'boolean' &&
+    (
+      value.reward === null ||
+      isRecord(value.reward) &&
+      typeof value.reward.recipientProfileId === 'string' &&
+      Boolean(value.reward.recipientProfileId) &&
+      value.reward.currency === 'star' &&
+      Number.isSafeInteger(value.reward.amount) &&
+      Number(value.reward.amount) >= 1 &&
+      Number(value.reward.amount) <= 100
+    ) &&
     Array.isArray(value.schedule.daysOfWeek) &&
     value.schedule.daysOfWeek.every(day =>
       Number.isInteger(day) && day >= 1 && day <= 7
@@ -92,6 +109,13 @@ function isRoutineDefinition(
   );
 }
 
+function isLegacyRoutineDefinition(
+  value: unknown
+): boolean {
+  return isRecord(value) &&
+    isRoutineDefinition({ ...value, reward: null });
+}
+
 function isRoutineOccurrence(
   value: unknown
 ): value is RoutineOccurrence {
@@ -102,6 +126,18 @@ function isRoutineOccurrence(
     typeof value.localDate === 'string' &&
     typeof value.timeZone === 'string' &&
     isRecord(value.snapshot) &&
+    (
+      value.rewardContract === null ||
+      isRecord(value.rewardContract) &&
+      typeof value.rewardContract.recipientProfileId === 'string' &&
+      Boolean(value.rewardContract.recipientProfileId) &&
+      value.rewardContract.currency === 'star' &&
+      Number.isSafeInteger(value.rewardContract.amount) &&
+      Number(value.rewardContract.amount) >= 1 &&
+      Number(value.rewardContract.amount) <= 100
+    ) &&
+    Number.isSafeInteger(value.completionSequence) &&
+    Number(value.completionSequence) >= 0 &&
     typeof value.snapshot.title === 'string' &&
     typeof value.snapshot.ownerProfileId === 'string' &&
     isRecord(value.snapshot.schedule) &&
@@ -141,12 +177,21 @@ function isRoutineData(
 ): value is RoutineData {
   return (
     isRecord(value) &&
-    value.schemaVersion === 2 &&
+    value.schemaVersion === 3 &&
     Array.isArray(value.routines) &&
     value.routines.every(isRoutineDefinition) &&
     Array.isArray(value.occurrences) &&
     value.occurrences.every(isRoutineOccurrence)
   );
+}
+
+function isLegacyDemoStoreV2(
+  value: unknown
+): value is LegacyDemoStoreV2 {
+  return isRecord(value) &&
+    value.schemaVersion === 2 &&
+    Array.isArray(value.routines) &&
+    Array.isArray(value.occurrences);
 }
 
 function isLegacyDemoStore(
@@ -156,7 +201,7 @@ function isLegacyDemoStore(
     !isRecord(value) ||
     value.schemaVersion !== 1 ||
     !Array.isArray(value.routines) ||
-    !value.routines.every(isRoutineDefinition) ||
+    !value.routines.every(isLegacyRoutineDefinition) ||
     !Array.isArray(value.occurrences)
   ) {
     return false;
@@ -205,21 +250,49 @@ function readDemoData(): DemoRoutineStore {
   }
 
   const legacyStored = window.localStorage.getItem(
+    LEGACY_DEMO_STORAGE_KEY_V2
+  );
+
+  if (legacyStored) {
+    try {
+      const parsed = JSON.parse(legacyStored) as unknown;
+      if (!isLegacyDemoStoreV2(parsed)) {
+        throw new Error('Invalid legacy demo data');
+      }
+      const migrated = migrateDemoStoreV2(parsed);
+      if (!isRoutineData(migrated)) {
+        throw new Error('Invalid migrated demo data');
+      }
+      writeDemoData(migrated);
+      return migrated;
+    } catch {
+      throw new Error(
+        'Demo routine data is invalid. Clear this site\'s local storage to restore the safe examples.'
+      );
+    }
+  }
+
+  const oldestStored = window.localStorage.getItem(
     LEGACY_DEMO_STORAGE_KEY
   );
 
-  if (!legacyStored) {
+  if (!oldestStored) {
     return cloneExampleData();
   }
 
   try {
-    const parsed = JSON.parse(legacyStored) as unknown;
+    const parsed = JSON.parse(oldestStored) as unknown;
 
     if (!isLegacyDemoStore(parsed)) {
       throw new Error('Invalid legacy demo data');
     }
 
-    const migrated = migrateLegacyDemoStore(parsed);
+    const migrated = migrateDemoStoreV2(
+      migrateLegacyDemoStore(parsed)
+    );
+    if (!isRoutineData(migrated)) {
+      throw new Error('Invalid migrated demo data');
+    }
     writeDemoData(migrated);
     return migrated;
   } catch {
@@ -322,6 +395,20 @@ export async function materializeTodayRoutines(
   }
 
   return response.localDate;
+}
+
+export async function reconcileAutomaticRoutineRewards(): Promise<void> {
+  if (getAppMode() === 'demo') {
+    reconcileDemoRoutineRewards(readDemoData());
+    window.dispatchEvent(new Event('ey-rewards-changed'));
+    return;
+  }
+
+  await requestHousehold('/api/routines/rewards/reconcile', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  window.dispatchEvent(new Event('ey-rewards-changed'));
 }
 
 export async function loadRoutines(
@@ -527,6 +614,14 @@ export async function updateRoutineStep(
       localDate,
       timeZone: existing?.timeZone ?? timeZone,
       snapshot,
+      rewardContract:
+        existing
+          ? existing.rewardContract
+          : structuredClone(routine.reward),
+      completionSequence:
+        (existing?.completionSequence ?? 0) +
+        (!wasCompleteBeforeUpdate &&
+        allSnapshotStepsComplete ? 1 : 0),
       completedSteps,
       completedAt: allSnapshotStepsComplete
         ? wasCompleteBeforeUpdate
@@ -544,6 +639,12 @@ export async function updateRoutineStep(
       occurrence,
     ];
     writeDemoData(data);
+    try {
+      reconcileDemoRoutineRewards(data);
+      window.dispatchEvent(new Event('ey-rewards-changed'));
+    } catch {
+      // The Routine write is authoritative and remains committed.
+    }
     return;
   }
 
@@ -559,4 +660,5 @@ export async function updateRoutineStep(
       }),
     }
   );
+  window.dispatchEvent(new Event('ey-rewards-changed'));
 }

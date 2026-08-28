@@ -16,6 +16,7 @@ import {
   History as HistoryIcon,
   Plus,
   RefreshCw,
+  Star,
   Trash2,
   Users,
   X,
@@ -169,13 +170,24 @@ function RoutineChecklist({
           <p>{formatSchedule(routine)}</p>
         </div>
 
-        <span className="routine-card__status">
-          <StatusIcon
-            size={18}
-            aria-hidden="true"
-          />
-          {statusLabel}
-        </span>
+        <div className="routine-card__badges">
+          {occurrence?.rewardContract && (
+            <span
+              className="routine-card__reward"
+              aria-label={`${occurrence.rewardContract.amount} stars for completion`}
+            >
+              <Star size={16} aria-hidden="true" />
+              {occurrence.rewardContract.amount}
+            </span>
+          )}
+          <span className="routine-card__status">
+            <StatusIcon
+              size={18}
+              aria-hidden="true"
+            />
+            {statusLabel}
+          </span>
+        </div>
       </header>
 
       <div className="routine-card__progress">
@@ -289,6 +301,22 @@ function RoutineEditor({
   );
   const [validationError, setValidationError] =
     useState<string | null>(null);
+  const childProfiles = profiles.filter(
+    profile =>
+      profile.kind === 'member' &&
+      profile.memberType === 'child'
+  );
+  const [rewardEnabled, setRewardEnabled] = useState(
+    Boolean(routine?.reward)
+  );
+  const [rewardRecipientProfileId, setRewardRecipientProfileId] =
+    useState(
+      routine?.reward?.recipientProfileId ??
+      childProfiles[0]?.id ?? ''
+    );
+  const [rewardAmount, setRewardAmount] = useState(
+    String(routine?.reward?.amount ?? 5)
+  );
 
   const toggleDay = (day: IsoWeekday) => {
     setDaysOfWeek(current =>
@@ -372,6 +400,22 @@ function RoutineEditor({
       return;
     }
 
+    const normalizedRewardAmount = Number(rewardAmount);
+    if (
+      rewardEnabled &&
+      (
+        !rewardRecipientProfileId ||
+        !Number.isInteger(normalizedRewardAmount) ||
+        normalizedRewardAmount < 1 ||
+        normalizedRewardAmount > 100
+      )
+    ) {
+      setValidationError(
+        'Choose a child and enter a whole-star reward from 1 to 100.'
+      );
+      return;
+    }
+
     setValidationError(null);
 
     try {
@@ -386,6 +430,13 @@ function RoutineEditor({
             endTime: endTime || null,
           },
           steps: normalizedSteps,
+          reward: rewardEnabled
+            ? {
+              recipientProfileId: rewardRecipientProfileId,
+              currency: 'star',
+              amount: normalizedRewardAmount,
+            }
+            : null,
         },
         routine?.id
       );
@@ -489,6 +540,59 @@ function RoutineEditor({
           </span>
         </label>
       </div>
+
+      <fieldset className="routine-editor__fieldset routine-editor__reward">
+        <legend>Automatic reward</legend>
+        <label className="routine-editor__active">
+          <input
+            type="checkbox"
+            checked={rewardEnabled}
+            onChange={event => setRewardEnabled(event.target.checked)}
+          />
+          Give stars when the whole routine is completed
+        </label>
+        {rewardEnabled && (
+          <div className="routine-editor__times">
+            <label className="routine-field">
+              <span>Reward recipient</span>
+              <select
+                value={rewardRecipientProfileId}
+                onChange={event =>
+                  setRewardRecipientProfileId(event.target.value)
+                }
+              >
+                {childProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.displayName}
+                  </option>
+                ))}
+                {routine?.reward &&
+                  !childProfiles.some(profile =>
+                    profile.id === routine.reward?.recipientProfileId
+                  ) && (
+                    <option value={routine.reward.recipientProfileId}>
+                      Previously configured child
+                    </option>
+                  )}
+              </select>
+            </label>
+            <label className="routine-field">
+              <span>Stars (1–100)</span>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value={rewardAmount}
+                onChange={event => setRewardAmount(event.target.value)}
+              />
+            </label>
+          </div>
+        )}
+        <p className="routine-editor__hint">
+          Changes apply only to future routine occurrences. Existing occurrences keep their captured reward.
+        </p>
+      </fieldset>
 
       <fieldset className="routine-editor__fieldset">
         <legend>Scheduled days</legend>
@@ -1143,6 +1247,7 @@ function Daily({
                                   active: !routine.active,
                                   schedule: routine.schedule,
                                   steps: routine.steps,
+                                  reward: routine.reward,
                                 },
                                 routine.id
                               ).catch(() => undefined);

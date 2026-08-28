@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "routines": [
     {
       "id": "example-family-evening",
@@ -21,6 +21,7 @@
           "title": "Check tomorrow's calendar"
         }
       ],
+      "reward": null,
       "createdAt": "2026-01-01T00:00:00.000Z",
       "updatedAt": "2026-01-01T00:00:00.000Z"
     },
@@ -44,6 +45,7 @@
           "title": "Pack the day's essentials"
         }
       ],
+      "reward": null,
       "createdAt": "2026-01-01T00:00:00.000Z",
       "updatedAt": "2026-01-01T00:00:00.000Z"
     },
@@ -67,6 +69,11 @@
           "title": "Brush teeth"
         }
       ],
+      "reward": {
+        "recipientProfileId": "child-1",
+        "currency": "star",
+        "amount": 5
+      },
       "createdAt": "2026-01-01T00:00:00.000Z",
       "updatedAt": "2026-01-01T00:00:00.000Z"
     }

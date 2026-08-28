@@ -17,6 +17,7 @@ import {
   deleteRoutine,
   loadRoutines,
   materializeTodayRoutines,
+  reconcileAutomaticRoutineRewards,
   updateRoutine,
   updateRoutineStep,
 } from '../services/routineService';
@@ -101,7 +102,14 @@ export function RoutineProvider({
 
   useEffect(() => {
     const initialLoadId = window.setTimeout(
-      () => void refresh(),
+      () => void (async () => {
+        await refresh();
+        try {
+          await reconcileAutomaticRoutineRewards();
+        } catch {
+          // Routine loading remains available while Rewards recovery is pending.
+        }
+      })(),
       0
     );
 

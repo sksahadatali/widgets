@@ -9,7 +9,7 @@ import {
 } from './recurrence';
 
 export type DemoRoutineStore = RoutineData & {
-  schemaVersion: 2;
+  schemaVersion: 3;
 };
 
 export type LegacyDemoOccurrence = Omit<
@@ -19,12 +19,21 @@ export type LegacyDemoOccurrence = Omit<
 
 export type LegacyDemoStore = {
   schemaVersion: 1;
-  routines: RoutineDefinition[];
+  routines: Array<Omit<RoutineDefinition, 'reward'>>;
   occurrences: LegacyDemoOccurrence[];
 };
 
+export type LegacyDemoStoreV2 = {
+  schemaVersion: 2;
+  routines: Array<Omit<RoutineDefinition, 'reward'>>;
+  occurrences: Array<Omit<
+    RoutineOccurrence,
+    'rewardContract' | 'completionSequence'
+  >>;
+};
+
 export function createRoutineSnapshot(
-  routine: RoutineDefinition,
+  routine: Omit<RoutineDefinition, 'reward'>,
   capturedAt: string,
   source: RoutineOccurrenceSnapshot['source']
 ): RoutineOccurrenceSnapshot {
@@ -42,7 +51,7 @@ export function createRoutineSnapshot(
 export function migrateLegacyDemoStore(
   legacy: LegacyDemoStore,
   migratedAt = new Date().toISOString()
-): DemoRoutineStore {
+): LegacyDemoStoreV2 {
   const routineById = new Map(
     legacy.routines.map(routine => [
       routine.id,
@@ -75,6 +84,26 @@ export function migrateLegacyDemoStore(
         };
       }
     ),
+  };
+}
+
+export function migrateDemoStoreV2(
+  legacy: LegacyDemoStoreV2
+): DemoRoutineStore {
+  return {
+    schemaVersion: 3,
+    routines: legacy.routines.map(routine => ({
+      ...structuredClone(routine),
+      reward: null,
+    })),
+    occurrences: legacy.occurrences.map(occurrence => ({
+      ...structuredClone(occurrence),
+      rewardContract: null,
+      completionSequence:
+        occurrence.snapshot.steps.every(step =>
+          Boolean(occurrence.completedSteps[step.id])
+        ) ? 1 : 0,
+    })),
   };
 }
 
@@ -121,6 +150,10 @@ export function materializeDemoRoutines(
         capturedAt,
         'captured'
       ),
+      rewardContract: structuredClone(
+        routine.reward
+      ),
+      completionSequence: 0,
       completedSteps: {},
       completedAt: null,
       updatedAt: capturedAt,

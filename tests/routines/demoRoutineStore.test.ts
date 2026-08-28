@@ -12,9 +12,11 @@ import exampleStore from '../../app/src/data/routines.example.json' with {
 };
 import {
   materializeDemoRoutines,
+  migrateDemoStoreV2,
   migrateLegacyDemoStore,
   type DemoRoutineStore,
   type LegacyDemoStore,
+  type LegacyDemoStoreV2,
 } from '../../app/src/routines/demoRoutineStore.ts';
 
 const definition = {
@@ -30,15 +32,17 @@ const definition = {
   steps: [
     { id: 'demo-step', title: 'Safe step' },
   ],
+  reward: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
 describe('Demo routine store separation', () => {
   it('migrates Demo v1 data independently with legacy snapshots', () => {
+    const { reward: _reward, ...legacyDefinition } = definition;
     const legacy: LegacyDemoStore = {
       schemaVersion: 1,
-      routines: [definition],
+      routines: [legacyDefinition],
       occurrences: [
         {
           id: 'demo-routine@2026-08-31',
@@ -69,9 +73,21 @@ describe('Demo routine store separation', () => {
     );
   });
 
+  it('migrates Demo v2 data non-retroactively to schema v3', () => {
+    const { reward: _reward, ...legacyDefinition } = definition;
+    const legacyV2: LegacyDemoStoreV2 = {
+      schemaVersion: 2,
+      routines: [legacyDefinition],
+      occurrences: [],
+    };
+    const migrated = migrateDemoStoreV2(legacyV2);
+    assert.equal(migrated.schemaVersion, 3);
+    assert.equal(migrated.routines[0].reward, null);
+  });
+
   it('materialises safe Demo data without mutating the input and remains idempotent', () => {
     const data: DemoRoutineStore = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       routines: [definition],
       occurrences: [],
     };
@@ -95,10 +111,14 @@ describe('Demo routine store separation', () => {
       first.store.occurrences[0].snapshot.source,
       'captured'
     );
+    assert.equal(
+      first.store.occurrences[0].completionSequence,
+      0
+    );
   });
 
-  it('tracks only safe schema-v2 examples and never imports the household file into the adapter', async () => {
-    assert.equal(exampleStore.schemaVersion, 2);
+  it('tracks only safe schema-v3 examples and never imports the household file into the adapter', async () => {
+    assert.equal(exampleStore.schemaVersion, 3);
     assert.deepEqual(exampleStore.occurrences, []);
 
     const adapterSource = await readFile(
@@ -111,7 +131,7 @@ describe('Demo routine store separation', () => {
 
     assert.match(
       adapterSource,
-      /ey-os-demo-routines-v2/
+      /ey-os-demo-routines-v3/
     );
     assert.doesNotMatch(
       adapterSource,
