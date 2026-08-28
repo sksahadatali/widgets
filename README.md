@@ -284,6 +284,35 @@ Occurrence history remains unpruned. The local store can therefore grow without 
 
 Deactivation is the normal non-destructive way to stop a routine. Permanent deletion requires confirmation and removes both the routine definition and every recorded occurrence for it.
 
+## Family Rewards ledger foundation
+
+Rewards use an independent append-only Household ledger at:
+
+```text
+server/data/rewards.local.json
+```
+
+The schema-v1 store contains immutable transactions rather than a separately mutable balance. Balances are always derived by summing validated `star` transaction amounts for each stable non-Family profile ID. The ledger accepts JavaScript safe integers and deliberately has no 100-star accounting maximum; a future user interface may apply a smaller product limit without changing the ledger invariant.
+
+The foundation exposes only read, positive-award and audit-preserving reversal primitives. It has no balance setter, transaction update/delete operation, unrestricted signed-transaction endpoint or Rewards user interface. Reversing a transaction appends one exact linked opposite transaction while retaining the original. Event keys make equivalent retries idempotent and reject conflicting reuse.
+
+Every mutation is serialized within one backend process, rereads and validates the authoritative primary, validates the complete resulting ledger, writes a temporary file and atomically renames it. Before replacing an existing valid primary, the server retains one previous valid copy at:
+
+```text
+server/data/rewards.local.json.bak
+```
+
+The primary, backup and temporary files are ignored by Git. A malformed or unsupported store fails safely and is never reset, repaired or copied over the valid backup. Household Reward content is never stored in browser local storage. Demo mode uses only the small tracked synthetic `rewards.example.json` store and never calls or falls back to the Household Rewards API.
+
+### Restoring the Rewards backup
+
+1. Stop `npm run dev` so the backend cannot write during recovery.
+2. Preserve the malformed `server/data/rewards.local.json` for diagnosis by renaming it to an ignored name such as `rewards.local.json.corrupt`.
+3. Copy `server/data/rewards.local.json.bak` to `server/data/rewards.local.json`.
+4. Restart `npm run dev` and verify `GET http://localhost:3001/api/rewards` returns the expected transaction count and derived balances before attempting another Reward mutation.
+
+The JSON store is designed for one Node backend process. It does not provide multi-process file locking, multi-host synchronization, cloud persistence, pruning or pagination. Reward history therefore grows without an automatic retention limit.
+
 ---
 
 # Development Workflow

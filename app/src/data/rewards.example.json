@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "transactions": [
+    {
+      "id": "demo-reward-1",
+      "profileId": "child-1",
+      "entryType": "award",
+      "currency": "star",
+      "amount": 5,
+      "category": "helping",
+      "reason": "Helpful household contribution",
+      "source": {
+        "kind": "manual-parent-award",
+        "eventKey": "demo-manual-award-1"
+      },
+      "relation": null,
+      "actorProfileId": null,
+      "createdAt": "2026-01-05T18:00:00.000Z",
+      "localDate": "2026-01-05",
+      "timeZone": "Europe/London"
+    }
+  ]
+}

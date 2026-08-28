@@ -12,6 +12,9 @@ dashboard/config.local.js
 # Private household routine data and atomic-write files
 server/data/routines.local.json*
 
+# Private household reward data and atomic-write files
+server/data/rewards.local.json*
+
 # Dependencies
 node_modules/
 
