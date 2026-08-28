@@ -294,7 +294,13 @@ server/data/rewards.local.json
 
 The schema-v1 store contains immutable transactions rather than a separately mutable balance. Balances are always derived by summing validated `star` transaction amounts for each stable non-Family profile ID. The ledger accepts JavaScript safe integers and deliberately has no 100-star accounting maximum; a future user interface may apply a smaller product limit without changing the ledger invariant.
 
-The foundation exposes only read, positive-award and audit-preserving reversal primitives. It has no balance setter, transaction update/delete operation, unrestricted signed-transaction endpoint or Rewards user interface. Reversing a transaction appends one exact linked opposite transaction while retaining the original. Event keys make equivalent retries idempotent and reject conflicting reuse.
+The foundation exposes read, positive-award and audit-preserving reversal primitives. It has no balance setter, transaction update/delete operation or unrestricted signed-transaction endpoint. Reversing a transaction appends one exact linked opposite transaction while retaining the original. Event keys make equivalent retries idempotent and reject conflicting reuse.
+
+The top-level Rewards workspace presents ledger-derived child balances and recent activity. Family context shows current children's combined activity, child context shows only that child's balance and history, and adult context also exposes Manual Parent Awards and explicit award reversal. Profile selection is context only: it is not authentication or authorization.
+
+Manual Parent Awards accept a currently configured child recipient, an integer from 1 to 100, one of the six initial categories, and a required trimmed reason of at most 160 characters. The 1–100 limit belongs only to this operation; the underlying ledger retains its broader safe-integer bound. A stable `manual-award:<requestId>` event key is retained across retries. Household award reasons remain in the ignored server ledger and are not logged, sent to Today Brain, stored in browser storage or copied into Demo data.
+
+Demo mode uses an in-memory disposable copy of the tracked synthetic Rewards example. Demo mutations never call or fall back to the Household API and reset when the application restarts.
 
 Every mutation is serialized within one backend process, rereads and validates the authoritative primary, validates the complete resulting ledger, writes a temporary file and atomically renames it. Before replacing an existing valid primary, the server retains one previous valid copy at:
 

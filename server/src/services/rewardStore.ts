@@ -50,6 +50,16 @@ const AWARD_CATEGORIES = new Set<RewardCategory>([
   'job',
   'correction',
 ]);
+const MANUAL_AWARD_CATEGORIES = new Set<RewardCategory>([
+  'school',
+  'kumon',
+  'behaviour',
+  'helping',
+  'achievement',
+  'other',
+]);
+const MANUAL_AWARD_MAX = 100;
+const MANUAL_REASON_MAX_LENGTH = 160;
 
 type StoreUpdate<T> = {
   store: RewardStoreData;
@@ -674,6 +684,66 @@ function normalizeAwardInput(
   };
 }
 
+function normalizeManualAwardInput(
+  input: unknown
+): RewardAwardInput {
+  const normalized = normalizeAwardInput(input);
+
+  if (
+    normalized.source.kind !==
+      'manual-parent-award' ||
+    !normalized.source.eventKey.startsWith(
+      'manual-award:'
+    ) ||
+    !normalized.source.eventKey.slice(
+      'manual-award:'.length
+    ).trim()
+  ) {
+    throw new RewardStoreError(
+      'Manual Reward event key is invalid.'
+    );
+  }
+
+  if (
+    normalized.amount > MANUAL_AWARD_MAX
+  ) {
+    throw new RewardStoreError(
+      'Manual Reward amount must be from 1 to 100.'
+    );
+  }
+
+  if (
+    !MANUAL_AWARD_CATEGORIES.has(
+      normalized.category
+    )
+  ) {
+    throw new RewardStoreError(
+      'Manual Reward category is invalid.'
+    );
+  }
+
+  if (
+    normalized.reason === null ||
+    normalized.reason.length >
+      MANUAL_REASON_MAX_LENGTH
+  ) {
+    throw new RewardStoreError(
+      'Manual Reward reason is required and must be 160 characters or fewer.'
+    );
+  }
+
+  if (
+    normalized.actorProfileId === null ||
+    normalized.actorProfileId === 'family'
+  ) {
+    throw new RewardStoreError(
+      'Manual Reward actor context is invalid.'
+    );
+  }
+
+  return normalized;
+}
+
 function normalizeReversalInput(
   input: unknown
 ): RewardReversalInput {
@@ -1087,6 +1157,18 @@ export class RewardFileStore {
         },
       };
     });
+  }
+
+  async appendManualAward(
+    id: string,
+    input: unknown,
+    now = new Date()
+  ): Promise<RewardMutationResult> {
+    return this.appendAward(
+      id,
+      normalizeManualAwardInput(input),
+      now
+    );
   }
 
   async reverseTransaction(

@@ -387,6 +387,96 @@ describe('Reward ledger validation', () => {
   });
 });
 
+describe('Manual Parent Award operation policy', () => {
+  it('accepts the 1 and 100 boundaries and trims the reason', async () => {
+    const { store } = await makeStore();
+    const first = await store.appendManualAward(
+      'manual-1',
+      awardInput({
+        amount: 1,
+        reason: '  Good effort  ',
+      }),
+      NOW
+    );
+    const second = await store.appendManualAward(
+      'manual-2',
+      awardInput({
+        amount: 100,
+        source: {
+          kind: 'manual-parent-award',
+          eventKey: 'manual-award:request-2',
+        },
+      }),
+      NOW
+    );
+
+    assert.equal(first.transaction.amount, 1);
+    assert.equal(first.transaction.reason, 'Good effort');
+    assert.equal(second.transaction.amount, 100);
+  });
+
+  it('rejects 0, 101 and fractional Manual Award amounts', async () => {
+    const { store } = await makeStore();
+
+    for (const amount of [0, 101, 1.5]) {
+      await assert.rejects(
+        () => store.appendManualAward(
+          `manual-${String(amount)}`,
+          awardInput({ amount }),
+          NOW
+        ),
+        RewardStoreError
+      );
+    }
+  });
+
+  it('requires an allowed category, reason and adult actor context', async () => {
+    const { store } = await makeStore();
+
+    for (const input of [
+      awardInput({ reason: null }),
+      awardInput({ reason: '   ' }),
+      awardInput({ reason: 'x'.repeat(161) }),
+      awardInput({ category: 'routine' }),
+      awardInput({ actorProfileId: null }),
+      awardInput({ actorProfileId: 'family' }),
+      awardInput({
+        source: {
+          kind: 'manual-parent-award',
+          eventKey: 'wrong-prefix',
+        },
+      }),
+    ]) {
+      await assert.rejects(
+        () => store.appendManualAward(
+          crypto.randomUUID(),
+          input,
+          NOW
+        ),
+        RewardStoreError
+      );
+    }
+  });
+
+  it('retains event-key idempotency for Manual Award retries', async () => {
+    const { store } = await makeStore();
+    const first = await store.appendManualAward(
+      'manual-1',
+      awardInput(),
+      NOW
+    );
+    const retry = await store.appendManualAward(
+      'manual-2',
+      awardInput(),
+      new Date('2026-08-28T13:00:00.000Z')
+    );
+
+    assert.equal(first.created, true);
+    assert.equal(retry.created, false);
+    assert.equal(first.transaction.id, retry.transaction.id);
+  });
+});
+
 describe('Reward idempotency', () => {
   it('returns the existing transaction for an equivalent retry', async () => {
     const { store } = await makeStore();

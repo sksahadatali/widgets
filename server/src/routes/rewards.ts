@@ -88,7 +88,7 @@ router.get('/', async (_request, response) => {
 
 router.post('/awards', async (request, response) => {
   try {
-    const result = await rewardStore.appendAward(
+    const result = await rewardStore.appendManualAward(
       randomUUID(),
       request.body as unknown
     );
