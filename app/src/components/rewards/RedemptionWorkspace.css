@@ -85,7 +85,8 @@
 }
 
 .redemption-request--cancelled,
-.redemption-request--declined {
+.redemption-request--declined,
+.redemption-request--refunded {
   opacity: 0.85;
 }
 
@@ -111,9 +112,31 @@
 }
 
 .redemption-status--cancelled,
-.redemption-status--declined {
+.redemption-status--declined,
+.redemption-status--refunded {
   background: var(--ey-bg-card-secondary);
   color: var(--ey-text-secondary);
+}
+
+.redemption-status--approved {
+  background: var(--ey-success-soft);
+  color: var(--ey-success);
+}
+
+.redemption-status--accounting-error {
+  background: var(--ey-danger-soft);
+  color: var(--ey-danger);
+}
+
+.redemption-request__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ey-space-2);
+}
+
+.redemption-request__integrity {
+  color: var(--ey-danger);
+  font-weight: 700;
 }
 
 .redemption-show-more {
@@ -180,6 +203,7 @@
   }
 
   .redemption-request .rewards-button,
+  .redemption-request__actions,
   .redemption-catalogue-manager__actions,
   .redemption-catalogue-manager__actions .rewards-button {
     width: 100%;

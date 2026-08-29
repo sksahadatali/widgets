@@ -1,5 +1,8 @@
 import exampleStore from '../data/rewards.example.json';
 import type {
+  RedemptionRequest,
+} from '../types/redemption';
+import type {
   ManualAwardInput,
   RewardReversalInput,
   RewardStoreData,
@@ -9,6 +12,9 @@ import type {
   RoutineData,
   RoutineOccurrence,
 } from '../types/routine';
+import {
+  getRewardBalance,
+} from './rewardSelectors';
 import {
   createManualAwardEventKey,
   createManualReversalEventKey,
@@ -156,6 +162,163 @@ function getLocalDate(
   ) => parts.find(part => part.type === type)?.value;
 
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+}
+
+function redemptionDebitKey(requestId: string): string {
+  return `redemption:${requestId}:debit`;
+}
+
+function redemptionRefundKey(requestId: string): string {
+  return `redemption:${requestId}:refund`;
+}
+
+function assertDemoActor(actorProfileId: string): void {
+  if (!actorProfileId.trim() || actorProfileId === 'family') {
+    throw new Error(
+      'Select an adult profile to manage this Redemption request.'
+    );
+  }
+}
+
+function demoDebitMatches(
+  request: RedemptionRequest,
+  transaction: RewardTransaction
+): boolean {
+  return transaction.entryType === 'redemption' &&
+    transaction.profileId === request.profileId &&
+    transaction.currency === request.contract.currency &&
+    transaction.amount === -request.contract.starCost &&
+    transaction.category === 'redemption' &&
+    transaction.reason === null &&
+    transaction.source.kind === 'redemption' &&
+    transaction.source.eventKey ===
+      redemptionDebitKey(request.id) &&
+    transaction.source.label === 'Reward redemption' &&
+    transaction.relation === null &&
+    transaction.timeZone === request.timeZone;
+}
+
+export function appendDemoRedemption(
+  request: RedemptionRequest,
+  actorProfileId: string,
+  now = new Date()
+): RewardTransaction {
+  assertDemoActor(actorProfileId);
+  const eventKey = redemptionDebitKey(request.id);
+  const existing = demoStore.transactions.find(
+    transaction => transaction.source.eventKey === eventKey
+  );
+  if (existing) {
+    if (demoDebitMatches(request, existing)) {
+      return structuredClone(existing);
+    }
+    throw new Error(
+      'Redemption accounting does not match the captured request contract.'
+    );
+  }
+  if (
+    getRewardBalance(
+      demoStore.transactions,
+      request.profileId
+    ) < request.contract.starCost
+  ) {
+    throw new Error(
+      'There are not enough stars to approve this request.'
+    );
+  }
+
+  const transaction: RewardTransaction = {
+    id: crypto.randomUUID(),
+    profileId: request.profileId,
+    entryType: 'redemption',
+    currency: request.contract.currency,
+    amount: -request.contract.starCost,
+    category: 'redemption',
+    reason: null,
+    source: {
+      kind: 'redemption',
+      eventKey,
+      label: 'Reward redemption',
+    },
+    relation: null,
+    actorProfileId,
+    createdAt: now.toISOString(),
+    localDate: getLocalDate(now, request.timeZone),
+    timeZone: request.timeZone,
+  };
+  demoStore.transactions.push(transaction);
+  validateDemoRewardStore(demoStore);
+  return structuredClone(transaction);
+}
+
+export function refundDemoRedemption(
+  request: RedemptionRequest,
+  actorProfileId: string,
+  now = new Date()
+): RewardTransaction {
+  assertDemoActor(actorProfileId);
+  const debit = demoStore.transactions.find(
+    transaction => transaction.source.eventKey ===
+      redemptionDebitKey(request.id)
+  );
+  if (!debit || !demoDebitMatches(request, debit)) {
+    throw new Error(
+      debit
+        ? 'Redemption accounting does not match the captured request contract.'
+        : 'Only an approved Redemption request can be refunded.'
+    );
+  }
+
+  const eventKey = redemptionRefundKey(request.id);
+  const existing = demoStore.transactions.find(
+    transaction => transaction.source.eventKey === eventKey
+  );
+  if (existing) {
+    if (
+      existing.entryType === 'reversal' &&
+      existing.profileId === debit.profileId &&
+      existing.currency === debit.currency &&
+      existing.amount === -debit.amount &&
+      existing.reason === 'Redemption cancelled and refunded' &&
+      existing.relation?.kind === 'reversal-of' &&
+      existing.relation.transactionId === debit.id
+    ) {
+      return structuredClone(existing);
+    }
+    throw new Error('Redemption refund accounting is inconsistent.');
+  }
+  if (demoStore.transactions.some(transaction =>
+    transaction.relation?.kind === 'reversal-of' &&
+    transaction.relation.transactionId === debit.id
+  )) {
+    throw new Error('Redemption debit has already been reversed.');
+  }
+
+  const refund: RewardTransaction = {
+    id: crypto.randomUUID(),
+    profileId: debit.profileId,
+    entryType: 'reversal',
+    currency: debit.currency,
+    amount: -debit.amount,
+    category: 'correction',
+    reason: 'Redemption cancelled and refunded',
+    source: {
+      kind: 'correction',
+      eventKey,
+      label: 'Reward reversal',
+    },
+    relation: {
+      kind: 'reversal-of',
+      transactionId: debit.id,
+    },
+    actorProfileId,
+    createdAt: now.toISOString(),
+    localDate: getLocalDate(now, request.timeZone),
+    timeZone: request.timeZone,
+  };
+  demoStore.transactions.push(refund);
+  validateDemoRewardStore(demoStore);
+  return structuredClone(refund);
 }
 
 export function appendDemoManualAward(

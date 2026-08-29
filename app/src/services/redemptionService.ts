@@ -1,8 +1,12 @@
 import {
-  cancelDemoRedemptionRequest,
+  cancelDemoRedemptionLifecycle,
+  approveDemoRedemptionRequest,
+  declineDemoRedemptionLifecycle,
+  refundDemoRedemptionRequest,
+} from '../redemptions/demoRedemptionAccounting';
+import {
   createDemoCatalogueItem,
   createDemoRedemptionRequest,
-  declineDemoRedemptionRequest,
   getDemoRedemptionStore,
   reorderDemoCatalogue,
   setDemoCatalogueItemActive,
@@ -164,7 +168,7 @@ export async function cancelRedemptionRequest(
   actorProfileId: string
 ): Promise<void> {
   if (getAppMode() === 'demo') {
-    cancelDemoRedemptionRequest(
+    await cancelDemoRedemptionLifecycle(
       requestId,
       actorProfileId
     );
@@ -184,7 +188,7 @@ export async function declineRedemptionRequest(
   actorProfileId: string
 ): Promise<void> {
   if (getAppMode() === 'demo') {
-    declineDemoRedemptionRequest(
+    await declineDemoRedemptionLifecycle(
       requestId,
       actorProfileId
     );
@@ -197,4 +201,46 @@ export async function declineRedemptionRequest(
       ...json({ actorProfileId }),
     }
   );
+}
+
+export async function approveRedemptionRequest(
+  requestId: string,
+  actorProfileId: string
+): Promise<void> {
+  if (getAppMode() === 'demo') {
+    await approveDemoRedemptionRequest(
+      requestId,
+      actorProfileId
+    );
+  } else {
+    await requestRedemptions(
+      `/api/redemptions/requests/${encodeURIComponent(requestId)}/approve`,
+      {
+        method: 'POST',
+        ...json({ actorProfileId }),
+      }
+    );
+  }
+  window.dispatchEvent(new Event('ey-rewards-changed'));
+}
+
+export async function refundRedemptionRequest(
+  requestId: string,
+  actorProfileId: string
+): Promise<void> {
+  if (getAppMode() === 'demo') {
+    await refundDemoRedemptionRequest(
+      requestId,
+      actorProfileId
+    );
+  } else {
+    await requestRedemptions(
+      `/api/redemptions/requests/${encodeURIComponent(requestId)}/refund`,
+      {
+        method: 'POST',
+        ...json({ actorProfileId }),
+      }
+    );
+  }
+  window.dispatchEvent(new Event('ey-rewards-changed'));
 }

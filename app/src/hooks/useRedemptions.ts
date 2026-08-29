@@ -5,11 +5,13 @@ import {
 } from 'react';
 
 import {
+  approveRedemptionRequest,
   cancelRedemptionRequest,
   createCatalogueItem,
   createRedemptionRequest,
   declineRedemptionRequest,
   loadRedemptions,
+  refundRedemptionRequest,
   reorderCatalogueItems,
   setCatalogueItemActive,
   updateCatalogueItem,
@@ -125,6 +127,24 @@ export function useRedemptions() {
       actorProfileId: string
     ) => runMutation(() =>
       declineRedemptionRequest(
+        requestId,
+        actorProfileId
+      )
+    ),
+    approveRequest: (
+      requestId: string,
+      actorProfileId: string
+    ) => runMutation(() =>
+      approveRedemptionRequest(
+        requestId,
+        actorProfileId
+      )
+    ),
+    refundRequest: (
+      requestId: string,
+      actorProfileId: string
+    ) => runMutation(() =>
+      refundRedemptionRequest(
         requestId,
         actorProfileId
       )
