@@ -38,6 +38,7 @@ import type {
   ManualRewardCategory,
   RewardTransaction,
 } from '../types/reward';
+import RedemptionWorkspace from '../components/rewards/RedemptionWorkspace';
 
 import './Rewards.css';
 
@@ -331,6 +332,8 @@ export default function Rewards() {
               ))}
             </div>
           </section>
+
+          <RedemptionWorkspace />
 
           {canManage && (
             <section className="rewards-panel" aria-labelledby="give-stars-title">

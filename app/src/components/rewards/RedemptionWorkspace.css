@@ -1,0 +1,192 @@
+.redemption-workspace {
+  display: contents;
+}
+
+.redemption-workspace__status {
+  min-height: 1.25rem;
+  margin: var(--ey-space-2) 0 0;
+  color: var(--ey-success);
+}
+
+.redemption-message {
+  display: flex;
+  align-items: center;
+  gap: var(--ey-space-3);
+  margin-top: var(--ey-space-3);
+  padding: var(--ey-space-3) var(--ey-space-4);
+  border-radius: var(--ey-radius-medium);
+}
+
+.redemption-message--error {
+  border: 1px solid var(--ey-border-chip-danger);
+  background: var(--ey-danger-soft);
+  color: var(--ey-danger);
+}
+
+.redemption-message .rewards-button {
+  margin-left: auto;
+}
+
+.redemption-catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--ey-card-gap);
+}
+
+.redemption-card {
+  display: grid;
+  gap: var(--ey-space-3);
+  padding: var(--ey-space-4);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-radius-medium);
+  background: var(--ey-bg-card-secondary);
+}
+
+.redemption-card h3,
+.redemption-card p {
+  margin: 0;
+}
+
+.redemption-card p,
+.redemption-note,
+.redemption-request span,
+.redemption-request p,
+.redemption-catalogue-manager span {
+  color: var(--ey-text-muted);
+}
+
+.redemption-card strong {
+  color: var(--ey-warning);
+  font-size: var(--ey-font-lg);
+}
+
+.redemption-note {
+  margin: var(--ey-space-4) 0 0;
+}
+
+.redemption-requests,
+.redemption-catalogue-manager {
+  display: grid;
+  gap: var(--ey-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.redemption-request,
+.redemption-catalogue-manager > li {
+  display: flex;
+  align-items: center;
+  gap: var(--ey-card-gap);
+  padding: var(--ey-space-4);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-radius-medium);
+  background: var(--ey-bg-card-secondary);
+}
+
+.redemption-request--cancelled,
+.redemption-request--declined {
+  opacity: 0.85;
+}
+
+.redemption-request__main,
+.redemption-catalogue-manager > li > div:first-child {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: var(--ey-space-1);
+}
+
+.redemption-request p {
+  margin: var(--ey-space-1) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.redemption-status {
+  padding: var(--ey-space-1) var(--ey-space-3);
+  border-radius: 999px;
+  background: var(--ey-info-soft);
+  color: var(--ey-info);
+  font-weight: 700;
+}
+
+.redemption-status--cancelled,
+.redemption-status--declined {
+  background: var(--ey-bg-card-secondary);
+  color: var(--ey-text-secondary);
+}
+
+.redemption-show-more {
+  margin: var(--ey-space-4) auto 0;
+}
+
+.redemption-editor {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) minmax(100px, 0.45fr);
+  gap: var(--ey-card-gap);
+  align-items: end;
+}
+
+.redemption-editor label {
+  display: grid;
+  gap: var(--ey-space-2);
+  color: var(--ey-text-secondary);
+  font-weight: 700;
+}
+
+.redemption-editor input {
+  width: 100%;
+  min-height: var(--ey-touch-target-min);
+  padding: 0 var(--ey-space-3);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-control-radius);
+  background: var(--ey-bg-input);
+  color: var(--ey-text-primary);
+}
+
+.redemption-editor__actions,
+.redemption-catalogue-manager__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ey-space-2);
+}
+
+.redemption-editor__actions {
+  grid-column: 1 / -1;
+}
+
+.redemption-catalogue-manager {
+  margin-top: var(--ey-space-4);
+}
+
+@media (max-width: 900px) {
+  .redemption-editor {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .redemption-request,
+  .redemption-catalogue-manager > li {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 620px) {
+  .redemption-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .redemption-editor__actions {
+    grid-column: auto;
+  }
+
+  .redemption-request .rewards-button,
+  .redemption-catalogue-manager__actions,
+  .redemption-catalogue-manager__actions .rewards-button {
+    width: 100%;
+  }
+}
+
+:root[data-display-profile='elo-touch'] .redemption-workspace button,
+:root[data-display-profile='elo-touch'] .redemption-workspace input {
+  min-height: var(--ey-touch-target-min);
+}

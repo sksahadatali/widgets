@@ -323,6 +323,39 @@ The primary, backup and temporary files are ignored by Git. A malformed or unsup
 
 The JSON store is designed for one Node backend process. It does not provide multi-process file locking, multi-host synchronization, cloud persistence, pruning or pagination. Reward history therefore grows without an automatic retention limit.
 
+## Reward catalogue and requests
+
+Rewards 1D-A adds a separate private Household store for catalogue definitions and non-financial redemption requests:
+
+```text
+server/data/redemptions.local.json
+```
+
+Its schema-v1 catalogue uses stable UUIDs, an item name, optional description, active state and an integer cost from 1 to 500 stars. The 500-star limit belongs only to the Redemption domain and does not change the broader safe-integer Rewards-ledger invariant. Catalogue array order is display order. Deactivation is the normal non-destructive way to stop new requests.
+
+Creating a request captures the item's ID, name, description, currency and cost as an immutable `RedemptionContract`. Later catalogue edits, reordering or deactivation cannot change that captured request. A child-profile context can request only for itself and can cancel its own still-pending request. Adult-profile context can decline a pending request. Family context can browse but cannot request because it does not identify which child would redeem the item. Profile selection and `memberType` remain context rather than authentication.
+
+Requests persist an immutable original record plus at most one explicit `cancelled` or `declined` closure. Stable request/cancel/decline event keys make equivalent retries idempotent and reject conflicting transitions. Closed requests are retained and cannot reopen. Renamed profiles stay connected by stable ID; removed-profile requests are retained for adult context and reconnect if the same ID is restored.
+
+Rewards 1D-A is deliberately non-financial. Catalogue creation/editing/deactivation/reordering and request creation/cancellation/decline do not deduct, reserve, reverse or reconcile stars and never write to `rewards.local.json`. Adult approval, redemption ledger transactions and refunds belong to a later separately reviewed phase.
+
+Before replacing an existing valid Redemption primary, the backend retains one previous valid copy at:
+
+```text
+server/data/redemptions.local.json.bak
+```
+
+The primary, backup and atomic-write temporary files are ignored by Git. A missing store creates an empty schema-v1 store on first use. A malformed or unsupported primary fails safely and is never overwritten or replaced with Demo data. Demo mode uses only a disposable in-memory copy of tracked synthetic `redemptions.example.json` data; it never calls or falls back to the Household Redemption API.
+
+### Restoring the Redemption backup
+
+1. Stop `npm run dev` so the backend cannot write during recovery.
+2. Preserve the malformed `server/data/redemptions.local.json` by renaming it to an ignored diagnostic name such as `redemptions.local.json.corrupt`.
+3. Copy `server/data/redemptions.local.json.bak` to `server/data/redemptions.local.json`.
+4. Restart `npm run dev`, open **Rewards**, and verify the recovered catalogue and requests before making another change.
+
+The Redemption JSON store assumes one Node backend process and has no pruning, pagination, cloud synchronization, authentication, approval, star reservation, fulfilment or financial reconciliation. Requests may therefore be created before the child has enough stars; the authoritative balance check belongs to the later adult-approval phase.
+
 ---
 
 # Development Workflow
