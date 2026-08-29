@@ -129,6 +129,15 @@ export default function Rewards() {
     () => getReversedRewardIds(transactions),
     [transactions]
   );
+  const transactionsById = useMemo(
+    () => new Map(
+      transactions.map(transaction => [
+        transaction.id,
+        transaction,
+      ])
+    ),
+    [transactions]
+  );
   const namesById = useMemo(
     () => new Map(
       profiles.map(profile => [
@@ -481,7 +490,13 @@ export default function Rewards() {
                               </div>
                               {transaction.reason && <p>{transaction.reason}</p>}
                               {transaction.relation?.kind === 'reversal-of' && (
-                                <small>Reverses an earlier award.</small>
+                                <small>
+                                  {transactionsById.get(
+                                    transaction.relation.transactionId
+                                  )?.entryType === 'redemption'
+                                    ? 'Refunds an earlier redemption.'
+                                    : 'Reverses an earlier award.'}
+                                </small>
                               )}
                             </div>
                             {canReverse && (

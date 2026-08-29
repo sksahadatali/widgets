@@ -100,3 +100,11 @@ export type RewardReversalInput = {
   actorProfileId: string | null;
   timeZone: string;
 };
+
+export type RewardRedemptionInput = {
+  profileId: string;
+  starCost: number;
+  eventKey: string;
+  actorProfileId: string;
+  timeZone: string;
+};

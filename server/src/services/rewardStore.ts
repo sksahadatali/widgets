@@ -18,6 +18,7 @@ import {
 import type {
   RewardAwardInput,
   RewardCategory,
+  RewardRedemptionInput,
   RewardRelation,
   RewardReversalInput,
   RewardSource,
@@ -97,6 +98,13 @@ export class RewardIdempotencyConflictError extends RewardStoreError {
   constructor(message: string) {
     super(message);
     this.name = 'RewardIdempotencyConflictError';
+  }
+}
+
+export class RewardInsufficientBalanceError extends RewardStoreError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RewardInsufficientBalanceError';
   }
 }
 
@@ -782,6 +790,64 @@ function normalizeManualAwardInput(
   return normalized;
 }
 
+function normalizeRedemptionInput(
+  input: unknown
+): RewardRedemptionInput {
+  if (!isRecord(input)) {
+    throw new RewardStoreError(
+      'Reward redemption details are invalid.'
+    );
+  }
+
+  const profileId = normalizeText(
+    input.profileId,
+    'recipient'
+  ) as string;
+  const eventKey = normalizeText(
+    input.eventKey,
+    'event key'
+  ) as string;
+  const actorProfileId = normalizeText(
+    input.actorProfileId,
+    'actor'
+  ) as string;
+
+  if (profileId === 'family') {
+    throw new RewardStoreError(
+      'Family cannot receive a Reward transaction.'
+    );
+  }
+  if (actorProfileId === 'family') {
+    throw new RewardStoreError(
+      'Family cannot approve a Redemption.'
+    );
+  }
+  if (
+    !Number.isSafeInteger(input.starCost) ||
+    Number(input.starCost) <= 0
+  ) {
+    throw new RewardStoreError(
+      'Reward redemption cost must be a positive safe integer.'
+    );
+  }
+  if (
+    !eventKey.startsWith('redemption:') ||
+    !eventKey.endsWith(':debit')
+  ) {
+    throw new RewardStoreError(
+      'Reward redemption event key is invalid.'
+    );
+  }
+
+  return {
+    profileId,
+    starCost: Number(input.starCost),
+    eventKey,
+    actorProfileId,
+    timeZone: normalizeTimeZone(input.timeZone),
+  };
+}
+
 function normalizeReversalInput(
   input: unknown
 ): RewardReversalInput {
@@ -883,6 +949,25 @@ function equivalentAward(
       input.source
     ) &&
     transaction.relation === null
+  );
+}
+
+function equivalentRedemption(
+  transaction: RewardTransaction,
+  input: RewardRedemptionInput
+): boolean {
+  return (
+    transaction.entryType === 'redemption' &&
+    transaction.profileId === input.profileId &&
+    transaction.currency === 'star' &&
+    transaction.amount === -input.starCost &&
+    transaction.category === 'redemption' &&
+    transaction.reason === null &&
+    transaction.source.kind === 'redemption' &&
+    transaction.source.eventKey === input.eventKey &&
+    transaction.source.label === 'Reward redemption' &&
+    transaction.relation === null &&
+    transaction.timeZone === input.timeZone
   );
 }
 
@@ -1207,6 +1292,105 @@ export class RewardFileStore {
       normalizeManualAwardInput(input),
       now
     );
+  }
+
+  async appendRedemption(
+    id: string,
+    input: unknown,
+    now = new Date()
+  ): Promise<RewardMutationResult> {
+    const normalized = normalizeRedemptionInput(input);
+    const createdAt = now.toISOString();
+
+    return this.mutate<RewardMutationResult>(store => {
+      const existingEvent = store.transactions.find(
+        transaction =>
+          transaction.source.eventKey ===
+            normalized.eventKey
+      );
+
+      if (existingEvent) {
+        if (equivalentRedemption(
+          existingEvent,
+          normalized
+        )) {
+          return {
+            store,
+            result: {
+              transaction: existingEvent,
+              created: false,
+            },
+            changed: false,
+          };
+        }
+
+        throw new RewardIdempotencyConflictError(
+          'Reward event key is already used by a different request.'
+        );
+      }
+
+      if (
+        !isNonEmptyText(id) ||
+        store.transactions.some(
+          transaction => transaction.id === id.trim()
+        )
+      ) {
+        throw new RewardStoreError(
+          'Reward transaction ID is invalid or already exists.'
+        );
+      }
+
+      const balances = getRewardBalances(
+        store.transactions
+      );
+      if (
+        (balances[normalized.profileId] ?? 0) <
+          normalized.starCost
+      ) {
+        throw new RewardInsufficientBalanceError(
+          'There are not enough stars to approve this request.'
+        );
+      }
+
+      const transaction: RewardTransaction = {
+        id: id.trim(),
+        profileId: normalized.profileId,
+        entryType: 'redemption',
+        currency: 'star',
+        amount: -normalized.starCost,
+        category: 'redemption',
+        reason: null,
+        source: {
+          kind: 'redemption',
+          eventKey: normalized.eventKey,
+          label: 'Reward redemption',
+        },
+        relation: null,
+        actorProfileId:
+          normalized.actorProfileId,
+        createdAt,
+        localDate: getLocalDate(
+          now,
+          normalized.timeZone
+        ),
+        timeZone: normalized.timeZone,
+      };
+
+      assertAppendWithinRange(
+        store.transactions,
+        transaction.profileId,
+        transaction.amount
+      );
+      store.transactions.push(transaction);
+
+      return {
+        store,
+        result: {
+          transaction,
+          created: true,
+        },
+      };
+    });
   }
 
   async reverseTransaction(

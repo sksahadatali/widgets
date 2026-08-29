@@ -20,6 +20,8 @@ import {
 import { useRedemptions } from '../../hooks/useRedemptions';
 import { useHouseholdProfile } from '../../household/useHouseholdProfile';
 import { canManageRewards } from '../../rewards/manualRewards';
+import { getRewardBalances } from '../../rewards/rewardSelectors';
+import { useRewardContext } from '../../rewards/useRewardContext';
 import {
   getRedemptionRequestStatus,
   selectActiveCatalogue,
@@ -98,6 +100,11 @@ export default function RedemptionWorkspace() {
     selectedProfile,
   } = useHouseholdProfile();
   const {
+    transactions,
+    saving: rewardSaving,
+    refresh: refreshRewards,
+  } = useRewardContext();
+  const {
     catalogue,
     requests,
     loading,
@@ -111,7 +118,10 @@ export default function RedemptionWorkspace() {
     createRequest,
     cancelRequest,
     declineRequest,
+    approveRequest,
+    refundRequest,
   } = useRedemptions();
+  const busy = saving || rewardSaving;
   const canManage = canManageRewards(selectedProfile);
   const isChild = selectedProfile.kind === 'member' &&
     selectedProfile.memberType === 'child';
@@ -135,6 +145,10 @@ export default function RedemptionWorkspace() {
       ])
     ),
     [profiles]
+  );
+  const balances = useMemo(
+    () => getRewardBalances(transactions),
+    [transactions]
   );
   const [visibleCount, setVisibleCount] =
     useState(INITIAL_REQUEST_LIMIT);
@@ -291,6 +305,72 @@ export default function RedemptionWorkspace() {
     }
   };
 
+  const approve = async (requestId: string) => {
+    clearMessages();
+    if (!canManage) return;
+    const request = requests.find(
+      candidate => candidate.id === requestId
+    );
+    if (!request) return;
+    if (!window.confirm(
+      `Approve this request and deduct ${request.contract.starCost} stars from the captured recipient?`
+    )) return;
+    try {
+      await approveRequest(
+        requestId,
+        selectedProfile.id
+      );
+      await refreshRewards();
+      setSuccessMessage(
+        `${request.contract.starCost} stars were deducted.`
+      );
+    } catch (approveError) {
+      setFormError(
+        approveError instanceof Error
+          ? approveError.message
+          : 'Unable to approve the request.'
+      );
+    }
+  };
+
+  const refund = async (requestId: string) => {
+    clearMessages();
+    if (!canManage) return;
+    const request = requests.find(
+      candidate => candidate.id === requestId
+    );
+    if (!request) return;
+    if (!window.confirm(
+      `Cancel this approved redemption and refund exactly ${request.contract.starCost} stars? The debit and refund will both remain in the accounting history.`
+    )) return;
+    try {
+      await refundRequest(
+        requestId,
+        selectedProfile.id
+      );
+      await refreshRewards();
+      setSuccessMessage(
+        `${request.contract.starCost} stars were refunded.`
+      );
+    } catch (refundError) {
+      setFormError(
+        refundError instanceof Error
+          ? refundError.message
+          : 'Unable to refund the redemption.'
+      );
+    }
+  };
+
+  const statusLabel = (
+    status: ReturnType<typeof getRedemptionRequestStatus>
+  ) => {
+    if (status === 'accounting-error') {
+      return 'Accounting issue';
+    }
+    return status.charAt(0).toUpperCase() +
+      status.slice(1);
+  };
+
   const move = async (
     index: number,
     direction: -1 | 1
@@ -369,7 +449,7 @@ export default function RedemptionWorkspace() {
           <div>
             <h2 id="redeem-stars-title">Redeem Stars</h2>
             <p>
-              Requests do not deduct or reserve stars. Adult approval will be introduced separately.
+              Requests do not reserve stars. Stars are deducted only when an adult approves.
             </p>
           </div>
           <Gift size={24} aria-hidden="true" />
@@ -421,7 +501,7 @@ export default function RedemptionWorkspace() {
             </h2>
             <p>
               {canManage
-                ? 'Adult profile context can decline pending requests. It is not authentication.'
+                ? 'Review pending requests, approve affordable rewards, or decline them.'
                 : 'Only requests visible in the selected household context are shown.'}
             </p>
           </div>
@@ -434,9 +514,15 @@ export default function RedemptionWorkspace() {
             {visibleRequests
               .slice(0, visibleCount)
               .map(request => {
-                const status = getRedemptionRequestStatus(request);
+                const status = getRedemptionRequestStatus(
+                  request,
+                  transactions
+                );
                 const profileName = namesById.get(request.profileId) ??
                   'Removed profile';
+                const balance = balances[request.profileId] ?? 0;
+                const affordable = balance >=
+                  request.contract.starCost;
                 return (
                   <li
                     key={request.id}
@@ -447,12 +533,18 @@ export default function RedemptionWorkspace() {
                       <span>
                         {profileName} · {request.contract.starCost} ★ · {formatLocalDate(request.localDate)}
                       </span>
+                      {canManage && status === 'requested' && (
+                        <span>
+                          Current balance: {balance} ★
+                          {!affordable && ' · Not enough stars to approve'}
+                        </span>
+                      )}
                       {request.contract.description && (
                         <p>{request.contract.description}</p>
                       )}
                     </div>
                     <span className={`redemption-status redemption-status--${status}`}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {statusLabel(status)}
                     </span>
                     {status === 'requested' && isChild &&
                       request.profileId === selectedProfile.id && (
@@ -460,22 +552,49 @@ export default function RedemptionWorkspace() {
                         type="button"
                         className="rewards-button rewards-button--secondary"
                         onClick={() => void cancel(request.id)}
-                        disabled={saving}
+                        disabled={busy}
                       >
                         <X size={17} aria-hidden="true" />
                         Cancel request
                       </button>
                     )}
                     {status === 'requested' && canManage && (
+                      <div className="redemption-request__actions">
+                        <button
+                          type="button"
+                          className="rewards-button rewards-button--primary"
+                          onClick={() => void approve(request.id)}
+                          disabled={busy || !affordable}
+                        >
+                          <Check size={17} aria-hidden="true" />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="rewards-button rewards-button--danger"
+                          onClick={() => void decline(request.id)}
+                          disabled={busy}
+                        >
+                          <Ban size={17} aria-hidden="true" />
+                          Decline
+                        </button>
+                      </div>
+                    )}
+                    {status === 'approved' && canManage && (
                       <button
                         type="button"
                         className="rewards-button rewards-button--danger"
-                        onClick={() => void decline(request.id)}
-                        disabled={saving}
+                        onClick={() => void refund(request.id)}
+                        disabled={busy}
                       >
-                        <Ban size={17} aria-hidden="true" />
-                        Decline
+                        <RotateCcw size={17} aria-hidden="true" />
+                        Cancel and refund
                       </button>
+                    )}
+                    {status === 'accounting-error' && (
+                      <span className="redemption-request__integrity" role="alert">
+                        This request needs an accounting review before it can be changed.
+                      </span>
                     )}
                   </li>
                 );
