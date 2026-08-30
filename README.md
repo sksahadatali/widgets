@@ -387,6 +387,29 @@ Demo mode uses only a disposable in-memory clone of the tracked synthetic `app/s
 
 The JSON store is designed for one Node backend process. It does not provide multi-process locking, real-time synchronization, cloud persistence, history, or automatic checked-item cleanup.
 
+## Meal Planning
+
+The **Meals** destination provides one shared Monday-to-Sunday household plan with Breakfast, Lunch and Dinner slots. Entries are plain titles tied to household-local calendar dates. Weeks are derived in the browser from those dates; no week containers, profile ownership, recipe data, ingredients or Lists integration are stored.
+
+Household Meals use an independent private schema-v1 store:
+
+```text
+server/data/meals.local.json
+```
+
+Entry array order supplies deterministic order within each date and meal-type slot. Creates and copies append to their target slot. Moves preserve identity and creation time while appending to the destination slot. Equivalent retries and no-op updates do not rewrite the primary or rotate the backup.
+
+Writes are serialized within the single backend process, re-read the authoritative primary, validate a clone, retain one previous valid primary at `server/data/meals.local.json.bak`, and atomically replace the primary through unique temporary files. The primary, backup and temporary files are ignored by Git. A malformed or unsupported primary remains byte-for-byte untouched, and Household mode never falls back to Demo data.
+
+Demo mode uses only safe current-week-relative synthetic meals in a disposable in-memory store. Demo state lasts for the current SPA session and resets on full reload. It never calls the Household Meals API or reads the Household store.
+
+### Restoring the Meals backup
+
+1. Stop `npm run dev` so the backend cannot write during recovery.
+2. Preserve the malformed `server/data/meals.local.json` for diagnosis by renaming it to an ignored filename such as `meals.local.json.corrupt`.
+3. Copy `server/data/meals.local.json.bak` to `server/data/meals.local.json`.
+4. Restart `npm run dev`, open **Meals**, and verify the recovered weekly plan before making another change.
+
 The Redemption JSON store assumes one Node backend process and has no pruning, pagination, cloud synchronization, authentication, approval, star reservation, fulfilment or financial reconciliation. Requests may therefore be created before the child has enough stars; the authoritative balance check belongs to the later adult-approval phase.
 
 ---

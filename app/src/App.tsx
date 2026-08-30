@@ -10,6 +10,7 @@ import Daily from './pages/Daily';
 import Settings from './pages/Settings';
 import Rewards from './pages/Rewards';
 import Lists from './pages/Lists';
+import Meals from './pages/Meals';
 
 import {
   ThemeProvider,
@@ -89,6 +90,10 @@ function App() {
 
               {page === 'Lists' && (
                 <Lists />
+              )}
+
+              {page === 'Meals' && (
+                <Meals />
               )}
 
               {page === 'Personal' && (

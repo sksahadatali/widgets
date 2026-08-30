@@ -9,7 +9,8 @@
         "start": "node dist/server.js",
         "test:routines": "node --import tsx --test ../tests/routines/*.test.ts",
         "test:rewards": "node --import tsx --test ../tests/rewards/*.test.ts",
-        "test:lists": "node --import tsx --test ../tests/lists/*.test.ts"
+        "test:lists": "node --import tsx --test ../tests/lists/*.test.ts",
+        "test:meals": "node --import tsx --test ../tests/meals/*.test.ts"
     },
     "dependencies": {
         "@notionhq/client": "^5.23.2",

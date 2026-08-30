@@ -8,6 +8,7 @@ import {
   Quote,
   Settings,
   ShoppingBag,
+  Utensils,
   User,
 } from 'lucide-react';
 
@@ -18,6 +19,7 @@ type SidebarPage =
   | 'Daily'
   | 'Rewards'
   | 'Lists'
+  | 'Meals'
   | 'Personal'
   | 'RAEN'
   | 'AYANOH'
@@ -51,6 +53,10 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Lists',
     icon: ListChecks,
+  },
+  {
+    label: 'Meals',
+    icon: Utensils,
   },
   {
     label: 'Personal',
