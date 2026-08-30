@@ -44,6 +44,7 @@
   },
   "calendar": {
     "endpoint": "",
-    "refreshMinutes": 15
+    "refreshMinutes": 15,
+    "sources": []
   }
 }

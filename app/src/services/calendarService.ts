@@ -1,6 +1,16 @@
 import { apiGet } from './apiClient';
 
 import {
+  shouldFetchHouseholdCalendar,
+} from '../calendar/calendarMode';
+
+import {
+  normalizeCalendarEvent,
+  type CalendarApiEvent,
+  type CalendarEvent,
+} from '../calendar/calendarModel';
+
+import {
   getAppMode,
   getHouseholdConfig,
 } from './householdConfigService';
@@ -8,17 +18,8 @@ import {
 const CALENDAR_CONFIG =
   getHouseholdConfig().calendar;
 
-type CalendarApiEvent = {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  allDay?: boolean;
-  location?: string;
-  description?: string;
-  status?: string;
-  calendarUrl?: string;
-};
+const DEFAULT_CALENDAR_URL =
+  'https://calendar.google.com/calendar/u/0/r';
 
 type CalendarApiResponse = {
   success: boolean;
@@ -29,16 +30,7 @@ type CalendarApiResponse = {
   error?: string;
 };
 
-export type CalendarEvent = {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  allDay: boolean;
-  location: string;
-  description: string;
-  calendarUrl: string;
-};
+export type { CalendarEvent };
 
 export type CalendarData = {
   calendarUrl: string;
@@ -48,18 +40,11 @@ export type CalendarData = {
 };
 
 export async function getCalendarEvents(): Promise<CalendarData> {
-  if (
-    getAppMode() === 'demo' &&
-    !CALENDAR_CONFIG.endpoint
-  ) {
+  if (!shouldFetchHouseholdCalendar(getAppMode())) {
     return {
-      calendarUrl:
-        'https://calendar.google.com/calendar/u/0/r',
-      generatedAt:
-        new Date().toISOString(),
-      timeZone:
-        getHouseholdConfig()
-          .location.timezone,
+      calendarUrl: DEFAULT_CALENDAR_URL,
+      generatedAt: new Date().toISOString(),
+      timeZone: getHouseholdConfig().location.timezone,
       events: [],
     };
   }
@@ -76,37 +61,23 @@ export async function getCalendarEvents(): Promise<CalendarData> {
     );
   }
 
-  const events = (data.events ?? []).map(
-    event => ({
-      id: event.id,
-      title:
-        event.title ||
-        'Untitled event',
-      start: event.start,
-      end: event.end,
-      allDay:
-        event.allDay ?? false,
-      location:
-        event.location ?? '',
-      description:
-        event.description ?? '',
-      calendarUrl:
-        event.calendarUrl ||
-        data.calendarUrl ||
-        'https://calendar.google.com/calendar/u/0/r',
-    })
-  );
+  const calendarUrl =
+    data.calendarUrl || DEFAULT_CALENDAR_URL;
+  const timeZone =
+    data.timeZone || getHouseholdConfig().location.timezone;
+  const events = (data.events ?? [])
+    .map(event => normalizeCalendarEvent(
+      event,
+      timeZone,
+      CALENDAR_CONFIG.sources ?? [],
+      calendarUrl
+    ))
+    .filter((event): event is CalendarEvent => event !== null);
 
   return {
-    calendarUrl:
-      data.calendarUrl ||
-      'https://calendar.google.com/calendar/u/0/r',
-    generatedAt:
-      data.generatedAt ?? '',
-    timeZone:
-      data.timeZone ||
-      getHouseholdConfig()
-        .location.timezone,
+    calendarUrl,
+    generatedAt: data.generatedAt ?? '',
+    timeZone,
     events,
   };
 }

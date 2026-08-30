@@ -6,20 +6,30 @@ import {
 
 import { useCalendar } from '../../../hooks/useCalendar';
 
+import {
+  formatCalendarLocalDate,
+} from '../../../calendar/calendarModel';
+
 import type {
   CalendarEvent,
 } from '../../../services/calendarService';
+
+import {
+  CalendarSourceIndicator,
+} from './CalendarSourceIndicator';
 
 import './Calendar.css';
 
 type EventGroupProps = {
   title: string;
   events: CalendarEvent[];
-  showWeekday?: boolean;
+  timeZone: string;
+  showDate?: boolean;
 };
 
 function formatTime(
-  event: CalendarEvent
+  event: CalendarEvent,
+  timeZone: string
 ) {
   if (event.allDay) {
     return 'All day';
@@ -31,29 +41,79 @@ function formatTime(
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
+      timeZone,
     }
   ).format(
     new Date(event.start)
   );
 }
 
-function formatWeekday(
+function formatDate(
   event: CalendarEvent
 ) {
-  return new Intl.DateTimeFormat(
-    'en-GB',
+  return formatCalendarLocalDate(
+    event.startLocalDate,
     {
       weekday: 'short',
+      day: 'numeric',
+      month: 'short',
     }
-  ).format(
-    new Date(event.start)
+  );
+}
+
+export function CalendarEventRow({
+  event,
+  timeZone,
+  showDate = false,
+}: {
+  event: CalendarEvent;
+  timeZone: string;
+  showDate?: boolean;
+}) {
+  return (
+    <article className="calendar-card__event">
+      <div className="calendar-card__time">
+        {showDate && (
+          <span className="calendar-card__date">
+            {formatDate(event)}
+          </span>
+        )}
+
+        <span>
+          {formatTime(event, timeZone)}
+        </span>
+      </div>
+
+      <div className="calendar-card__event-content">
+        <div className="calendar-card__event-heading">
+          <span className="calendar-card__event-title">
+            {event.title}
+          </span>
+
+          <CalendarSourceIndicator source={event.source} />
+        </div>
+
+        {event.location && (
+          <span className="calendar-card__location">
+            <MapPin
+              size={13}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+
+            {event.location}
+          </span>
+        )}
+      </div>
+    </article>
   );
 }
 
 function EventGroup({
   title,
   events,
-  showWeekday = false,
+  timeZone,
+  showDate = false,
 }: EventGroupProps) {
   if (events.length === 0) {
     return null;
@@ -67,42 +127,12 @@ function EventGroup({
 
       <div className="calendar-card__events">
         {events.map(event => (
-          <article
-            className="calendar-card__event"
+          <CalendarEventRow
             key={event.id}
-          >
-            <div className="calendar-card__time">
-              {showWeekday && (
-                <span className="calendar-card__weekday">
-                  {formatWeekday(
-                    event
-                  )}
-                </span>
-              )}
-
-              <span>
-                {formatTime(event)}
-              </span>
-            </div>
-
-            <div className="calendar-card__event-content">
-              <span className="calendar-card__event-title">
-                {event.title}
-              </span>
-
-              {event.location && (
-                <span className="calendar-card__location">
-                  <MapPin
-                    size={13}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-
-                  {event.location}
-                </span>
-              )}
-            </div>
-          </article>
+            event={event}
+            timeZone={timeZone}
+            showDate={showDate}
+          />
         ))}
       </div>
     </section>
@@ -111,15 +141,19 @@ function EventGroup({
 
 function Calendar() {
   const {
-    events,
     todayEvents,
     tomorrowEvents,
-    thisWeekEvents,
+    comingUpEvents,
     calendarUrl,
+    timeZone,
     loading,
     error,
     refresh,
   } = useCalendar();
+  const displayedEventCount =
+    todayEvents.length +
+    tomorrowEvents.length +
+    comingUpEvents.length;
 
   function openCalendar() {
     window.open(
@@ -176,7 +210,7 @@ function Calendar() {
             Retry
           </button>
         </div>
-      ) : events.length === 0 ? (
+      ) : displayedEventCount === 0 ? (
         <div className="calendar-card__state">
           No upcoming events.
         </div>
@@ -185,17 +219,20 @@ function Calendar() {
           <EventGroup
             title="Today"
             events={todayEvents}
+            timeZone={timeZone}
           />
 
           <EventGroup
             title="Tomorrow"
             events={tomorrowEvents}
+            timeZone={timeZone}
           />
 
           <EventGroup
-            title="This Week"
-            events={thisWeekEvents}
-            showWeekday
+            title="Coming Up"
+            events={comingUpEvents}
+            timeZone={timeZone}
+            showDate
           />
         </div>
       )}
