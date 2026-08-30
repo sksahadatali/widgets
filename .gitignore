@@ -18,6 +18,9 @@ server/data/rewards.local.json*
 # Private household Redemption catalogue/request data and atomic-write files
 server/data/redemptions.local.json*
 
+# Private household Lists data and atomic-write files
+server/data/lists.local.json*
+
 # Dependencies
 node_modules/
 
