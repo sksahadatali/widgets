@@ -85,14 +85,14 @@ async function requestMeals(
 }
 
 export async function loadMeals(
-  weekStart: string
+  windowStart: string
 ): Promise<MealPlanEntry[]> {
   if (getAppMode() === 'demo') {
-    return demoMealPlanStore.readWeek(weekStart);
+    return demoMealPlanStore.readWindow(windowStart);
   }
 
   const payload = await requestMeals(
-    `/api/meals?weekStart=${encodeURIComponent(weekStart)}`
+    `/api/meals?startDate=${encodeURIComponent(windowStart)}`
   );
 
   if (!payload.success || !payload.entries) {

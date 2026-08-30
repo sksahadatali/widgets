@@ -1,6 +1,6 @@
 export type MealCalendarState = {
   householdToday: string;
-  selectedWeekStart: string;
+  selectedWindowStart: string;
 };
 
 const LOCAL_DATE_PATTERN =
@@ -64,34 +64,6 @@ export function shiftMealLocalDate(
   ].join('-');
 }
 
-export function getMealIsoWeekday(
-  localDate: string
-): number {
-  const [year, month, day] =
-    parseLocalDate(localDate);
-  const weekday = new Date(
-    Date.UTC(year, month - 1, day)
-  ).getUTCDay();
-
-  return weekday === 0 ? 7 : weekday;
-}
-
-export function getMealWeekStart(
-  localDate: string
-): string {
-  return shiftMealLocalDate(
-    localDate,
-    -(getMealIsoWeekday(localDate) - 1)
-  );
-}
-
-export function isMondayLocalDate(
-  localDate: string
-): boolean {
-  return isValidLocalDate(localDate) &&
-    getMealIsoWeekday(localDate) === 1;
-}
-
 function getDatePart(
   parts: Intl.DateTimeFormatPart[],
   type: Intl.DateTimeFormatPartTypes
@@ -139,8 +111,7 @@ export function createMealCalendarState(
 
   return {
     householdToday,
-    selectedWeekStart:
-      getMealWeekStart(householdToday),
+    selectedWindowStart: householdToday,
   };
 }
 
@@ -149,34 +120,40 @@ export function refreshMealHouseholdToday(
   instant: Date,
   timeZone: string
 ): MealCalendarState {
+  const householdToday =
+    getHouseholdToday(instant, timeZone);
+
   return {
-    ...state,
-    householdToday:
-      getHouseholdToday(instant, timeZone),
+    householdToday,
+    selectedWindowStart:
+      state.selectedWindowStart === state.householdToday
+        ? householdToday
+        : state.selectedWindowStart,
   };
 }
 
-export function selectCurrentMealWeek(
+export function selectCurrentMealWindow(
   state: MealCalendarState
 ): MealCalendarState {
   return {
     ...state,
-    selectedWeekStart:
-      getMealWeekStart(state.householdToday),
+    selectedWindowStart: state.householdToday,
   };
 }
 
-export function getMealWeekDates(
-  weekStart: string
+export function getMealWindowDates(
+  windowStart: string
 ): string[] {
-  if (!isMondayLocalDate(weekStart)) {
-    throw new Error('Meal week must start on Monday.');
+  if (!isValidLocalDate(windowStart)) {
+    throw new Error(
+      'Meal planning window must start on a valid local date.'
+    );
   }
 
   return Array.from(
     { length: 7 },
     (_, index) =>
-      shiftMealLocalDate(weekStart, index)
+      shiftMealLocalDate(windowStart, index)
   );
 }
 

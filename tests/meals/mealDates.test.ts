@@ -4,12 +4,10 @@ import { describe, it } from 'node:test';
 import {
   createMealCalendarState,
   getHouseholdToday,
-  getMealWeekDates,
-  getMealWeekStart,
-  isMondayLocalDate,
+  getMealWindowDates,
   isValidLocalDate,
   refreshMealHouseholdToday,
-  selectCurrentMealWeek,
+  selectCurrentMealWindow,
   shiftMealLocalDate,
 } from '../../app/src/meals/mealDates.ts';
 
@@ -22,10 +20,37 @@ describe('Meal civil dates and household time', () => {
     assert.equal(isValidLocalDate('26-08-31'), false);
   });
 
-  it('derives Monday-Sunday weeks across month and year boundaries', () => {
-    assert.equal(getMealWeekStart('2026-01-01'), '2025-12-29');
+  it('starts the default window at household Today', () => {
     assert.deepEqual(
-      getMealWeekDates('2025-12-29'),
+      createMealCalendarState(
+        new Date('2026-08-30T23:30:00.000Z'),
+        'Europe/London'
+      ),
+      {
+        householdToday: '2026-08-31',
+        selectedWindowStart: '2026-08-31',
+      }
+    );
+  });
+
+  it('returns exactly seven consecutive dates across a month boundary', () => {
+    assert.deepEqual(
+      getMealWindowDates('2026-08-30'),
+      [
+        '2026-08-30',
+        '2026-08-31',
+        '2026-09-01',
+        '2026-09-02',
+        '2026-09-03',
+        '2026-09-04',
+        '2026-09-05',
+      ]
+    );
+  });
+
+  it('keeps consecutive windows correct across year and leap-year boundaries', () => {
+    assert.deepEqual(
+      getMealWindowDates('2025-12-29'),
       [
         '2025-12-29',
         '2025-12-30',
@@ -36,9 +61,18 @@ describe('Meal civil dates and household time', () => {
         '2026-01-04',
       ]
     );
-    assert.equal(isMondayLocalDate('2025-12-29'), true);
-    assert.equal(isMondayLocalDate('2026-01-01'), false);
-    assert.equal(shiftMealLocalDate('2024-02-28', 1), '2024-02-29');
+    assert.deepEqual(
+      getMealWindowDates('2024-02-27'),
+      [
+        '2024-02-27',
+        '2024-02-28',
+        '2024-02-29',
+        '2024-03-01',
+        '2024-03-02',
+        '2024-03-03',
+        '2024-03-04',
+      ]
+    );
   });
 
   it('uses the household timezone across a UTC date boundary', () => {
@@ -77,10 +111,21 @@ describe('Meal civil dates and household time', () => {
     );
   });
 
-  it('refreshes householdToday without hijacking the selected week', () => {
+  it('moves Previous and Next by exactly seven calendar days', () => {
+    assert.equal(
+      shiftMealLocalDate('2026-08-30', -7),
+      '2026-08-23'
+    );
+    assert.equal(
+      shiftMealLocalDate('2026-08-30', 7),
+      '2026-09-06'
+    );
+  });
+
+  it('refreshes householdToday without hijacking a navigated window', () => {
     const navigated = {
       householdToday: '2026-08-30',
-      selectedWeekStart: '2026-08-10',
+      selectedWindowStart: '2026-08-16',
     };
     const refreshed = refreshMealHouseholdToday(
       navigated,
@@ -89,20 +134,27 @@ describe('Meal civil dates and household time', () => {
     );
     assert.deepEqual(refreshed, {
       householdToday: '2026-08-31',
-      selectedWeekStart: '2026-08-10',
+      selectedWindowStart: '2026-08-16',
     });
     assert.equal(
-      selectCurrentMealWeek(refreshed).selectedWeekStart,
+      selectCurrentMealWindow(refreshed).selectedWindowStart,
       '2026-08-31'
     );
+  });
+
+  it('rolls a still-current Today window across household midnight', () => {
     assert.deepEqual(
-      createMealCalendarState(
-        new Date('2026-08-30T23:30:00.000Z'),
+      refreshMealHouseholdToday(
+        {
+          householdToday: '2026-08-30',
+          selectedWindowStart: '2026-08-30',
+        },
+        new Date('2026-08-31T12:00:00.000Z'),
         'Europe/London'
       ),
       {
         householdToday: '2026-08-31',
-        selectedWeekStart: '2026-08-31',
+        selectedWindowStart: '2026-08-31',
       }
     );
   });

@@ -340,17 +340,6 @@ function normalizeUpdateInput(
   };
 }
 
-function getIsoWeekday(localDate: string): number {
-  const match = LOCAL_DATE_PATTERN.exec(localDate)!;
-  const weekday = new Date(Date.UTC(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3])
-  )).getUTCDay();
-
-  return weekday === 0 ? 7 : weekday;
-}
-
 function shiftLocalDate(
   localDate: string,
   days: number
@@ -367,18 +356,6 @@ function shiftLocalDate(
     String(date.getUTCMonth() + 1).padStart(2, '0'),
     String(date.getUTCDate()).padStart(2, '0'),
   ].join('-');
-}
-
-function normalizeWeekStart(value: unknown): string {
-  const localDate = normalizeLocalDate(value);
-
-  if (getIsoWeekday(localDate) !== 1) {
-    throw new MealPlanStoreError(
-      'Meal weekStart must be a Monday.'
-    );
-  }
-
-  return localDate;
 }
 
 function insertAfterTargetSlot(
@@ -556,20 +533,20 @@ export class MealPlanFileStore {
     }));
   }
 
-  async readWeek(
-    weekStartValue: unknown
+  async readWindow(
+    windowStartValue: unknown
   ): Promise<MealPlanEntry[]> {
-    const weekStart =
-      normalizeWeekStart(weekStartValue);
-    const weekEnd =
-      shiftLocalDate(weekStart, 6);
+    const windowStart =
+      normalizeLocalDate(windowStartValue);
+    const windowEnd =
+      shiftLocalDate(windowStart, 6);
 
     return this.mutate(store => ({
       store,
       result: structuredClone(
         store.entries.filter(entry =>
-          entry.localDate >= weekStart &&
-          entry.localDate <= weekEnd
+          entry.localDate >= windowStart &&
+          entry.localDate <= windowEnd
         )
       ),
       changed: false,

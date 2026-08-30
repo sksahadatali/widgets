@@ -178,7 +178,7 @@ describe('MealPlanFileStore validation and persistence', () => {
     );
   });
 
-  it('requires a valid Monday and returns only the selected week', async () => {
+  it('accepts any valid start and returns only its seven-date window', async () => {
     const { store } = await makeStore();
     await store.createEntry(
       input(ENTRY_ONE, '2026-08-31', 'breakfast', 'Porridge'),
@@ -193,11 +193,11 @@ describe('MealPlanFileStore validation and persistence', () => {
       NOW
     );
     assert.deepEqual(
-      (await store.readWeek('2026-08-31')).map(entry => entry.id),
-      [ENTRY_ONE, ENTRY_TWO]
+      (await store.readWindow('2026-09-01')).map(entry => entry.id),
+      [ENTRY_TWO, ENTRY_THREE]
     );
     await assert.rejects(
-      store.readWeek('2026-09-01'),
+      store.readWindow('2026-02-30'),
       MealPlanStoreError
     );
   });

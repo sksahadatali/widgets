@@ -1,7 +1,6 @@
 import {
   getHouseholdToday,
-  getMealWeekDates,
-  getMealWeekStart,
+  getMealWindowDates,
   isValidLocalDate,
   shiftMealLocalDate,
 } from './mealDates';
@@ -212,8 +211,9 @@ function createSeedStore(
   now: Date,
   timeZone: string
 ): MealPlanStoreData {
-  const weekStart = getMealWeekStart(
-    getHouseholdToday(now, timeZone)
+  const windowStart = getHouseholdToday(
+    now,
+    timeZone
   );
   const timestamp = now.toISOString();
 
@@ -222,7 +222,7 @@ function createSeedStore(
     entries: SAFE_DEMO_SEEDS.map(seed => ({
       id: seed.id,
       localDate: shiftMealLocalDate(
-        weekStart,
+        windowStart,
         seed.dayOffset
       ),
       mealType: seed.mealType,
@@ -252,14 +252,14 @@ export class DemoMealPlanStore {
     return structuredClone(this.store);
   }
 
-  readWeek(weekStart: string): MealPlanEntry[] {
-    const weekDates = new Set(
-      getMealWeekDates(weekStart)
+  readWindow(windowStart: string): MealPlanEntry[] {
+    const windowDates = new Set(
+      getMealWindowDates(windowStart)
     );
 
     return structuredClone(
       this.store.entries.filter(entry =>
-        weekDates.has(entry.localDate)
+        windowDates.has(entry.localDate)
       )
     );
   }

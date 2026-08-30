@@ -25,15 +25,15 @@ import { useMeals } from '../hooks/useMeals';
 import {
   createMealCalendarState,
   formatMealLocalDate,
-  getMealWeekDates,
   refreshMealHouseholdToday,
-  selectCurrentMealWeek,
+  selectCurrentMealWindow,
   shiftMealLocalDate,
 } from '../meals/mealDates';
 import {
   MEAL_TYPES,
   MEAL_TYPE_LABELS,
-  selectMealPlanWeek,
+  selectMealActionDates,
+  selectMealPlanWindow,
 } from '../meals/mealSelectors';
 import {
   getHouseholdConfig,
@@ -153,7 +153,7 @@ function Meals() {
     createMeal,
     updateMeal,
     removeMeal,
-  } = useMeals(calendar.selectedWeekStart);
+  } = useMeals(calendar.selectedWindowStart);
   const [addingSlot, setAddingSlot] =
     useState<Slot | null>(null);
   const [newTitle, setNewTitle] = useState('');
@@ -257,29 +257,29 @@ function Meals() {
     };
   }, [openActionMenuId]);
 
-  const weekDays = useMemo(
-    () => selectMealPlanWeek(
+  const windowDays = useMemo(
+    () => selectMealPlanWindow(
       entries,
-      calendar.selectedWeekStart,
+      calendar.selectedWindowStart,
       calendar.householdToday
     ),
     [
       entries,
-      calendar.selectedWeekStart,
+      calendar.selectedWindowStart,
       calendar.householdToday,
     ]
   );
-  const weekDates = useMemo(
-    () => getMealWeekDates(
-      calendar.selectedWeekStart
+  const windowDates = useMemo(
+    () => selectMealActionDates(
+      calendar.selectedWindowStart
     ),
-    [calendar.selectedWeekStart]
+    [calendar.selectedWindowStart]
   );
-  const weekEnd = weekDates[6];
-  const weekRange = `${formatMealLocalDate(
-    calendar.selectedWeekStart,
+  const windowEnd = windowDates[6];
+  const windowRange = `${formatMealLocalDate(
+    calendar.selectedWindowStart,
     { day: 'numeric', month: 'short' }
-  )} – ${formatMealLocalDate(weekEnd, {
+  )} – ${formatMealLocalDate(windowEnd, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -312,12 +312,12 @@ function Meals() {
     pendingCopyRef.current = null;
   };
 
-  const navigateWeek = (days: -7 | 7) => {
+  const navigateWindow = (days: -7 | 7) => {
     resetEditors();
     setCalendar(current => ({
       ...current,
-      selectedWeekStart: shiftMealLocalDate(
-        current.selectedWeekStart,
+      selectedWindowStart: shiftMealLocalDate(
+        current.selectedWindowStart,
         days
       ),
     }));
@@ -326,7 +326,7 @@ function Meals() {
   const navigateToToday = () => {
     resetEditors();
     setCalendar(current =>
-      selectCurrentMealWeek(
+      selectCurrentMealWindow(
         refreshMealHouseholdToday(
           current,
           new Date(),
@@ -494,35 +494,35 @@ function Meals() {
       <header className="meals-page__header">
         <div>
           <p className="meals-page__eyebrow">
-            Weekly meal planner
+            Seven-day meal planner
           </p>
           <h1>Meals</h1>
           <p>
-            Keep the household meal plan clear for the week.
+            Keep the next seven days of household meals clear.
           </p>
         </div>
         <Utensils size={34} aria-hidden="true" />
       </header>
 
       <section
-        className="meals-week-toolbar"
-        aria-label="Meal planning week"
+        className="meals-window-toolbar"
+        aria-label="Meal planning window"
       >
         <div>
-          <p className="meals-week-toolbar__label">
-            Selected week
+          <p className="meals-window-toolbar__label">
+            Selected seven days
           </p>
-          <h2>{weekRange}</h2>
+          <h2>{windowRange}</h2>
         </div>
-        <div className="meals-week-toolbar__actions">
+        <div className="meals-window-toolbar__actions">
           <button
             type="button"
             className="meals-button meals-button--secondary"
             disabled={saving}
-            onClick={() => navigateWeek(-7)}
+            onClick={() => navigateWindow(-7)}
           >
             <ChevronLeft size={18} aria-hidden="true" />
-            Previous
+            Previous 7 days
           </button>
           <button
             type="button"
@@ -536,9 +536,9 @@ function Meals() {
             type="button"
             className="meals-button meals-button--secondary"
             disabled={saving}
-            onClick={() => navigateWeek(7)}
+            onClick={() => navigateWindow(7)}
           >
-            Next
+            Next 7 days
             <ChevronRight size={18} aria-hidden="true" />
           </button>
         </div>
@@ -579,10 +579,22 @@ function Meals() {
         </section>
       ) : (
         <section
-          className="meals-week"
-          aria-label={`Meals for ${weekRange}`}
+          className="meals-window"
+          aria-label={`Meals for ${windowRange}`}
         >
-          {weekDays.map(day => (
+          <div
+            className="meals-window__headings"
+            aria-hidden="true"
+          >
+            <span>Day</span>
+            {MEAL_TYPES.map(mealType => (
+              <span key={mealType}>
+                {MEAL_TYPE_LABELS[mealType]}
+              </span>
+            ))}
+          </div>
+
+          {windowDays.map(day => (
             <article
               key={day.localDate}
               className={`meals-day ${
@@ -622,7 +634,10 @@ function Meals() {
                       aria-labelledby={`${day.localDate}-${mealType}`}
                     >
                       <div className="meals-slot__header">
-                        <h4 id={`${day.localDate}-${mealType}`}>
+                        <h4
+                          className="meals-sr-only"
+                          id={`${day.localDate}-${mealType}`}
+                        >
                           {MEAL_TYPE_LABELS[mealType]}
                         </h4>
                         <button
@@ -857,7 +872,7 @@ function Meals() {
                       );
                     }}
                   >
-                    {weekDates.map(localDate => (
+                    {windowDates.map(localDate => (
                       <option
                         key={localDate}
                         value={localDate}

@@ -16,7 +16,7 @@ import type {
   UpdateMealPlanEntryInput,
 } from '../types/mealPlan';
 
-export function useMeals(weekStart: string) {
+export function useMeals(windowStart: string) {
   const [entries, setEntries] =
     useState<MealPlanEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export function useMeals(weekStart: string) {
     setLoading(true);
 
     try {
-      setEntries(await loadMeals(weekStart));
+      setEntries(await loadMeals(windowStart));
       setError(null);
     } catch (loadError) {
       setError(
@@ -39,7 +39,7 @@ export function useMeals(weekStart: string) {
     } finally {
       setLoading(false);
     }
-  }, [weekStart]);
+  }, [windowStart]);
 
   useEffect(() => {
     const loadId = window.setTimeout(
@@ -56,7 +56,7 @@ export function useMeals(weekStart: string) {
 
       try {
         await mutation();
-        setEntries(await loadMeals(weekStart));
+        setEntries(await loadMeals(windowStart));
         setError(null);
       } catch (mutationError) {
         setError(
@@ -69,7 +69,7 @@ export function useMeals(weekStart: string) {
         setSaving(false);
       }
     },
-    [weekStart]
+    [windowStart]
   );
 
   return {

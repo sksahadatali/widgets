@@ -59,18 +59,18 @@ function sendMealError(
 
 router.get('/', async (request, response) => {
   try {
-    const weekStart = request.query.weekStart;
+    const startDate = request.query.startDate;
 
-    if (typeof weekStart !== 'string') {
+    if (typeof startDate !== 'string') {
       throw new MealPlanStoreError(
-        'Meals weekStart is required.'
+        'Meals startDate is required.'
       );
     }
 
     response.json({
       success: true,
       entries:
-        await mealPlanStore.readWeek(weekStart),
+        await mealPlanStore.readWindow(startDate),
     });
   } catch (error) {
     sendMealError(error, response);

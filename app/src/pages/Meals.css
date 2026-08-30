@@ -9,8 +9,8 @@
 }
 
 .meals-page__header,
-.meals-week-toolbar,
-.meals-week-toolbar__actions,
+.meals-window-toolbar,
+.meals-window-toolbar__actions,
 .meals-message,
 .meals-button,
 .meals-day__header,
@@ -23,7 +23,7 @@
 }
 
 .meals-page__header,
-.meals-week-toolbar,
+.meals-window-toolbar,
 .meals-day__header,
 .meals-slot__header,
 .meals-entry__row {
@@ -54,7 +54,7 @@
 }
 
 .meals-page__eyebrow,
-.meals-week-toolbar__label {
+.meals-window-toolbar__label {
   margin-bottom: var(--ey-space-1);
   color: var(--ey-accent-primary);
   font-size: var(--ey-font-sm);
@@ -63,7 +63,7 @@
   text-transform: uppercase;
 }
 
-.meals-week-toolbar,
+.meals-window-toolbar,
 .meals-loading {
   padding: var(--ey-card-padding);
   border: 1px solid var(--ey-border-default);
@@ -72,17 +72,17 @@
   box-shadow: var(--ey-shadow-card);
 }
 
-.meals-week-toolbar {
+.meals-window-toolbar {
   gap: var(--ey-card-gap);
   margin-bottom: var(--ey-section-gap);
 }
 
-.meals-week-toolbar h2 {
+.meals-window-toolbar h2 {
   margin-bottom: 0;
   font-size: var(--ey-font-xl);
 }
 
-.meals-week-toolbar__actions,
+.meals-window-toolbar__actions,
 .meals-editor__actions {
   gap: var(--ey-space-2);
 }
@@ -139,15 +139,43 @@
   color: var(--ey-success);
 }
 
-.meals-week {
+.meals-window {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--ey-space-2);
   min-width: 0;
 }
 
+.meals-window__headings,
 .meals-day {
+  display: grid;
+  grid-template-columns:
+    var(--meals-day-column, minmax(7rem, 0.65fr))
+    repeat(3, minmax(0, 1fr));
   min-width: 0;
+}
+
+.meals-window__headings {
+  overflow: hidden;
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-radius-medium);
+  background: var(--ey-bg-card-secondary);
+  color: var(--ey-text-secondary);
+  font-size: var(--ey-font-sm);
+  font-weight: 800;
+}
+
+.meals-window__headings span {
+  min-width: 0;
+  padding: var(--ey-space-2) var(--ey-space-3);
+  overflow-wrap: anywhere;
+  border-right: 1px solid var(--ey-border-default);
+}
+
+.meals-window__headings span:last-child {
+  border-right: 0;
+}
+
+.meals-day {
   border: 1px solid var(--ey-border-default);
   border-radius: var(--ey-card-radius);
   background: var(--ey-bg-card);
@@ -160,16 +188,19 @@
 }
 
 .meals-day__header {
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
   gap: var(--ey-space-2);
-  min-height: var(--ey-touch-target-min);
   padding: var(--ey-space-3);
-  border-bottom: 1px solid var(--ey-border-default);
+  overflow: hidden;
+  border-right: 1px solid var(--ey-border-default);
   background: var(--ey-bg-card-secondary);
   border-radius:
     var(--ey-card-radius)
-    var(--ey-card-radius)
     0
-    0;
+    0
+    var(--ey-card-radius);
 }
 
 .meals-day__header h3 {
@@ -193,20 +224,21 @@
 }
 
 .meals-day__slots {
-  display: grid;
+  display: contents;
 }
 
 .meals-slot {
   min-width: 0;
   padding: var(--ey-space-3);
-  border-bottom: 1px solid var(--ey-border-subtle);
+  border-right: 1px solid var(--ey-border-subtle);
 }
 
 .meals-slot:last-child {
-  border-bottom: 0;
+  border-right: 0;
 }
 
 .meals-slot__header {
+  justify-content: flex-end;
   gap: var(--ey-space-2);
   margin-bottom: var(--ey-space-2);
 }
@@ -456,80 +488,92 @@
 }
 
 :root[data-display-profile='compact'] .meals-page__header,
-:root[data-display-profile='compact'] .meals-week-toolbar {
+:root[data-display-profile='compact'] .meals-window-toolbar {
   margin-bottom: var(--ey-space-2);
 }
 
-:root[data-display-profile='compact'] .meals-week {
-  grid-template-columns: 1fr;
+:root[data-display-profile='compact'] .meals-page {
+  --meals-day-column: minmax(4.25rem, 0.55fr);
 }
 
-:root[data-display-profile='compact'] .meals-week-toolbar {
+:root[data-display-profile='compact'] .meals-window {
+  gap: var(--ey-space-1);
+}
+
+:root[data-display-profile='compact'] .meals-window-toolbar {
   align-items: stretch;
   flex-direction: column;
 }
 
-:root[data-display-profile='compact'] .meals-week-toolbar__actions {
+:root[data-display-profile='compact'] .meals-window-toolbar__actions {
   flex-wrap: wrap;
 }
 
-:root[data-display-profile='compact'] .meals-week-toolbar__actions .meals-button {
+:root[data-display-profile='compact'] .meals-window-toolbar__actions .meals-button {
   flex: 1 1 auto;
 }
 
-@container meals (min-width: 841px) and (max-width: 1150px) {
-  :root[data-display-profile='desktop'] .meals-week {
-    gap: var(--ey-space-1);
-  }
-
-  :root[data-display-profile='desktop'] .meals-day__header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    padding: var(--ey-space-2);
-  }
-
-  :root[data-display-profile='desktop'] .meals-slot {
-    padding: var(--ey-space-2);
-  }
-
-  :root[data-display-profile='desktop'] .meals-entry {
-    padding: var(--ey-space-1) var(--ey-space-2);
-  }
-
-  :root[data-display-profile='desktop'] .meals-entry__row {
-    align-items: flex-start;
-  }
-
-  :root[data-display-profile='desktop'] .meals-entry__title {
-    font-size: var(--ey-font-sm);
-    line-height: 1.35;
-  }
+:root[data-display-profile='compact'] .meals-day__header,
+:root[data-display-profile='compact'] .meals-slot {
+  padding: var(--ey-space-2);
 }
 
-@container meals (max-width: 1050px) {
-  :root[data-display-profile='elo-touch'] .meals-week {
-    grid-template-columns: 1fr;
-  }
+:root[data-display-profile='compact'] .meals-window__headings {
+  font-size: var(--ey-font-xs);
 }
 
-@container meals (max-width: 840px) {
-  .meals-week {
-    grid-template-columns: 1fr;
-  }
+:root[data-display-profile='compact'] .meals-window__headings span {
+  padding: var(--ey-space-2) var(--ey-space-1);
+}
+
+:root[data-display-profile='compact'] .meals-day__header h3 {
+  font-size: var(--ey-font-sm);
+}
+
+:root[data-display-profile='compact'] .meals-day__header p,
+:root[data-display-profile='compact'] .meals-day__today,
+:root[data-display-profile='compact'] .meals-entry__title,
+:root[data-display-profile='compact'] .meals-slot__empty {
+  font-size: var(--ey-font-xs);
+}
+
+:root[data-display-profile='compact'] .meals-entry {
+  padding: var(--ey-space-1);
+}
+
+:root[data-display-profile='elo-touch'] .meals-page {
+  --meals-day-column: minmax(8rem, 0.7fr);
 }
 
 @container meals (max-width: 620px) {
   .meals-page__header,
-  .meals-week-toolbar {
+  .meals-window-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .meals-week-toolbar__actions {
+  .meals-window-toolbar__actions {
     flex-wrap: wrap;
   }
 
-  .meals-week-toolbar__actions .meals-button {
+  .meals-window-toolbar__actions .meals-button {
     flex: 1 1 auto;
+  }
+
+  .meals-page {
+    --meals-day-column: minmax(4rem, 0.5fr);
+  }
+
+  .meals-window__headings span,
+  .meals-day__header,
+  .meals-slot {
+    padding: var(--ey-space-1);
+  }
+
+  .meals-window__headings,
+  .meals-day__header h3,
+  .meals-entry__title,
+  .meals-slot__empty {
+    font-size: var(--ey-font-xs);
   }
 }

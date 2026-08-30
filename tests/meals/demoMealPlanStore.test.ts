@@ -12,7 +12,7 @@ const NOW = new Date('2026-08-30T09:00:00.000Z');
 const LATER = new Date('2026-08-30T10:00:00.000Z');
 
 describe('Demo Meal Planning', () => {
-  it('uses safe current-week-relative synthetic meals', () => {
+  it('uses safe current-window-relative synthetic meals', () => {
     const demo = new DemoMealPlanStore(
       undefined,
       NOW,
@@ -30,10 +30,39 @@ describe('Demo Meal Planning', () => {
     );
     assert.deepEqual(
       store.entries.map(entry => entry.localDate),
-      ['2026-08-24', '2026-08-26', '2026-08-28']
+      ['2026-08-30', '2026-09-01', '2026-09-03']
     );
     assert.doesNotThrow(
       () => validateDemoMealPlanStore(store)
+    );
+  });
+
+  it('returns only entries in an arbitrary seven-date window', () => {
+    const demo = new DemoMealPlanStore({
+      schemaVersion: 1,
+      entries: [
+        {
+          id: ENTRY_ONE,
+          localDate: '2026-08-30',
+          mealType: 'breakfast',
+          title: 'Toast',
+          createdAt: NOW.toISOString(),
+          updatedAt: NOW.toISOString(),
+        },
+        {
+          id: ENTRY_TWO,
+          localDate: '2026-09-05',
+          mealType: 'dinner',
+          title: 'Pasta',
+          createdAt: LATER.toISOString(),
+          updatedAt: LATER.toISOString(),
+        },
+      ],
+    });
+
+    assert.deepEqual(
+      demo.readWindow('2026-08-31').map(entry => entry.id),
+      [ENTRY_TWO]
     );
   });
 

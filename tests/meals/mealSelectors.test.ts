@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 
 import {
   MEAL_TYPES,
-  selectMealPlanWeek,
+  selectMealActionDates,
+  selectMealPlanWindow,
 } from '../../app/src/meals/mealSelectors.ts';
 import type {
   MealPlanEntry,
@@ -27,24 +28,24 @@ function entry(
   };
 }
 
-describe('Meal week selectors', () => {
-  it('returns seven ordered days and three frozen meal types', () => {
-    const days = selectMealPlanWeek(
+describe('Meal rolling-window selectors', () => {
+  it('returns the selected seven dates and three frozen meal types', () => {
+    const days = selectMealPlanWindow(
       [],
-      '2026-08-31',
-      '2026-09-02'
+      '2026-08-30',
+      '2026-09-01'
     );
     assert.equal(days.length, 7);
     assert.deepEqual(
       days.map(day => day.localDate),
       [
+        '2026-08-30',
         '2026-08-31',
         '2026-09-01',
         '2026-09-02',
         '2026-09-03',
         '2026-09-04',
         '2026-09-05',
-        '2026-09-06',
       ]
     );
     assert.deepEqual(
@@ -60,7 +61,7 @@ describe('Meal week selectors', () => {
       entry('2', '2026-09-01', 'dinner', 'Pasta'),
       entry('3', '2026-08-31', 'breakfast', 'Toast'),
     ];
-    const days = selectMealPlanWeek(
+    const days = selectMealPlanWindow(
       entries,
       '2026-08-31',
       '2026-08-31'
@@ -72,6 +73,21 @@ describe('Meal week selectors', () => {
     assert.deepEqual(
       days[1].entries.dinner.map(item => item.title),
       ['Pasta']
+    );
+  });
+
+  it('uses the selected rolling window for Move and Copy targets', () => {
+    assert.deepEqual(
+      selectMealActionDates('2026-12-29'),
+      [
+        '2026-12-29',
+        '2026-12-30',
+        '2026-12-31',
+        '2027-01-01',
+        '2027-01-02',
+        '2027-01-03',
+        '2027-01-04',
+      ]
     );
   });
 });

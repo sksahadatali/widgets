@@ -1,5 +1,5 @@
 import {
-  getMealWeekDates,
+  getMealWindowDates,
 } from './mealDates';
 import type {
   MealPlanEntry,
@@ -25,12 +25,18 @@ export type MealPlanDay = {
   entries: Record<MealType, MealPlanEntry[]>;
 };
 
-export function selectMealPlanWeek(
+export function selectMealActionDates(
+  windowStart: string
+): string[] {
+  return getMealWindowDates(windowStart);
+}
+
+export function selectMealPlanWindow(
   entries: MealPlanEntry[],
-  weekStart: string,
+  windowStart: string,
   householdToday: string
 ): MealPlanDay[] {
-  return getMealWeekDates(weekStart).map(
+  return selectMealActionDates(windowStart).map(
     localDate => ({
       localDate,
       isToday: localDate === householdToday,
