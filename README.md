@@ -354,6 +354,39 @@ The primary, backup and atomic-write temporary files are ignored by Git. A missi
 3. Copy `server/data/redemptions.local.json.bak` to `server/data/redemptions.local.json`.
 4. Restart `npm run dev`, open **Rewards**, and verify the recovered catalogue and requests before making another change.
 
+## Family Lists
+
+The **Lists** destination provides multiple shared household lists with an automatically created Shopping list. Shopping has an immutable `systemKey: "shopping"`, so it may be renamed without breaking the future Meal Planning integration boundary. Lists remain separate from Tasks, Routines and Rewards.
+
+Household Lists use an independent private schema-v1 store:
+
+```text
+server/data/lists.local.json
+```
+
+The first read creates one empty Shopping list. List and item array order is persisted, and accessible Move Up/Move Down controls change that order. Items deliberately contain only a title; text such as `Milk × 2` stays lightweight title text rather than quantity or inventory data. `addedByProfileId` records the selected stable Household Profile ID as descriptive attribution only and grants no ownership or permission.
+
+Checked items remain available in a collapsed Checked section until they are unchecked, individually removed, or removed with the explicitly confirmed **Clear checked** action. There is no automatic pruning, completed-item archive or item history in Phase 1. Lists may be archived and reactivated, but are not permanently deleted.
+
+Writes are serialized within the single backend process, re-read the authoritative primary, validate a cloned result, create a unique temporary file, retain the previous valid primary at:
+
+```text
+server/data/lists.local.json.bak
+```
+
+and atomically replace the primary. The primary, backup and temporary files are ignored by Git. A malformed or unsupported primary fails safely and remains byte-for-byte untouched; Household mode never falls back to Demo data.
+
+Demo mode uses only a disposable in-memory clone of the tracked synthetic `app/src/data/lists.example.json` fixture. Demo Lists persist while the current SPA is running and reset on full reload or restart. Demo never calls the Household Lists API or reads the Household store.
+
+### Restoring the Lists backup
+
+1. Stop `npm run dev` so the backend cannot write during recovery.
+2. Preserve the malformed `server/data/lists.local.json` for diagnosis by renaming it to an ignored filename such as `lists.local.json.corrupt`.
+3. Copy `server/data/lists.local.json.bak` to `server/data/lists.local.json`.
+4. Restart `npm run dev`, open **Lists**, and verify Shopping, other lists and their items before making another change.
+
+The JSON store is designed for one Node backend process. It does not provide multi-process locking, real-time synchronization, cloud persistence, history, or automatic checked-item cleanup.
+
 The Redemption JSON store assumes one Node backend process and has no pruning, pagination, cloud synchronization, authentication, approval, star reservation, fulfilment or financial reconciliation. Requests may therefore be created before the child has enough stars; the authoritative balance check belongs to the later adult-approval phase.
 
 ---

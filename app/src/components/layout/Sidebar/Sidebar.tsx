@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Home,
   Gift,
+  ListChecks,
   Plus,
   Quote,
   Settings,
@@ -16,6 +17,7 @@ type SidebarPage =
   | 'Home'
   | 'Daily'
   | 'Rewards'
+  | 'Lists'
   | 'Personal'
   | 'RAEN'
   | 'AYANOH'
@@ -45,6 +47,10 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Rewards',
     icon: Gift,
+  },
+  {
+    label: 'Lists',
+    icon: ListChecks,
   },
   {
     label: 'Personal',

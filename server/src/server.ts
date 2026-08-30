@@ -9,6 +9,7 @@ import petrolRouter from './routes/petrol.js';
 import routinesRouter from './routes/routines.js';
 import rewardsRouter from './routes/rewards.js';
 import redemptionsRouter from './routes/redemptions.js';
+import listsRouter from './routes/lists.js';
 import { reconcileRoutineRewards } from './services/routineRewardReconciler.js';
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/routines', routinesRouter);
 app.use('/api/rewards', rewardsRouter);
 app.use('/api/redemptions', redemptionsRouter);
+app.use('/api/lists', listsRouter);
 
 app.get('/health', (_request, response) => {
   response.json({

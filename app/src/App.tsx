@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Daily from './pages/Daily';
 import Settings from './pages/Settings';
 import Rewards from './pages/Rewards';
+import Lists from './pages/Lists';
 
 import {
   ThemeProvider,
@@ -84,6 +85,10 @@ function App() {
 
               {page === 'Rewards' && (
                 <Rewards />
+              )}
+
+              {page === 'Lists' && (
+                <Lists />
               )}
 
               {page === 'Personal' && (
