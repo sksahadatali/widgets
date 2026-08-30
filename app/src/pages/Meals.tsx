@@ -13,7 +13,9 @@ import {
 } from 'lucide-react';
 import {
   type FormEvent,
+  type ReactNode,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -48,7 +50,7 @@ type Slot = {
   mealType: MealType;
 };
 
-type ActionEditor = Slot & {
+type ActionDialogState = Slot & {
   entryId: string;
   mode: 'edit' | 'move' | 'copy';
   title: string;
@@ -64,6 +66,54 @@ type PendingCopy = Slot & {
   sourceEntryId: string;
   title: string;
 };
+
+type MealDialogProps = {
+  busy: boolean;
+  children: ReactNode;
+  onClose: () => void;
+  title: string;
+};
+
+function MealDialog({
+  busy,
+  children,
+  onClose,
+  title,
+}: MealDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog?.open) {
+        dialog.close();
+      }
+    };
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="meals-dialog"
+      aria-labelledby={titleId}
+      onCancel={event => {
+        event.preventDefault();
+        if (!busy) onClose();
+      }}
+    >
+      <div className="meals-dialog__surface">
+        <h2 id={titleId}>{title}</h2>
+        {children}
+      </div>
+    </dialog>
+  );
+}
 
 function dayLabel(localDate: string): string {
   return formatMealLocalDate(localDate, {
@@ -108,9 +158,17 @@ function Meals() {
     useState<Slot | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [actionEditor, setActionEditor] =
-    useState<ActionEditor | null>(null);
+    useState<ActionDialogState | null>(null);
+  const [removeEntryId, setRemoveEntryId] =
+    useState<string | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] =
+    useState<string | null>(null);
   const [statusMessage, setStatusMessage] =
     useState('');
+  const actionMenuRef =
+    useRef<HTMLDivElement | null>(null);
+  const actionMenuTriggerRef =
+    useRef<HTMLButtonElement | null>(null);
   const pendingCreateRef =
     useRef<PendingCreate | null>(null);
   const pendingCopyRef =
@@ -155,6 +213,50 @@ function Meals() {
     };
   }, [timeZone]);
 
+  useEffect(() => {
+    if (!openActionMenuId) return;
+
+    const closeForOutsideInteraction = (
+      event: PointerEvent
+    ) => {
+      const target = event.target;
+
+      if (
+        target instanceof Node &&
+        !actionMenuRef.current?.contains(target)
+      ) {
+        setOpenActionMenuId(null);
+      }
+    };
+    const closeForEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+
+      event.preventDefault();
+      setOpenActionMenuId(null);
+      actionMenuTriggerRef.current?.focus();
+    };
+
+    document.addEventListener(
+      'pointerdown',
+      closeForOutsideInteraction
+    );
+    document.addEventListener(
+      'keydown',
+      closeForEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        'pointerdown',
+        closeForOutsideInteraction
+      );
+      document.removeEventListener(
+        'keydown',
+        closeForEscape
+      );
+    };
+  }, [openActionMenuId]);
+
   const weekDays = useMemo(
     () => selectMealPlanWeek(
       entries,
@@ -182,9 +284,19 @@ function Meals() {
     month: 'short',
     year: 'numeric',
   })}`;
+  const actionEntry = actionEditor
+    ? entries.find(
+      entry => entry.id === actionEditor.entryId
+    )
+    : undefined;
+  const removeEntry = removeEntryId
+    ? entries.find(entry => entry.id === removeEntryId)
+    : undefined;
 
   const startAdd = (slot: Slot) => {
     setActionEditor(null);
+    setRemoveEntryId(null);
+    setOpenActionMenuId(null);
     setAddingSlot(slot);
     setNewTitle('');
     pendingCreateRef.current = null;
@@ -194,6 +306,8 @@ function Meals() {
     setAddingSlot(null);
     setNewTitle('');
     setActionEditor(null);
+    setRemoveEntryId(null);
+    setOpenActionMenuId(null);
     pendingCreateRef.current = null;
     pendingCopyRef.current = null;
   };
@@ -261,9 +375,11 @@ function Meals() {
 
   const beginAction = (
     entry: MealPlanEntry,
-    mode: ActionEditor['mode']
+    mode: ActionDialogState['mode']
   ) => {
+    setOpenActionMenuId(null);
     setAddingSlot(null);
+    setRemoveEntryId(null);
     setActionEditor({
       entryId: entry.id,
       mode,
@@ -272,6 +388,25 @@ function Meals() {
       mealType: entry.mealType,
     });
     pendingCopyRef.current = null;
+  };
+
+  const beginRemove = (entry: MealPlanEntry) => {
+    setOpenActionMenuId(null);
+    setAddingSlot(null);
+    setActionEditor(null);
+    setRemoveEntryId(entry.id);
+    pendingCopyRef.current = null;
+  };
+
+  const closeActionDialog = () => {
+    setActionEditor(null);
+    setRemoveEntryId(null);
+    pendingCopyRef.current = null;
+
+    window.requestAnimationFrame(() => {
+      const trigger = actionMenuTriggerRef.current;
+      if (trigger?.isConnected) trigger.focus();
+    });
   };
 
   const submitAction = async (event: FormEvent) => {
@@ -334,164 +469,24 @@ function Meals() {
         );
       }
 
-      setActionEditor(null);
+      closeActionDialog();
     } catch {
       // The shared error banner reports the failure.
     }
   };
 
-  const confirmRemove = (entry: MealPlanEntry) => {
-    if (!window.confirm(
-      `Remove ${entry.title} from ${destinationLabel(
-        entry.localDate,
-        entry.mealType
-      )}?`
-    )) {
-      return;
+  const submitRemove = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!removeEntry || saving) return;
+
+    try {
+      await removeMeal(removeEntry.id);
+      setStatusMessage(`${removeEntry.title} removed.`);
+      closeActionDialog();
+    } catch {
+      // The shared error banner reports the failure.
     }
-
-    void removeMeal(entry.id)
-      .then(() => {
-        if (actionEditor?.entryId === entry.id) {
-          setActionEditor(null);
-        }
-        setStatusMessage(`${entry.title} removed.`);
-      })
-      .catch(() => undefined);
-  };
-
-  const renderActionEditor = (
-    entry: MealPlanEntry
-  ) => {
-    if (actionEditor?.entryId !== entry.id) {
-      return null;
-    }
-
-    const isEdit = actionEditor.mode === 'edit';
-
-    return (
-      <form
-        className="meals-editor"
-        onSubmit={submitAction}
-      >
-        {isEdit ? (
-          <>
-            <label htmlFor={`meal-title-${entry.id}`}>
-              Edit meal title
-            </label>
-            <input
-              id={`meal-title-${entry.id}`}
-              value={actionEditor.title}
-              maxLength={160}
-              autoFocus
-              disabled={saving}
-              onChange={event =>
-                setActionEditor(current =>
-                  current
-                    ? {
-                      ...current,
-                      title: event.target.value,
-                    }
-                    : null
-                )
-              }
-            />
-          </>
-        ) : (
-          <>
-            <label htmlFor={`meal-day-${entry.id}`}>
-              {actionEditor.mode === 'move'
-                ? 'Move to day'
-                : 'Copy to day'}
-            </label>
-            <select
-              id={`meal-day-${entry.id}`}
-              value={actionEditor.localDate}
-              disabled={saving}
-              onChange={event => {
-                pendingCopyRef.current = null;
-                setActionEditor(current =>
-                  current
-                    ? {
-                      ...current,
-                      localDate: event.target.value,
-                    }
-                    : null
-                );
-              }}
-            >
-              {weekDates.map(localDate => (
-                <option
-                  key={localDate}
-                  value={localDate}
-                >
-                  {dayLabel(localDate)} · {shortDateLabel(localDate)}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor={`meal-type-${entry.id}`}>
-              Meal type
-            </label>
-            <select
-              id={`meal-type-${entry.id}`}
-              value={actionEditor.mealType}
-              disabled={saving}
-              onChange={event => {
-                pendingCopyRef.current = null;
-                setActionEditor(current =>
-                  current
-                    ? {
-                      ...current,
-                      mealType:
-                        event.target.value as MealType,
-                    }
-                    : null
-                );
-              }}
-            >
-              {MEAL_TYPES.map(mealType => (
-                <option
-                  key={mealType}
-                  value={mealType}
-                >
-                  {MEAL_TYPE_LABELS[mealType]}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
-
-        <div className="meals-editor__actions">
-          <button
-            type="submit"
-            className="meals-button meals-button--primary"
-            disabled={
-              saving ||
-              (isEdit && !actionEditor.title.trim())
-            }
-          >
-            <Check size={18} aria-hidden="true" />
-            {actionEditor.mode === 'edit'
-              ? 'Save'
-              : actionEditor.mode === 'move'
-                ? 'Move'
-                : 'Copy'}
-          </button>
-          <button
-            type="button"
-            className="meals-button meals-button--secondary"
-            disabled={saving}
-            onClick={() => {
-              setActionEditor(null);
-              pendingCopyRef.current = null;
-            }}
-          >
-            <X size={18} aria-hidden="true" /> Cancel
-          </button>
-        </div>
-      </form>
-    );
   };
 
   return (
@@ -652,53 +647,85 @@ function Meals() {
                                 <span className="meals-entry__title">
                                   {entry.title}
                                 </span>
-                                <details className="meals-entry__actions">
-                                  <summary
+                                <div
+                                  className="meals-entry__actions"
+                                  ref={
+                                    openActionMenuId === entry.id
+                                      ? actionMenuRef
+                                      : undefined
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    className="meals-entry__action-button"
                                     aria-label={`Actions for ${entry.title}`}
+                                    aria-expanded={
+                                      openActionMenuId === entry.id
+                                    }
+                                    aria-haspopup="menu"
+                                    disabled={saving}
+                                    onClick={event => {
+                                      actionMenuTriggerRef.current =
+                                        event.currentTarget;
+                                      setOpenActionMenuId(current =>
+                                        current === entry.id
+                                          ? null
+                                          : entry.id
+                                      );
+                                    }}
                                   >
                                     <MoreHorizontal
                                       size={20}
                                       aria-hidden="true"
                                     />
-                                  </summary>
-                                  <div className="meals-entry__action-list">
-                                    <button
-                                      type="button"
-                                      disabled={saving}
-                                      onClick={() => beginAction(entry, 'edit')}
+                                  </button>
+                                  {openActionMenuId === entry.id && (
+                                    <div
+                                      className="meals-entry__action-list"
+                                      role="menu"
+                                      aria-label={`Actions for ${entry.title}`}
                                     >
-                                      <Pencil size={17} aria-hidden="true" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={saving}
-                                      onClick={() => beginAction(entry, 'move')}
-                                    >
-                                      <ChevronRight size={17} aria-hidden="true" />
-                                      Move
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={saving}
-                                      onClick={() => beginAction(entry, 'copy')}
-                                    >
-                                      <Copy size={17} aria-hidden="true" />
-                                      Copy
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="is-danger"
-                                      disabled={saving}
-                                      onClick={() => confirmRemove(entry)}
-                                    >
-                                      <Trash2 size={17} aria-hidden="true" />
-                                      Remove
-                                    </button>
-                                  </div>
-                                </details>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        disabled={saving}
+                                        onClick={() => beginAction(entry, 'edit')}
+                                      >
+                                        <Pencil size={17} aria-hidden="true" />
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        disabled={saving}
+                                        onClick={() => beginAction(entry, 'move')}
+                                      >
+                                        <ChevronRight size={17} aria-hidden="true" />
+                                        Move
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        disabled={saving}
+                                        onClick={() => beginAction(entry, 'copy')}
+                                      >
+                                        <Copy size={17} aria-hidden="true" />
+                                        Copy
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="is-danger"
+                                        disabled={saving}
+                                        onClick={() => beginRemove(entry)}
+                                      >
+                                        <Trash2 size={17} aria-hidden="true" />
+                                        Remove
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {renderActionEditor(entry)}
                             </li>
                           ))}
                         </ul>
@@ -768,6 +795,175 @@ function Meals() {
             </article>
           ))}
         </section>
+      )}
+
+      {actionEditor && actionEntry && (
+        <MealDialog
+          busy={saving}
+          title={
+            actionEditor.mode === 'edit'
+              ? 'Edit meal'
+              : actionEditor.mode === 'move'
+                ? 'Move meal'
+                : 'Copy meal'
+          }
+          onClose={closeActionDialog}
+        >
+          <form
+            className="meals-dialog__form"
+            onSubmit={submitAction}
+          >
+            {actionEditor.mode === 'edit' ? (
+              <label className="meals-dialog__field">
+                <span>Meal</span>
+                <input
+                  value={actionEditor.title}
+                  maxLength={160}
+                  autoFocus
+                  disabled={saving}
+                  onChange={event =>
+                    setActionEditor(current =>
+                      current
+                        ? {
+                          ...current,
+                          title: event.target.value,
+                        }
+                        : null
+                    )
+                  }
+                />
+              </label>
+            ) : (
+              <>
+                <p className="meals-dialog__meal-title">
+                  {actionEntry.title}
+                </p>
+
+                <label className="meals-dialog__field">
+                  <span>Day</span>
+                  <select
+                    value={actionEditor.localDate}
+                    autoFocus
+                    disabled={saving}
+                    onChange={event => {
+                      pendingCopyRef.current = null;
+                      setActionEditor(current =>
+                        current
+                          ? {
+                            ...current,
+                            localDate: event.target.value,
+                          }
+                          : null
+                      );
+                    }}
+                  >
+                    {weekDates.map(localDate => (
+                      <option
+                        key={localDate}
+                        value={localDate}
+                      >
+                        {dayLabel(localDate)} · {shortDateLabel(localDate)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="meals-dialog__field">
+                  <span>Meal</span>
+                  <select
+                    value={actionEditor.mealType}
+                    disabled={saving}
+                    onChange={event => {
+                      pendingCopyRef.current = null;
+                      setActionEditor(current =>
+                        current
+                          ? {
+                            ...current,
+                            mealType:
+                              event.target.value as MealType,
+                          }
+                          : null
+                      );
+                    }}
+                  >
+                    {MEAL_TYPES.map(mealType => (
+                      <option
+                        key={mealType}
+                        value={mealType}
+                      >
+                        {MEAL_TYPE_LABELS[mealType]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+
+            <div className="meals-dialog__actions">
+              <button
+                type="button"
+                className="meals-button meals-button--secondary"
+                disabled={saving}
+                onClick={closeActionDialog}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="meals-button meals-button--primary"
+                disabled={
+                  saving ||
+                  (actionEditor.mode === 'edit' &&
+                    !actionEditor.title.trim())
+                }
+              >
+                {actionEditor.mode === 'edit'
+                  ? 'Save'
+                  : actionEditor.mode === 'move'
+                    ? 'Move'
+                    : 'Copy'}
+              </button>
+            </div>
+          </form>
+        </MealDialog>
+      )}
+
+      {removeEntry && (
+        <MealDialog
+          busy={saving}
+          title="Remove meal?"
+          onClose={closeActionDialog}
+        >
+          <form
+            className="meals-dialog__form"
+            onSubmit={submitRemove}
+          >
+            <p className="meals-dialog__meal-title">
+              {removeEntry.title}
+            </p>
+            <p className="meals-dialog__description">
+              This will remove the meal from the plan.
+            </p>
+            <div className="meals-dialog__actions">
+              <button
+                type="button"
+                className="meals-button meals-button--secondary"
+                autoFocus
+                disabled={saving}
+                onClick={closeActionDialog}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="meals-button meals-button--danger"
+                disabled={saving}
+              >
+                Remove
+              </button>
+            </div>
+          </form>
+        </MealDialog>
       )}
     </main>
   );
