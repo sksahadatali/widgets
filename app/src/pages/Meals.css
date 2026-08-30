@@ -388,7 +388,42 @@
   width: 190px;
 }
 
+@container meals (min-width: 841px) and (max-width: 1150px) {
+  :root[data-display-profile='desktop'] .meals-week {
+    gap: var(--ey-space-1);
+  }
+
+  :root[data-display-profile='desktop'] .meals-day__header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: var(--ey-space-2);
+  }
+
+  :root[data-display-profile='desktop'] .meals-slot {
+    padding: var(--ey-space-2);
+  }
+
+  :root[data-display-profile='desktop'] .meals-entry {
+    padding: var(--ey-space-1) var(--ey-space-2);
+  }
+
+  :root[data-display-profile='desktop'] .meals-entry__row {
+    align-items: flex-start;
+  }
+
+  :root[data-display-profile='desktop'] .meals-entry__title {
+    font-size: var(--ey-font-sm);
+    line-height: 1.35;
+  }
+}
+
 @container meals (max-width: 1050px) {
+  :root[data-display-profile='elo-touch'] .meals-week {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container meals (max-width: 840px) {
   .meals-week {
     grid-template-columns: 1fr;
   }
