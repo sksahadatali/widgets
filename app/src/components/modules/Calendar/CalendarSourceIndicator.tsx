@@ -7,6 +7,13 @@ export function CalendarSourceIndicator({
 }: {
   source: CalendarSource;
 }) {
+  if (
+    source.kind === 'calendar' &&
+    source.label === 'Calendar'
+  ) {
+    return null;
+  }
+
   return (
     <span
       className="calendar-card__source"

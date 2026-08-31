@@ -362,7 +362,7 @@
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__event {
   grid-template-columns:
-    44px minmax(0, 1fr);
+    56px minmax(0, 1fr);
   gap: 6px;
 
   min-height: 42px;
