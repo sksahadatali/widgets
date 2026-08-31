@@ -2,30 +2,52 @@ import { CalendarDays } from 'lucide-react';
 
 import { useCalendar } from '../../../hooks/useCalendar';
 
+import {
+  formatCalendarLocalDate,
+  getCalendarHouseholdDate,
+} from '../../../calendar/calendarModel';
+
 import './StatusCard.css';
 
 function CalendarCard() {
   const {
     events,
+    timeZone,
     loading,
     error,
   } = useCalendar();
 
   const now = new Date();
+  const today = getCalendarHouseholdDate(
+    now,
+    timeZone
+  );
 
   const nextEvent =
     events
       .filter(event => {
         if (event.allDay) {
-          return true;
+          return event.endLocalDateExclusive > today;
         }
   
         return new Date(event.start) > now;
       })
       .sort(
-        (a, b) =>
-          new Date(a.start).getTime() -
-          new Date(b.start).getTime()
+        (a, b) => {
+          const dateOrder =
+            a.startLocalDate.localeCompare(
+              b.startLocalDate
+            );
+
+          if (dateOrder !== 0) return dateOrder;
+
+          if (a.allDay !== b.allDay) {
+            return a.allDay ? -1 : 1;
+          }
+
+          return new Date(a.start).getTime() -
+            new Date(b.start).getTime();
+        }
       )[0] ?? null;
 
   function formatTime() {
@@ -43,6 +65,7 @@ function CalendarCard() {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
+        timeZone,
       }
     ).format(
       new Date(nextEvent.start)
@@ -54,15 +77,13 @@ function CalendarCard() {
       return '';
     }
 
-    return new Intl.DateTimeFormat(
-      'en-GB',
+    return formatCalendarLocalDate(
+      nextEvent.startLocalDate,
       {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
       }
-    ).format(
-      new Date(nextEvent.start)
     );
   }
 
@@ -127,7 +148,7 @@ function CalendarCard() {
           </strong>
 
           <span className="status-card__secondary">
-            Next 7 days clear
+            Outlook clear
           </span>
         </>
       )}

@@ -1,5 +1,9 @@
 import selectedConfig from '@household-config';
 
+import type {
+  CalendarSourceConfig,
+} from '../calendar/calendarModel';
+
 export type AppMode =
   | 'household'
   | 'demo';
@@ -43,6 +47,7 @@ export type HouseholdConfig = {
   calendar: {
     endpoint: string;
     refreshMinutes: number;
+    sources?: CalendarSourceConfig[];
   };
 };
 
@@ -138,6 +143,47 @@ function validateConfig(
       'Household calendar endpoint is not configured.'
     );
   }
+
+  if (
+    config.calendar?.sources !== undefined &&
+    !Array.isArray(config.calendar.sources)
+  ) {
+    throw new Error(
+      'Household calendar sources must be an array.'
+    );
+  }
+
+  const sourceDefinitions = new Map<string, string>();
+
+  (config.calendar?.sources ?? []).forEach(
+    (source, index) => {
+      const sourceId = source.sourceId?.trim();
+      const label = source.label?.trim();
+      const kind = source.kind?.trim();
+      const calendarId = source.calendarId?.trim();
+      const calendarName = source.calendarName?.trim();
+      const sourceKey = sourceId ?? '';
+      const existingDefinition = sourceDefinitions.get(sourceKey);
+      const definition = `${label}\u0000${kind}`;
+
+      if (
+        !sourceId ||
+        !label ||
+        !kind ||
+        (!calendarId && !calendarName) ||
+        (
+          existingDefinition !== undefined &&
+          existingDefinition !== definition
+        )
+      ) {
+        throw new Error(
+          `Household calendar source ${index + 1} is invalid.`
+        );
+      }
+
+      sourceDefinitions.set(sourceKey, definition);
+    }
+  );
 }
 
 export const APP_MODE =

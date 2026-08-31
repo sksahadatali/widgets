@@ -231,6 +231,8 @@ If Household mode is selected without the private local file, eY OS stops with a
 
 Do not store API keys, OAuth tokens, passwords or other credentials in the household JSON file. Secrets belong in ignored environment files or the backend.
 
+Calendar source labels are configured only in the ignored local household file. Add an optional `calendar.sources` array with a stable safe `sourceId`, a display `label`, a generic `kind`, and either the exact provider `calendarName` or private `calendarId` used for matching. Multiple provider calendars can map to the same safe source, for example `sourceId: "school"`, `label: "School"`, and `kind: "school"`. Keep real calendar names and provider IDs out of the tracked example configuration.
+
 ## Family Routines
 
 The Daily area provides three shared routine views:
