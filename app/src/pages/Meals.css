@@ -53,8 +53,7 @@
   color: var(--ey-text-secondary);
 }
 
-.meals-page__eyebrow,
-.meals-window-toolbar__label {
+.meals-page__eyebrow {
   margin-bottom: var(--ey-space-1);
   color: var(--ey-accent-primary);
   font-size: var(--ey-font-sm);
@@ -73,8 +72,9 @@
 }
 
 .meals-window-toolbar {
-  gap: var(--ey-card-gap);
-  margin-bottom: var(--ey-section-gap);
+  gap: var(--ey-space-3);
+  margin-bottom: var(--ey-space-2);
+  padding: var(--ey-space-2) var(--ey-space-3);
 }
 
 .meals-window-toolbar h2 {
@@ -135,13 +135,18 @@
 
 .meals-sr-status {
   min-height: 1.25rem;
-  margin-bottom: var(--ey-space-2);
+  margin-bottom: var(--ey-space-1);
   color: var(--ey-success);
+}
+
+.meals-sr-status:empty {
+  min-height: 0;
+  margin: 0;
 }
 
 .meals-window {
   display: grid;
-  gap: var(--ey-space-2);
+  gap: var(--ey-space-1);
   min-width: 0;
 }
 
@@ -191,8 +196,8 @@
   align-items: flex-start;
   flex-direction: column;
   justify-content: center;
-  gap: var(--ey-space-2);
-  padding: var(--ey-space-3);
+  gap: var(--ey-space-1);
+  padding: var(--ey-space-2);
   overflow: hidden;
   border-right: 1px solid var(--ey-border-default);
   background: var(--ey-bg-card-secondary);
@@ -229,7 +234,7 @@
 
 .meals-slot {
   min-width: 0;
-  padding: var(--ey-space-3);
+  padding: var(--ey-space-2);
   border-right: 1px solid var(--ey-border-subtle);
 }
 
@@ -240,7 +245,12 @@
 .meals-slot__header {
   justify-content: flex-end;
   gap: var(--ey-space-2);
-  margin-bottom: var(--ey-space-2);
+  margin-bottom: var(--ey-space-1);
+}
+
+.meals-slot__header--empty {
+  justify-content: space-between;
+  margin-bottom: 0;
 }
 
 .meals-slot__header h4 {
@@ -264,7 +274,7 @@
 
 .meals-entries {
   display: grid;
-  gap: var(--ey-space-2);
+  gap: var(--ey-space-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -272,7 +282,7 @@
 
 .meals-entry {
   min-width: 0;
-  padding: var(--ey-space-2);
+  padding: var(--ey-space-1);
   border: 1px solid var(--ey-border-subtle);
   border-radius: var(--ey-radius-medium);
   background: var(--ey-bg-card-secondary);
@@ -501,8 +511,7 @@
 }
 
 :root[data-display-profile='compact'] .meals-window-toolbar {
-  align-items: stretch;
-  flex-direction: column;
+  padding-block: var(--ey-space-1);
 }
 
 :root[data-display-profile='compact'] .meals-window-toolbar__actions {
@@ -546,9 +555,13 @@
 }
 
 @container meals (max-width: 620px) {
-  .meals-page__header,
-  .meals-window-toolbar {
+  .meals-page__header {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .meals-window-toolbar {
+    align-items: flex-start;
     flex-direction: column;
   }
 

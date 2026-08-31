@@ -508,12 +508,7 @@ function Meals() {
         className="meals-window-toolbar"
         aria-label="Meal planning window"
       >
-        <div>
-          <p className="meals-window-toolbar__label">
-            Selected seven days
-          </p>
-          <h2>{windowRange}</h2>
-        </div>
+        <h2>{windowRange}</h2>
         <div className="meals-window-toolbar__actions">
           <button
             type="button"
@@ -633,13 +628,24 @@ function Meals() {
                       className="meals-slot"
                       aria-labelledby={`${day.localDate}-${mealType}`}
                     >
-                      <div className="meals-slot__header">
+                      <div
+                        className={`meals-slot__header ${
+                          slotEntries.length === 0
+                            ? 'meals-slot__header--empty'
+                            : ''
+                        }`}
+                      >
                         <h4
                           className="meals-sr-only"
                           id={`${day.localDate}-${mealType}`}
                         >
                           {MEAL_TYPE_LABELS[mealType]}
                         </h4>
+                        {slotEntries.length === 0 && (
+                          <p className="meals-slot__empty">
+                            Nothing planned.
+                          </p>
+                        )}
                         <button
                           type="button"
                           className="meals-icon-button"
@@ -744,11 +750,7 @@ function Meals() {
                             </li>
                           ))}
                         </ul>
-                      ) : (
-                        <p className="meals-slot__empty">
-                          Nothing planned.
-                        </p>
-                      )}
+                      ) : null}
 
                       {isAdding && (
                         <form
