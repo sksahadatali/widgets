@@ -1,9 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import Header from './components/layout/Header/Header';
-import Sidebar, {
-  type SidebarPage,
-} from './components/layout/Sidebar/Sidebar';
+import Sidebar from './components/layout/Sidebar/Sidebar';
 
 import Home from './pages/Home';
 import Daily from './pages/Daily';
@@ -27,19 +26,24 @@ import {
 import {
   RewardProvider,
 } from './rewards/RewardProvider';
+import {
+  AppPageRoutes,
+} from './navigation/AppPageRoutes';
+import {
+  getAppRoute,
+  type AppPage,
+} from './navigation/appRoutes';
 
 function App() {
-  const [page, setPage] =
-    useState<SidebarPage>('Home');
+  const navigate = useNavigate();
   const [dailyRoutineTarget, setDailyRoutineTarget] =
     useState<{
       routineId: string;
       occurrenceId: string;
     } | null>(null);
 
-  const navigate = (nextPage: SidebarPage) => {
+  const handlePrimaryNavigation = () => {
     setDailyRoutineTarget(null);
-    setPage(nextPage);
   };
 
   const openRoutine = (
@@ -50,7 +54,41 @@ function App() {
       routineId,
       occurrenceId,
     });
-    setPage('Daily');
+    navigate(getAppRoute('Daily').path);
+  };
+
+  const renderPage = (page: AppPage) => {
+    switch (page) {
+      case 'Home':
+        return (
+          <Home onOpenRoutine={openRoutine} />
+        );
+      case 'Settings':
+        return <Settings />;
+      case 'Daily':
+        return (
+          <Daily routineTarget={dailyRoutineTarget} />
+        );
+      case 'Rewards':
+        return <Rewards />;
+      case 'Lists':
+        return <Lists />;
+      case 'Meals':
+        return <Meals />;
+      case 'Personal':
+      case 'RAEN':
+      case 'AYANOH':
+        return (
+          <div style={{ padding: '48px' }}>
+            <h1>{page}</h1>
+            <p>
+              {page === 'Personal'
+                ? 'Coming in Sprint 7.'
+                : 'Coming soon.'}
+            </p>
+          </div>
+        );
+    }
   };
 
   return (
@@ -61,73 +99,13 @@ function App() {
             <RoutineProvider>
             <div className="app-shell">
               <Sidebar
-                page={page}
-                onNavigate={navigate}
+                onNavigate={handlePrimaryNavigation}
               />
 
               <div className="app-main">
                 <Header />
 
-              {page === 'Home' && (
-                <Home
-                  onOpenRoutine={openRoutine}
-                />
-              )}
-
-              {page === 'Settings' && (
-                <Settings />
-              )}
-
-              {page === 'Daily' && (
-                <Daily
-                  routineTarget={dailyRoutineTarget}
-                />
-              )}
-
-              {page === 'Rewards' && (
-                <Rewards />
-              )}
-
-              {page === 'Lists' && (
-                <Lists />
-              )}
-
-              {page === 'Meals' && (
-                <Meals />
-              )}
-
-              {page === 'Personal' && (
-                <div
-                  style={{
-                    padding: '48px',
-                  }}
-                >
-                  <h1>Personal</h1>
-                  <p>Coming in Sprint 7.</p>
-                </div>
-              )}
-
-              {page === 'RAEN' && (
-                <div
-                  style={{
-                    padding: '48px',
-                  }}
-                >
-                  <h1>RAEN</h1>
-                  <p>Coming soon.</p>
-                </div>
-              )}
-
-              {page === 'AYANOH' && (
-                <div
-                  style={{
-                    padding: '48px',
-                  }}
-                >
-                  <h1>AYANOH</h1>
-                  <p>Coming soon.</p>
-                </div>
-              )}
+              <AppPageRoutes renderPage={renderPage} />
               </div>
             </div>
             </RoutineProvider>

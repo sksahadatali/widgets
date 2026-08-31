@@ -10,8 +10,8 @@ import type {
 import {
   getAppMode,
 } from './householdConfigService';
+import { apiUrl } from './clientApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const REQUEST_TIMEOUT_MS = 15000;
 let demoStore: DemoKumonStore | null = null;
 
@@ -31,7 +31,7 @@ async function request(path: string, init?: RequestInit): Promise<KumonApiRespon
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, { ...init, signal: controller.signal });
+    const response = await fetch(apiUrl(path), { ...init, signal: controller.signal });
     const payload = await response.json() as KumonApiResponse;
     if (!response.ok || !payload.success) throw new Error(payload.error || 'Kumon is unavailable.');
     return payload;

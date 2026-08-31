@@ -11,29 +11,24 @@ import {
   Utensils,
   User,
 } from 'lucide-react';
+import {
+  NavLink,
+} from 'react-router-dom';
+
+import {
+  getAppRoute,
+  getNavigationItemClassName,
+  type AppPage,
+} from '../../../navigation/appRoutes';
 
 import './Sidebar.css';
 
-type SidebarPage =
-  | 'Home'
-  | 'Daily'
-  | 'Rewards'
-  | 'Lists'
-  | 'Meals'
-  | 'Personal'
-  | 'RAEN'
-  | 'AYANOH'
-  | 'Settings';
-
 type SidebarProps = {
-  page: SidebarPage;
-  onNavigate: (
-    page: SidebarPage
-  ) => void;
+  onNavigate?: () => void;
 };
 
 type NavigationItem = {
-  label: SidebarPage;
+  label: AppPage;
   icon: typeof Home;
 };
 
@@ -77,15 +72,15 @@ const navigationItems: NavigationItem[] = [
 ];
 
 function Sidebar({
-  page,
   onNavigate,
 }: SidebarProps) {
   return (
     <aside className="sidebar">
-      <button
-        type="button"
+      <NavLink
+        to={getAppRoute('Home').path}
+        end
         className="sidebar__brand"
-        onClick={() => onNavigate('Home')}
+        onClick={onNavigate}
         aria-label="Go to Home"
       >
         <div className="sidebar__logo">
@@ -97,7 +92,7 @@ function Sidebar({
         </div>
 
         <p>Personal Operating System</p>
-      </button>
+      </NavLink>
 
       <div className="sidebar__divider" />
 
@@ -106,47 +101,40 @@ function Sidebar({
         aria-label="Primary navigation"
       >
         {navigationItems.map(item => {
-          const isActive =
-            page === item.label;
-
           const Icon = item.icon;
 
           return (
-            <button
+            <NavLink
               key={item.label}
-              type="button"
-              className={`sidebar__nav-item ${
-                isActive
-                  ? 'sidebar__nav-item--active'
-                  : ''
-              }`}
-              onClick={() =>
-                onNavigate(item.label)
+              to={getAppRoute(item.label).path}
+              end={item.label === 'Home'}
+              className={({ isActive }) =>
+                getNavigationItemClassName(isActive)
               }
-              aria-current={
-                isActive
-                  ? 'page'
-                  : undefined
-              }
+              onClick={onNavigate}
             >
-              {isActive && (
-                <span
-                  className="sidebar__active-indicator"
-                  aria-hidden="true"
-                />
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span
+                      className="sidebar__active-indicator"
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  <Icon
+                    size={20}
+                    strokeWidth={2}
+                    className="sidebar__nav-icon"
+                    aria-hidden="true"
+                  />
+
+                  <span className="sidebar__nav-label">
+                    {item.label}
+                  </span>
+                </>
               )}
-
-              <Icon
-                size={20}
-                strokeWidth={2}
-                className="sidebar__nav-icon"
-                aria-hidden="true"
-              />
-
-              <span className="sidebar__nav-label">
-                {item.label}
-              </span>
-            </button>
+            </NavLink>
           );
         })}
       </nav>
@@ -191,5 +179,5 @@ function Sidebar({
 export default Sidebar;
 
 export type {
-  SidebarPage,
+  AppPage as SidebarPage,
 };

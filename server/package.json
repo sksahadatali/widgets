@@ -12,7 +12,8 @@
         "test:lists": "node --import tsx --test ../tests/lists/*.test.ts",
         "test:meals": "node --import tsx --test ../tests/meals/*.test.ts",
         "test:calendar": "NODE_PATH=../app/node_modules TSX_TSCONFIG_PATH=../tests/calendar/tsconfig.json node --import tsx --test ../tests/calendar/*.test.ts",
-        "test:kumon": "NODE_PATH=../app/node_modules node --import tsx --test ../tests/kumon/*.test.ts"
+        "test:kumon": "NODE_PATH=../app/node_modules node --import tsx --test ../tests/kumon/*.test.ts",
+        "test:client": "NODE_PATH=../app/node_modules TSX_TSCONFIG_PATH=../tests/client/tsconfig.json node --import tsx --test ../tests/client/*.test.tsx"
     },
     "dependencies": {
         "@notionhq/client": "^5.23.2",

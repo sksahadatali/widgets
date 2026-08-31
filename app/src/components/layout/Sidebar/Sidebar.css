@@ -29,7 +29,10 @@
   background: transparent;
 
   cursor: pointer;
+  color: inherit;
+  font: inherit;
   text-align: center;
+  text-decoration: none;
 
   transition:
     transform var(--ey-transition-fast),
@@ -113,6 +116,7 @@
   color: var(--ey-text-primary);
 
   cursor: pointer;
+  text-decoration: none;
   text-align: left;
 
   transition:

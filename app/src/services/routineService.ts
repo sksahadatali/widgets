@@ -20,10 +20,8 @@ import {
 import {
   reconcileDemoRoutineRewards,
 } from '../rewards/demoRewardStore';
+import { apiUrl } from './clientApi';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:3001';
 const DEMO_STORAGE_KEY =
   'ey-os-demo-routines-v3';
 const LEGACY_DEMO_STORAGE_KEY_V2 =
@@ -321,7 +319,7 @@ async function requestHousehold(
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}${path}`,
+      apiUrl(path),
       {
         ...options,
         headers: {
