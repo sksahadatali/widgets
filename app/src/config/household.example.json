@@ -45,6 +45,7 @@
   "calendar": {
     "endpoint": "",
     "refreshMinutes": 15,
-    "sources": []
+    "sources": [],
+    "semanticRules": []
   }
 }

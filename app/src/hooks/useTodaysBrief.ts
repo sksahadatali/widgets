@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
 } from 'react';
@@ -20,6 +21,14 @@ import {
 import {
   getTravelSettings,
 } from '../services/travelSettingsService';
+
+import {
+  getHouseholdConfig,
+} from '../services/householdConfigService';
+
+import {
+  selectSchoolBriefInsight,
+} from '../calendar/schoolBrief';
 
 type UseTodaysBriefResult = {
   brief: BriefData;
@@ -86,7 +95,9 @@ export function useTodaysBrief(): UseTodaysBriefResult {
   } = usePrayerTimes();
 
   const {
+    events,
     todayEvents,
+    timeZone,
     loading: calendarLoading,
     error: calendarError,
   } = useCalendar();
@@ -97,7 +108,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
     error: nestError,
   } = useNest();
 
-  const updateTravel = async () => {
+  const updateTravel = useCallback(async () => {
 
     const settings =
       getTravelSettings();
@@ -149,12 +160,12 @@ export function useTodaysBrief(): UseTodaysBriefResult {
 
     }
 
-  };
+  }, [todayEvents]);
 
   // Refresh immediately whenever calendar events change
   useEffect(() => {
     void updateTravel();
-  }, [todayEvents]);
+  }, [updateTravel]);
 
   // Refresh travel information every 5 minutes
   useEffect(() => {
@@ -203,20 +214,33 @@ export function useTodaysBrief(): UseTodaysBriefResult {
       window.clearInterval(intervalId);
     };
   
-  }, [todayEvents]);
+  }, [todayEvents, updateTravel]);
 
   const brief = useMemo(
-    () =>
-      buildTodaysBrief({
+    () => {
+      const schoolInsight =
+        selectSchoolBriefInsight(
+          events,
+          timeZone,
+          new Date(),
+          getHouseholdConfig().calendar
+            .semanticRules ?? []
+        );
+
+      return buildTodaysBrief({
         weather,
         prayer,
         todayEvents,
         nest,
-      }),
+        schoolInsight,
+      });
+    },
     [
       weather,
       prayer,
+      events,
       todayEvents,
+      timeZone,
       nest,
     ]
   );

@@ -11,7 +11,7 @@
         "test:rewards": "node --import tsx --test ../tests/rewards/*.test.ts",
         "test:lists": "node --import tsx --test ../tests/lists/*.test.ts",
         "test:meals": "node --import tsx --test ../tests/meals/*.test.ts",
-        "test:calendar": "NODE_PATH=../app/node_modules TSX_TSCONFIG_PATH=../app/tsconfig.app.json node --import tsx --test ../tests/calendar/*.test.ts"
+        "test:calendar": "NODE_PATH=../app/node_modules TSX_TSCONFIG_PATH=../tests/calendar/tsconfig.json node --import tsx --test ../tests/calendar/*.test.ts"
     },
     "dependencies": {
         "@notionhq/client": "^5.23.2",

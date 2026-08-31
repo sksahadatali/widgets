@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import {
+  readFileSync,
+} from 'node:fs';
+import {
   describe,
   it,
 } from 'node:test';
@@ -64,5 +67,27 @@ describe('Calendar presentation boundaries', () => {
   it('keeps Demo isolated from the household endpoint', () => {
     assert.equal(shouldFetchHouseholdCalendar('demo'), false);
     assert.equal(shouldFetchHouseholdCalendar('household'), true);
+  });
+
+  it('keeps tracked Demo semantic configuration empty and synthetic', () => {
+    const config = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../app/src/config/household.example.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as {
+      calendar: {
+        endpoint: string;
+        sources: unknown[];
+        semanticRules: unknown[];
+      };
+    };
+
+    assert.equal(config.calendar.endpoint, '');
+    assert.deepEqual(config.calendar.sources, []);
+    assert.deepEqual(config.calendar.semanticRules, []);
   });
 });
