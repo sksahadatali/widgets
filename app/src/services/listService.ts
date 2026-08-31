@@ -5,9 +5,8 @@ import type {
   FamilyListStoreData,
 } from '../types/familyList';
 import { getAppMode } from './householdConfigService';
+import { apiUrl } from './clientApi';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const REQUEST_TIMEOUT_MS = 15000;
 
 type ListApiResponse =
@@ -29,7 +28,7 @@ async function requestLists(
     REQUEST_TIMEOUT_MS
   );
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(apiUrl(path), {
       ...init,
       signal: controller.signal,
     });

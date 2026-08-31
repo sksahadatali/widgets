@@ -18,10 +18,8 @@ import type {
   RedemptionStoreData,
 } from '../types/redemption';
 import { getAppMode } from './householdConfigService';
+import { apiUrl } from './clientApi';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:3001';
 const REQUEST_TIMEOUT_MS = 15000;
 
 type RedemptionApiResponse =
@@ -51,7 +49,7 @@ async function requestRedemptions(
   );
   try {
     const response = await fetch(
-      `${API_BASE_URL}${path}`,
+      apiUrl(path),
       { ...init, signal: controller.signal }
     );
     const payload =

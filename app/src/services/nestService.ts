@@ -1,3 +1,5 @@
+import { apiUrl } from './clientApi';
+
 export type NestStatus = {
     room: string;
     online: boolean;
@@ -10,15 +12,11 @@ export type NestStatus = {
     targetTemperatureCelsius: number | null;
   };
   
-  const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL ??
-    'http://localhost:3001';
-  
   export async function fetchNestStatus(
     signal?: AbortSignal
   ): Promise<NestStatus> {
     const response = await fetch(
-      `${API_BASE_URL}/api/nest/status`,
+      apiUrl('/api/nest/status'),
       {
         method: 'GET',
         headers: {

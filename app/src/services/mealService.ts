@@ -10,10 +10,8 @@ import {
   getAppMode,
   getHouseholdConfig,
 } from './householdConfigService';
+import { apiUrl } from './clientApi';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:3001';
 const REQUEST_TIMEOUT_MS = 15000;
 
 const demoMealPlanStore = new DemoMealPlanStore(
@@ -53,7 +51,7 @@ async function requestMeals(
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}${path}`,
+      apiUrl(path),
       {
         ...init,
         cache: 'no-store',

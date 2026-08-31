@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { apiUrl } from '../services/clientApi';
 
 export interface PetrolData {
   station: string;
@@ -14,7 +15,7 @@ export function usePetrol() {
     async function load() {
       try {
         const response = await fetch(
-          'http://localhost:3001/api/petrol'
+          apiUrl('/api/petrol')
         );
 
         const result = await response.json();

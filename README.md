@@ -161,9 +161,13 @@ app/.env
 ```
 
 ```env
-VITE_API_BASE_URL=http://localhost:3001
 VITE_EY_MODE=household
 ```
+
+Frontend eY OS API calls use same-origin `/api` paths. During local
+development, Vite proxies those requests to `http://localhost:3001`.
+`VITE_API_BASE_URL` is an optional centralized override for environments
+that cannot use the preferred same-origin deployment.
 
 ---
 
