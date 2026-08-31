@@ -4,6 +4,11 @@ import type {
   CalendarSourceConfig,
 } from '../calendar/calendarModel';
 
+import {
+  isValidCalendarSemanticRule,
+  type CalendarSemanticRule,
+} from '../calendar/calendarSemantics';
+
 export type AppMode =
   | 'household'
   | 'demo';
@@ -48,12 +53,13 @@ export type HouseholdConfig = {
     endpoint: string;
     refreshMinutes: number;
     sources?: CalendarSourceConfig[];
+    semanticRules?: CalendarSemanticRule[];
   };
 };
 
 function resolveAppMode(): AppMode {
   const configuredMode =
-    import.meta.env.VITE_EY_MODE
+    import.meta.env?.VITE_EY_MODE
       ?.trim()
       .toLowerCase();
 
@@ -64,12 +70,12 @@ function resolveAppMode(): AppMode {
     return configuredMode;
   }
 
-  return import.meta.env.DEV
+  return import.meta.env?.DEV
     ? 'household'
     : 'demo';
 }
 
-function validateConfig(
+export function validateHouseholdConfig(
   config: HouseholdConfig,
   mode: AppMode
 ): void {
@@ -154,6 +160,7 @@ function validateConfig(
   }
 
   const sourceDefinitions = new Map<string, string>();
+  const schoolSourceIds = new Set<string>();
 
   (config.calendar?.sources ?? []).forEach(
     (source, index) => {
@@ -182,6 +189,62 @@ function validateConfig(
       }
 
       sourceDefinitions.set(sourceKey, definition);
+
+      if (kind === 'school') {
+        schoolSourceIds.add(sourceKey);
+      }
+    }
+  );
+
+  if (
+    config.calendar?.semanticRules !== undefined &&
+    !Array.isArray(config.calendar.semanticRules)
+  ) {
+    throw new Error(
+      'Household calendar semantic rules must be an array.'
+    );
+  }
+
+  const semanticRuleDefinitions = new Set<string>();
+
+  (config.calendar?.semanticRules ?? []).forEach(
+    (rule, index) => {
+      if (!isValidCalendarSemanticRule(rule)) {
+        throw new Error(
+          `Household calendar semantic rule ${index + 1} is invalid.`
+        );
+      }
+
+      if (!schoolSourceIds.has(rule.sourceId.trim())) {
+        throw new Error(
+          `Household calendar semantic rule ${index + 1} must reference a configured School source.`
+        );
+      }
+
+      const matchType = rule.titleEquals
+        ? 'equals'
+        : 'includes';
+      const matchValue = (
+        rule.titleEquals ??
+        rule.titleIncludes ??
+        ''
+      )
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLocaleLowerCase('en-GB');
+      const definition = [
+        rule.sourceId.trim(),
+        matchType,
+        matchValue,
+      ].join('\u0000');
+
+      if (semanticRuleDefinitions.has(definition)) {
+        throw new Error(
+          `Household calendar semantic rule ${index + 1} is duplicated.`
+        );
+      }
+
+      semanticRuleDefinitions.add(definition);
     }
   );
 }
@@ -189,7 +252,7 @@ function validateConfig(
 export const APP_MODE =
   resolveAppMode();
 
-validateConfig(
+validateHouseholdConfig(
   selectedConfig as HouseholdConfig,
   APP_MODE
 );

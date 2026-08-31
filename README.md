@@ -233,6 +233,23 @@ Do not store API keys, OAuth tokens, passwords or other credentials in the house
 
 Calendar source labels are configured only in the ignored local household file. Add an optional `calendar.sources` array with a stable safe `sourceId`, a display `label`, a generic `kind`, and either the exact provider `calendarName` or private `calendarId` used for matching. Multiple provider calendars can map to the same safe source, for example `sourceId: "school"`, `label: "School"`, and `kind: "school"`. Keep real calendar names and provider IDs out of the tracked example configuration.
 
+School-source events can optionally be classified for Today's Brief with private `calendar.semanticRules`. A rule uses the safe configured `sourceId`, exactly one case-insensitive `titleEquals` or explicitly chosen `titleIncludes`, one of `school.training-day`, `school.holiday` or `school.reopens`, and an optional short `label`. Exact-title rules take precedence over contains rules. An editable event description may instead contain a validated `eyos.kind=...` line and optional `eyos.label=...` line; valid markers take precedence over private rules. Unsupported or malformed markers and ambiguous rules remain semantically unclassified. Keep real academic-event titles and mappings only in the ignored local file.
+
+```json
+{
+  "calendar": {
+    "semanticRules": [
+      {
+        "sourceId": "school",
+        "titleEquals": "Example training day",
+        "kind": "school.training-day",
+        "label": "Training Day"
+      }
+    ]
+  }
+}
+```
+
 ## Family Routines
 
 The Daily area provides three shared routine views:

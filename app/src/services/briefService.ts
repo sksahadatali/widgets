@@ -2,6 +2,9 @@ import type { WeatherData } from './weatherService';
 import type { PrayerData } from './prayerService';
 import type { CalendarEvent } from './calendarService';
 import type { NestStatus } from './nestService';
+import type {
+  SchoolBriefInsight,
+} from '../calendar/schoolBrief';
 
 import {
   getTravelRecommendation,
@@ -17,11 +20,12 @@ export type BriefData = {
   updatedAt: string;
 };
 
-type BriefInput = {
+export type BriefInput = {
   weather: WeatherData | null;
   prayer: PrayerData | null;
   todayEvents: CalendarEvent[];
   nest: NestStatus | null;
+  schoolInsight: SchoolBriefInsight | null;
 };
 
 type BriefItem = {
@@ -40,6 +44,9 @@ const RAIN_CODES = [
   81,
   95,
 ];
+
+const SCHOOL_TRANSITION_PRIORITY = 96;
+const MAX_BRIEF_ITEMS = 3;
 
 function getPrayerMinutesRemaining(
   timeRemaining: string
@@ -445,6 +452,13 @@ export function buildTodaysBrief(
     );
   }
 
+  if (input.schoolInsight) {
+    candidates.push({
+      text: input.schoolInsight.text,
+      priority: SCHOOL_TRANSITION_PRIORITY,
+    });
+  }
+
   const travelItem =
   getTravelItem(
     input.todayEvents
@@ -458,9 +472,15 @@ if (travelItem) {
 
 } else {
 
+  const consumedEventIds = new Set(
+    input.schoolInsight?.consumedEventIds ?? []
+  );
+
   const calendarItem =
     getCalendarItem(
-      input.todayEvents
+      input.todayEvents.filter(
+        event => !consumedEventIds.has(event.id)
+      )
     );
 
   if (calendarItem) {
@@ -526,14 +546,14 @@ if (travelItem) {
 
   const items =
     selected
-      .slice(0, 3)
+      .slice(0, MAX_BRIEF_ITEMS)
       .map(
         item =>
           item.text
       );
 
   if (
-    items.length < 3 &&
+    items.length < MAX_BRIEF_ITEMS &&
     input.todayEvents.length ===
       0
   ) {
