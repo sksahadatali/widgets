@@ -11,6 +11,7 @@ import rewardsRouter from './routes/rewards.js';
 import redemptionsRouter from './routes/redemptions.js';
 import listsRouter from './routes/lists.js';
 import mealsRouter from './routes/meals.js';
+import kumonRouter from './routes/kumon.js';
 import { reconcileRoutineRewards } from './services/routineRewardReconciler.js';
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/rewards', rewardsRouter);
 app.use('/api/redemptions', redemptionsRouter);
 app.use('/api/lists', listsRouter);
 app.use('/api/meals', mealsRouter);
+app.use('/api/kumon', kumonRouter);
 
 app.get('/health', (_request, response) => {
   response.json({

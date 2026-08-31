@@ -410,6 +410,14 @@ The JSON store is designed for one Node backend process. It does not provide mul
 
 The **Meals** destination provides one shared rolling seven-day household plan, starting at household-local Today, with Breakfast, Lunch and Dinner slots. Entries are plain titles tied to household-local calendar dates; no week containers, profile ownership, recipe data, ingredients or Lists integration are stored. Previous and Next move the selected window by seven calendar days without deleting historical meals.
 
+### Kumon daily homework
+
+The **Daily → Today** workspace includes a small Kumon capability for date-specific Maths and English homework. An adult profile can assign a child a human-readable worksheet label and an explicit total number of units for the current Household civil date. Adult profiles and the owning child profile can update progress with absolute unit totals, complete the assignment, and reopen it by reducing progress. Family is an all-children read-only overview; a child sees only their own records.
+
+Kumon owns its assignment and progress state. It does not create Tasks, complete Routine steps, award stars, or enter Home, Today’s Brief or Today’s Focus. Recent history shows today and the previous six Household dates without generating or carrying work forward.
+
+Household data is stored privately in `server/data/kumon.local.json`, with versioned validation, serialized atomic writes and a previous-valid-file backup. Demo mode never calls this Household store and uses only the isolated `ey-os-demo-kumon-v1` browser entry initialized from empty synthetic data.
+
 Household Meals use an independent private schema-v1 store:
 
 ```text
