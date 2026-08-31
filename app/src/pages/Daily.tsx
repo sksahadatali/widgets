@@ -45,6 +45,7 @@ import type {
   RoutineTimeStatus,
 } from '../types/routine';
 import RoutineHistory from '../components/routines/RoutineHistory/RoutineHistory';
+import KumonToday from '../components/kumon/KumonToday';
 
 import './Daily.css';
 
@@ -913,12 +914,12 @@ function Daily({
       <header className="daily-page__header">
         <div>
           <span className="daily-page__eyebrow">
-            Shared household routines
+            Daily household activities
           </span>
           <h1>Daily</h1>
           <p>
-            Repeatable checklists for Family and
-            household members.
+            Today’s homework and repeatable checklists for
+            Family and household members.
           </p>
         </div>
 
@@ -1022,6 +1023,8 @@ function Daily({
           role="tabpanel"
           aria-labelledby="daily-tab-today"
         >
+          <KumonToday />
+
           <div className="daily-workspace__heading">
             <div>
               <h2>

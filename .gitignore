@@ -24,6 +24,9 @@ server/data/lists.local.json*
 # Private household Meals data and atomic-write files
 server/data/meals.local.json*
 
+# Private household Kumon data and atomic-write files
+server/data/kumon.local.json*
+
 # Dependencies
 node_modules/
 

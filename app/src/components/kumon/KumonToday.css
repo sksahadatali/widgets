@@ -1,0 +1,62 @@
+.kumon-section { margin-bottom: var(--ey-card-gap); padding-bottom: var(--ey-card-gap); border-bottom: 1px solid var(--ey-border-default); }
+.kumon-section__header,.kumon-child__header,.kumon-assignment,.kumon-editor__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--ey-card-gap); }
+.kumon-section__header { align-items: flex-start; margin-bottom: var(--ey-space-3); }
+.kumon-section__header h2 { display: flex; align-items: center; gap: var(--ey-space-2); margin-bottom: 0; }
+.kumon-section__eyebrow { color: var(--ey-accent-primary); font-size: var(--ey-font-sm); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.kumon-children { display: grid; gap: var(--ey-space-3); }
+.kumon-child { padding: var(--ey-space-3); border: 1px solid var(--ey-border-default); border-radius: var(--ey-radius-medium); background: var(--ey-bg-card-secondary); }
+.kumon-child__header { align-items: center; margin-bottom: var(--ey-space-2); }
+.kumon-child__header h3 { margin: 0 0 var(--ey-space-1); }
+.kumon-status { color: var(--ey-text-muted); font-size: var(--ey-font-sm); font-weight: 700; }
+.kumon-status--complete { color: var(--ey-success); }
+.kumon-assignments { display: grid; gap: var(--ey-space-2); }
+.kumon-assignment { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; min-width: 0; min-height: var(--ey-touch-target-min); padding: var(--ey-space-1) var(--ey-space-2); border: 1px solid var(--ey-border-subtle); border-left: 4px solid var(--ey-info); border-radius: var(--ey-radius-small); background: var(--ey-bg-input); }
+.kumon-assignment--maths { border-left-color: var(--ey-accent-primary); }
+.kumon-assignment--english { border-left-color: var(--ey-info); }
+.kumon-assignment--complete { border-left-color: var(--ey-success); }
+.kumon-assignment__details { display: grid; grid-template-columns: minmax(64px, .25fr) minmax(120px, 1fr) auto; min-width: 0; align-items: center; gap: var(--ey-space-2); }
+.kumon-assignment__details strong { color: var(--ey-text-primary); }
+.kumon-assignment__details span { min-width: 0; overflow-wrap: anywhere; line-height: 1.3; }
+.kumon-assignment__details small { color: var(--ey-text-muted); font-weight: 700; white-space: nowrap; }
+.kumon-progress-actions,.kumon-definition-actions { display: flex; flex: 0 0 auto; gap: var(--ey-space-2); }
+.kumon-definition-actions button { display: grid; width: var(--ey-touch-target-min); height: var(--ey-touch-target-min); place-items: center; border: 1px solid var(--ey-border-default); border-radius: var(--ey-control-radius); background: transparent; color: var(--ey-text-secondary); cursor: pointer; }
+.kumon-button { display: inline-flex; min-height: var(--ey-touch-target-min); align-items: center; justify-content: center; gap: var(--ey-space-2); padding: 0 var(--ey-space-3); border: 1px solid var(--ey-border-default); border-radius: var(--ey-control-radius); background: transparent; color: inherit; font-weight: 700; cursor: pointer; }
+.kumon-button--primary { border-color: var(--ey-accent-primary); background: var(--ey-accent-primary); color: var(--ey-text-on-accent); }
+.kumon-button--secondary { background: var(--ey-bg-card-secondary); }
+.kumon-button--square { width: var(--ey-touch-target-min); padding: 0; }
+.kumon-button:disabled,.kumon-definition-actions button:disabled { cursor: not-allowed; opacity: var(--ey-opacity-disabled); }
+.kumon-empty,.kumon-empty-state { padding: var(--ey-space-4); color: var(--ey-text-muted); text-align: center; }
+.kumon-empty { display: flex; align-items: center; justify-content: center; gap: var(--ey-space-2); }
+.kumon-message { display: flex; align-items: center; justify-content: space-between; gap: var(--ey-space-3); margin-bottom: var(--ey-card-gap); padding: var(--ey-space-3); border: 1px solid var(--ey-border-chip-danger); border-radius: var(--ey-radius-medium); background: var(--ey-danger-soft); color: var(--ey-danger); }
+.kumon-editor { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: var(--ey-card-gap); margin-bottom: var(--ey-space-3); padding: var(--ey-space-3); border: 1px solid var(--ey-border-default); border-radius: var(--ey-radius-small); background: var(--ey-bg-input); }
+.kumon-editor label { display: grid; gap: var(--ey-space-2); color: var(--ey-text-secondary); font-size: var(--ey-font-sm); font-weight: 700; }
+.kumon-editor input,.kumon-editor select { min-height: var(--ey-touch-target-min); padding: 0 var(--ey-space-3); border: 1px solid var(--ey-border-default); border-radius: var(--ey-control-radius); background: var(--ey-bg-card); color: var(--ey-text-primary); }
+.kumon-editor__actions { grid-column: 1 / -1; justify-content: flex-end; }
+.kumon-editor__error { grid-column: 1 / -1; margin: 0; color: var(--ey-danger); }
+.kumon-history { margin-top: var(--ey-space-2); }
+.kumon-history summary { min-height: var(--ey-touch-target-min); padding: var(--ey-space-3); border-radius: var(--ey-control-radius); color: var(--ey-text-secondary); font-weight: 700; cursor: pointer; }
+.kumon-history__rows { display: grid; gap: var(--ey-space-2); padding: var(--ey-space-2) var(--ey-space-3); }
+.kumon-history__day { display: grid; grid-template-columns: minmax(100px, .35fr) 1fr; gap: var(--ey-space-1) var(--ey-card-gap); padding: var(--ey-space-2) 0; border-bottom: 1px solid var(--ey-border-subtle); }
+.kumon-history__day strong { grid-row: 1 / span 2; }
+.kumon-history__day span { color: var(--ey-text-secondary); }
+@media (max-width: 900px) {
+  .kumon-assignment { grid-template-columns: minmax(0, 1fr) auto; }
+  .kumon-assignment__details { grid-template-columns: minmax(60px, .3fr) minmax(100px, 1fr) auto; }
+  .kumon-definition-actions { grid-column: 2; }
+  .kumon-editor { grid-template-columns: 1fr 1fr; }
+  .kumon-editor__label { grid-column: 1 / -1; }
+}
+@media (max-width: 620px) {
+  .kumon-section__header,.kumon-child__header { flex-direction: column; }
+  .kumon-editor { grid-template-columns: 1fr; }
+  .kumon-editor__label,.kumon-editor__actions,.kumon-editor__error { grid-column: auto; }
+  .kumon-editor__actions { flex-wrap: wrap; }
+  .kumon-editor__actions .kumon-button { flex: 1; }
+  .kumon-assignment { grid-template-columns: 1fr; padding: var(--ey-space-2); }
+  .kumon-assignment__details { grid-template-columns: minmax(58px, .3fr) minmax(0, 1fr) auto; }
+  .kumon-progress-actions { width: 100%; }
+  .kumon-progress-actions .kumon-button--primary { flex: 1; }
+  .kumon-definition-actions { grid-column: auto; }
+  .kumon-history__day { grid-template-columns: 1fr; }
+  .kumon-history__day strong { grid-row: auto; }
+}
