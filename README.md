@@ -150,6 +150,40 @@ Keep the terminal window open while developing.
 
 ---
 
+## Running the local production service
+
+The production topology serves the compiled React application and the
+existing Express APIs from one localhost origin. From the project root,
+build and start it with:
+
+```bash
+npm run build:production
+npm run start:production
+```
+
+Open:
+
+```text
+http://localhost:3001/
+```
+
+Vite is not required while the production service is running. React routes
+such as `/daily`, `/rewards`, `/lists`, `/meals` and `/settings` support
+direct navigation and reload through the production application fallback.
+Existing APIs remain under `/api/*`, and unknown API routes always return a
+JSON 404 rather than the React application.
+
+Production builds default to Demo mode. To build the private Household
+application, keep `app/src/config/household.local.json` available locally,
+set `VITE_EY_MODE=household` through the existing private app environment,
+and leave `VITE_API_BASE_URL` empty so all API requests remain same-origin.
+
+The local production service deliberately does not provide LAN exposure,
+HTTPS, authentication, process management, backup or PWA behavior. Those
+belong to later Home Service phases.
+
+---
+
 # Environment Variables
 
 ## Frontend
