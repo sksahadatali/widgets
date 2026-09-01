@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import type {
   CreateFamilyListInput,
@@ -18,10 +21,6 @@ import type {
   FamilyListItem,
   FamilyListStoreData,
 } from '../types/familyList.js';
-
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL('../../data/lists.local.json', import.meta.url)
-);
 
 export const SHOPPING_LIST_ID =
   '00000000-0000-4000-8000-000000000001';
@@ -311,18 +310,45 @@ async function fileExists(filePath: string): Promise<boolean> {
 export class FamilyListFileStore {
   private writeQueue: Promise<void> = Promise.resolve();
 
-  constructor(private readonly filePath = DEFAULT_STORE_PATH) {}
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
+  constructor(
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'lists.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
   }
 
   private async readExisting(): Promise<FamilyListStoreData | null> {
+    if (this.accessPolicy === 'disabled') {
+      throw new FamilyListStoreError(
+        'The Lists datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
     try {
       raw = await readFile(this.filePath, 'utf8');
     } catch (error) {
-      if (isRecord(error) && error.code === 'ENOENT') return null;
+      if (isRecord(error) && error.code === 'ENOENT') {
+        if (this.accessPolicy === 'required') {
+          throw new FamilyListStoreError(
+            'The required Lists datastore is missing.'
+          );
+        }
+        return null;
+      }
       throw error;
     }
 
@@ -341,7 +367,9 @@ export class FamilyListFileStore {
     retainBackup: boolean
   ): Promise<void> {
     validateFamilyListStore(nextStore);
-    await mkdir(dirname(this.filePath), { recursive: true });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), { recursive: true });
+    }
     const suffix = `${process.pid}.${Date.now()}.${crypto.randomUUID()}`;
     const temporaryPath = `${this.filePath}.${suffix}.tmp`;
     const backupTemporaryPath = `${this.backupPath}.${suffix}.tmp`;

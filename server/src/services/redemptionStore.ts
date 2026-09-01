@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import type {
   CreateCatalogueItemInput,
@@ -20,13 +23,6 @@ import type {
   RewardCatalogueItem,
   UpdateCatalogueItemInput,
 } from '../types/redemption.js';
-
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL(
-    '../../data/redemptions.local.json',
-    import.meta.url
-  )
-);
 
 const EMPTY_STORE: RedemptionStoreData = {
   schemaVersion: 1,
@@ -542,9 +538,21 @@ export class RedemptionFileStore {
   private writeQueue: Promise<void> =
     Promise.resolve();
 
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
   constructor(
-    private readonly filePath = DEFAULT_STORE_PATH
-  ) {}
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'redemptions.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
@@ -553,6 +561,12 @@ export class RedemptionFileStore {
   private async readExisting(): Promise<
     RedemptionStoreData | null
   > {
+    if (this.accessPolicy === 'disabled') {
+      throw new RedemptionStoreError(
+        'The Redemption datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
     try {
       raw = await readFile(this.filePath, 'utf8');
@@ -561,6 +575,11 @@ export class RedemptionFileStore {
         isRecord(error) &&
         error.code === 'ENOENT'
       ) {
+        if (this.accessPolicy === 'required') {
+          throw new RedemptionStoreError(
+            'The required Redemption datastore is missing.'
+          );
+        }
         return null;
       }
       throw error;
@@ -582,9 +601,11 @@ export class RedemptionFileStore {
     retainBackup: boolean
   ): Promise<void> {
     validateRedemptionStore(nextStore);
-    await mkdir(dirname(this.filePath), {
-      recursive: true,
-    });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), {
+        recursive: true,
+      });
+    }
     const suffix = `${process.pid}.${Date.now()}`;
     const temporaryPath =
       `${this.filePath}.${suffix}.tmp`;

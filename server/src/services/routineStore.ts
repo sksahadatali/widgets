@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import type {
   IsoWeekday,
@@ -26,13 +29,6 @@ import type {
   RoutineStep,
   RoutineStoreData,
 } from '../types/routine.js';
-
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL(
-    '../../data/routines.local.json',
-    import.meta.url
-  )
-);
 
 const EMPTY_STORE: RoutineStoreData = {
   schemaVersion: 3,
@@ -659,10 +655,21 @@ export class RoutineFileStore {
   private writeQueue: Promise<void> =
     Promise.resolve();
 
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
   constructor(
-    private readonly filePath =
-      DEFAULT_STORE_PATH
-  ) {}
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'routines.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
@@ -671,6 +678,12 @@ export class RoutineFileStore {
   private async readExisting(): Promise<
     LoadedStore | null
   > {
+    if (this.accessPolicy === 'disabled') {
+      throw new RoutineStoreError(
+        'The Routine datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
 
     try {
@@ -683,6 +696,11 @@ export class RoutineFileStore {
         isRecord(error) &&
         error.code === 'ENOENT'
       ) {
+        if (this.accessPolicy === 'required') {
+          throw new RoutineStoreError(
+            'The required Routine datastore is missing.'
+          );
+        }
         return null;
       }
 
@@ -756,9 +774,11 @@ export class RoutineFileStore {
   ): Promise<void> {
     validateRoutineStore(nextStore);
 
-    await mkdir(dirname(this.filePath), {
-      recursive: true,
-    });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), {
+        recursive: true,
+      });
+    }
 
     const temporaryPath =
       `${this.filePath}.${process.pid}.${Date.now()}.tmp`;

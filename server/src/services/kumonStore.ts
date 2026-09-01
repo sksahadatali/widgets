@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import type {
   CreateKumonAssignmentInput,
@@ -20,9 +23,6 @@ import type {
   UpdateKumonProgressInput,
 } from '../types/kumon.js';
 
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL('../../data/kumon.local.json', import.meta.url)
-);
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const LOCAL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -277,18 +277,45 @@ const EMPTY_STORE: KumonStoreData = { schemaVersion: 1, assignments: [] };
 export class KumonFileStore {
   private writeQueue: Promise<void> = Promise.resolve();
 
-  constructor(private readonly filePath = DEFAULT_STORE_PATH) {}
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
+  constructor(
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'kumon.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
   }
 
   private async readExisting(): Promise<KumonStoreData | null> {
+    if (this.accessPolicy === 'disabled') {
+      throw new KumonStoreError(
+        'The Kumon datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
     try {
       raw = await readFile(this.filePath, 'utf8');
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        if (this.accessPolicy === 'required') {
+          throw new KumonStoreError(
+            'The required Kumon datastore is missing.'
+          );
+        }
+        return null;
+      }
       throw error;
     }
     try {
@@ -303,7 +330,9 @@ export class KumonFileStore {
 
   private async replace(nextStore: KumonStoreData, retainBackup: boolean): Promise<void> {
     validateKumonStore(nextStore);
-    await mkdir(dirname(this.filePath), { recursive: true });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), { recursive: true });
+    }
     const suffix = `${process.pid}.${Date.now()}.${crypto.randomUUID()}`;
     const temporaryPath = `${this.filePath}.${suffix}.tmp`;
     const backupTemporaryPath = `${this.backupPath}.${suffix}.tmp`;

@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import type {
   CreateMealPlanEntryInput,
@@ -18,10 +21,6 @@ import type {
   MealType,
   UpdateMealPlanEntryInput,
 } from '../types/mealPlan.js';
-
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL('../../data/meals.local.json', import.meta.url)
-);
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -396,9 +395,21 @@ export class MealPlanFileStore {
   private writeQueue: Promise<void> =
     Promise.resolve();
 
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
   constructor(
-    private readonly filePath = DEFAULT_STORE_PATH
-  ) {}
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'meals.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
@@ -406,6 +417,12 @@ export class MealPlanFileStore {
 
   private async readExisting():
     Promise<MealPlanStoreData | null> {
+    if (this.accessPolicy === 'disabled') {
+      throw new MealPlanStoreError(
+        'The Meals datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
 
     try {
@@ -415,6 +432,11 @@ export class MealPlanFileStore {
         isRecord(error) &&
         error.code === 'ENOENT'
       ) {
+        if (this.accessPolicy === 'required') {
+          throw new MealPlanStoreError(
+            'The required Meals datastore is missing.'
+          );
+        }
         return null;
       }
 
@@ -441,9 +463,11 @@ export class MealPlanFileStore {
     retainBackup: boolean
   ): Promise<void> {
     validateMealPlanStore(nextStore);
-    await mkdir(dirname(this.filePath), {
-      recursive: true,
-    });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), {
+        recursive: true,
+      });
+    }
 
     const suffix =
       `${process.pid}.${Date.now()}.${crypto.randomUUID()}`;
