@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
-        "start": "node dist/server.js",
+        "start": "node dist/server.js --production",
+        "test:topology": "node --import tsx --test ../tests/server/*.test.ts",
         "test:routines": "node --import tsx --test ../tests/routines/*.test.ts",
         "test:rewards": "node --import tsx --test ../tests/rewards/*.test.ts",
         "test:lists": "node --import tsx --test ../tests/lists/*.test.ts",
