@@ -9,7 +9,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  getRuntimeStoreOptions,
+  type StoreAccessPolicy,
+} from '../config/runtimeData.js';
 
 import {
   checkedRewardAdd,
@@ -25,13 +28,6 @@ import type {
   RewardStoreData,
   RewardTransaction,
 } from '../types/reward.js';
-
-const DEFAULT_STORE_PATH = fileURLToPath(
-  new URL(
-    '../../data/rewards.local.json',
-    import.meta.url
-  )
-);
 
 const EMPTY_STORE: RewardStoreData = {
   schemaVersion: 1,
@@ -1036,10 +1032,21 @@ export class RewardFileStore {
   private writeQueue: Promise<void> =
     Promise.resolve();
 
+  private readonly filePath: string;
+  private readonly accessPolicy: StoreAccessPolicy;
+
   constructor(
-    private readonly filePath =
-      DEFAULT_STORE_PATH
-  ) {}
+    filePath?: string,
+    accessPolicy?: StoreAccessPolicy
+  ) {
+    const runtime = getRuntimeStoreOptions(
+      'rewards.local.json'
+    );
+    this.filePath = filePath ?? runtime.filePath;
+    this.accessPolicy = accessPolicy ?? (
+      filePath ? 'initialize' : runtime.policy
+    );
+  }
 
   get backupPath(): string {
     return `${this.filePath}.bak`;
@@ -1048,6 +1055,12 @@ export class RewardFileStore {
   private async readExisting(): Promise<
     RewardStoreData | null
   > {
+    if (this.accessPolicy === 'disabled') {
+      throw new RewardStoreError(
+        'The Rewards datastore is disabled in Demo mode.'
+      );
+    }
+
     let raw: string;
 
     try {
@@ -1060,6 +1073,11 @@ export class RewardFileStore {
         isRecord(error) &&
         error.code === 'ENOENT'
       ) {
+        if (this.accessPolicy === 'required') {
+          throw new RewardStoreError(
+            'The required Rewards datastore is missing.'
+          );
+        }
         return null;
       }
 
@@ -1093,9 +1111,11 @@ export class RewardFileStore {
   ): Promise<void> {
     validateRewardStore(nextStore);
 
-    await mkdir(dirname(this.filePath), {
-      recursive: true,
-    });
+    if (this.accessPolicy === 'initialize') {
+      await mkdir(dirname(this.filePath), {
+        recursive: true,
+      });
+    }
 
     const suffix =
       `${process.pid}.${Date.now()}`;

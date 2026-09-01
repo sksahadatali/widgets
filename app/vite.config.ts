@@ -83,6 +83,19 @@ export default defineConfig(
     return {
       plugins: [
         react(),
+        {
+          name: 'eyos-build-metadata',
+          generateBundle() {
+            this.emitFile({
+              type: 'asset',
+              fileName: 'eyos-build.json',
+              source: `${JSON.stringify({
+                schemaVersion: 1,
+                appMode,
+              }, null, 2)}\n`,
+            });
+          },
+        },
       ],
 
       server: {

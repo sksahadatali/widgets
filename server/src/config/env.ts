@@ -31,6 +31,9 @@ export const env = {
     process.env.FRONTEND_ORIGIN?.trim() ??
     'http://localhost:5173',
 
+  runtimeDirectory:
+    process.env.EYOS_RUNTIME_DIR?.trim(),
+
   nest: {
     clientId: required('NEST_CLIENT_ID'),
     clientSecret: required('NEST_CLIENT_SECRET'),

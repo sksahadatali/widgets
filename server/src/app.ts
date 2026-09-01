@@ -7,10 +7,6 @@ import {
   extname,
   join,
 } from 'node:path';
-import {
-  fileURLToPath,
-} from 'node:url';
-
 import cors from 'cors';
 import express from 'express';
 import type {
@@ -18,6 +14,10 @@ import type {
   Request,
   Response,
 } from 'express';
+
+import {
+  DEFAULT_FRONTEND_DIST_PATH,
+} from './config/frontendBuild.js';
 
 import kumonRouter from './routes/kumon.js';
 import listsRouter from './routes/lists.js';
@@ -39,10 +39,7 @@ export type CreateAppOptions = {
   frontendDistPath?: string;
 };
 
-export const DEFAULT_FRONTEND_DIST_PATH =
-  fileURLToPath(
-    new URL('../../app/dist/', import.meta.url)
-  );
+export { DEFAULT_FRONTEND_DIST_PATH };
 
 const REVALIDATE_CACHE_CONTROL =
   'public, max-age=0, must-revalidate';

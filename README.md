@@ -176,7 +176,56 @@ JSON 404 rather than the React application.
 Production builds default to Demo mode. To build the private Household
 application, keep `app/src/config/household.local.json` available locally,
 set `VITE_EY_MODE=household` through the existing private app environment,
-and leave `VITE_API_BASE_URL` empty so all API requests remain same-origin.
+set `EYOS_RUNTIME_DIR` in `server/.env` to the initialized external runtime
+root, and leave `VITE_API_BASE_URL` empty so all API requests remain
+same-origin.
+
+### External Household runtime data
+
+Household production uses one authoritative runtime root outside the Git
+checkout. `EYOS_RUNTIME_DIR` must be an absolute path to an already migrated
+root with this fixed layout:
+
+```text
+<runtime-root>/
+  runtime.json
+  data/
+    routines.local.json
+    rewards.local.json
+    redemptions.local.json
+    lists.local.json
+    meals.local.json
+    kumon.local.json
+```
+
+The manifest is versioned independently from the six unchanged domain-store
+schemas. Production validates the manifest, directory access, and every
+primary store before the API routers or startup reconciliation are loaded.
+Missing, partial, malformed, relative, checkout-local, unreadable, or
+unwritable runtime data stops Household production. It never falls back to
+`server/data` and never creates an empty production store. A valid `.bak`
+does not override an invalid primary; restoration is deliberately outside
+Home Service 2A and all files remain untouched on failure.
+
+Migrate an existing initialized Household only while eY OS is stopped. The
+target path and its parent are explicit; the target itself must not exist:
+
+```bash
+npm run runtime:migrate --prefix server -- --source "<absolute-server-data-path>" --target "<absolute-runtime-root>"
+npm run runtime:validate --prefix server -- --root "<absolute-runtime-root>"
+```
+
+Migration is copy-only. It validates the complete source set, copies into a
+temporary sibling directory, verifies each primary with SHA-256, validates
+the copied stores, writes the manifest last, and atomically publishes the
+whole root. It neither copies `.bak` evidence nor changes/deletes the source.
+It refuses an existing target and provides no clean-install initialization.
+
+Development remains compatible with repository-local `server/data` and its
+existing first-use initialization when `EYOS_RUNTIME_DIR` is absent. If an
+external root is explicitly supplied during development it is strict and
+required. Demo production reads `eyos-build.json`, disables all six server
+datastores, and does not require or access an external runtime root.
 
 The local production service deliberately does not provide LAN exposure,
 HTTPS, authentication, process management, backup or PWA behavior. Those
