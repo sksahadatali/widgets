@@ -423,3 +423,11 @@
 
   font-size: 0.7rem;
 }
+
+@media (max-width: 700px) {
+  .calendar-card__view-all,
+  .calendar-card__state button {
+    min-height: 44px;
+    padding: var(--ey-space-2) var(--ey-space-3);
+  }
+}

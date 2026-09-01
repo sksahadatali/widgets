@@ -214,3 +214,16 @@
 :root[data-display-profile='elo-touch'] .redemption-workspace input {
   min-height: var(--ey-touch-target-min);
 }
+
+@media (max-width: 700px) {
+  .redemption-card,
+  .redemption-request,
+  .redemption-catalogue-manager > li {
+    padding: var(--ey-space-3);
+  }
+
+  .redemption-card .rewards-button--primary,
+  .redemption-editor__actions .rewards-button--primary {
+    width: 100%;
+  }
+}

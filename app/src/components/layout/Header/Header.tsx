@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, CalendarDays, Clock3 } from 'lucide-react';
 
 import SearchBox from '../../ui/SearchBox/SearchBox';
 import IconButton from '../../ui/IconButton/IconButton';
 
 import ProfileSwitcher from '../../household/ProfileSwitcher/ProfileSwitcher';
+import { MobileMenuButton } from './MobileMenuButton';
 
 import {
   getGreeting,
@@ -17,8 +18,18 @@ import {
 
 import './Header.css';
 
-function Header() {
+type HeaderProps = {
+  isMenuOpen: boolean;
+  onMenuToggle: () => void;
+};
+
+function Header({
+  isMenuOpen,
+  onMenuToggle,
+}: HeaderProps) {
   const [, setNow] = useState(new Date());
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasMenuOpenRef = useRef(false);
   const {
     selectedProfile,
   } = useHouseholdProfile();
@@ -30,6 +41,14 @@ function Header() {
   
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (wasMenuOpenRef.current && !isMenuOpen) {
+      menuTriggerRef.current?.focus();
+    }
+
+    wasMenuOpenRef.current = isMenuOpen;
+  }, [isMenuOpen]);
   
   const greeting = getGreeting();
   const currentDate = getCurrentDate();
@@ -39,6 +58,16 @@ function Header() {
 
   return (
     <header className="header">
+      <MobileMenuButton
+        isMenuOpen={isMenuOpen}
+        menuTriggerRef={menuTriggerRef}
+        onMenuToggle={onMenuToggle}
+      />
+
+      <div className="header__mobile-identity" aria-hidden="true">
+        <span>eY</span> OS
+      </div>
+
       <div className="header__greeting">
         <h1>{greeting} {profileName}</h1>
       </div>

@@ -679,3 +679,21 @@
 
   font-size: 0.7rem;
 }
+
+@media (max-width: 700px) {
+  .tasks__add-button,
+  .tasks__state button,
+  .tasks__complete,
+  .tasks__edit {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .tasks__add-button {
+    padding: var(--ey-space-2) var(--ey-space-3);
+  }
+
+  .tasks__item {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+}

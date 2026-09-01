@@ -60,3 +60,49 @@
   .kumon-history__day { grid-template-columns: 1fr; }
   .kumon-history__day strong { grid-row: auto; }
 }
+
+@media (max-width: 700px) {
+  .kumon-section__header,
+  .kumon-child__header {
+    align-items: flex-start;
+  }
+
+  .kumon-child__header .kumon-button {
+    width: 100%;
+  }
+
+  .kumon-assignment {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kumon-assignment__details {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .kumon-assignment__details small {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .kumon-progress-actions,
+  .kumon-definition-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .kumon-progress-actions .kumon-button--primary {
+    flex: 1 1 120px;
+  }
+
+  .kumon-definition-actions {
+    justify-content: flex-end;
+  }
+
+  .kumon-definition-actions button,
+  .kumon-button--square {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+  }
+}

@@ -307,3 +307,24 @@
 :root[data-display-profile='elo-touch'] .give-stars-form select {
   min-height: var(--ey-touch-target-min);
 }
+
+@media (max-width: 700px) {
+  .rewards-page {
+    padding: var(--ey-space-3);
+  }
+
+  .rewards-page__header,
+  .rewards-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .rewards-panel,
+  .reward-balance-card {
+    padding: var(--ey-space-3);
+  }
+
+  .give-stars-form .rewards-button--primary {
+    width: 100%;
+  }
+}
