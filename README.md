@@ -174,11 +174,11 @@ Existing APIs remain under `/api/*`, and unknown API routes always return a
 JSON 404 rather than the React application.
 
 Production builds default to Demo mode. To build the private Household
-application, keep `app/src/config/household.local.json` available locally,
-set `VITE_EY_MODE=household` through the existing private app environment,
-set `EYOS_RUNTIME_DIR` in `server/.env` to the initialized external runtime
-root, and leave `VITE_API_BASE_URL` empty so all API requests remain
-same-origin.
+application, set `VITE_EY_MODE=household`, set `EYOS_RUNTIME_DIR` in
+`server/.env` to the initialized external runtime root, configure provider
+secrets in the server environment, and leave `VITE_API_BASE_URL` empty so
+all browser requests remain same-origin. Private Household configuration is
+loaded by Express and is never compiled into the Vite application.
 
 ### External Household runtime data
 
@@ -189,6 +189,8 @@ root with this fixed layout:
 ```text
 <runtime-root>/
   runtime.json
+  config/
+    household.json
   data/
     routines.local.json
     rewards.local.json
@@ -220,6 +222,19 @@ temporary sibling directory, verifies each primary with SHA-256, validates
 the copied stores, writes the manifest last, and atomically publishes the
 whole root. It neither copies `.bak` evidence nor changes/deletes the source.
 It refuses an existing target and provides no clean-install initialization.
+
+After the six stores are present, copy an existing ignored Household
+configuration into the same runtime with the separate explicit command:
+
+```bash
+npm run runtime:config:migrate --prefix server -- --source "<absolute-household.local.json>" --root "<absolute-runtime-root>"
+```
+
+The command validates the legacy source, retains it unchanged, stages and
+validates the independently versioned `config/household.json`, and publishes
+the configuration directory atomically. It refuses an existing target and
+never changes `data/*`. Household production fails before listening if this
+configuration is missing or invalid.
 
 Development remains compatible with repository-local `server/data` and its
 existing first-use initialization when `EYOS_RUNTIME_DIR` is absent. If an
@@ -276,17 +291,18 @@ NEST_DEVICE_NAME=
 
 eY OS supports two configuration modes:
 
-- **Household mode** is the primary mode for the wall-mounted 32-inch Elo touchscreen. It requires a private local household configuration.
-- **Demo mode** is the safe public/GitHub Pages mode. It uses tracked example data and never loads private household values.
+- **Household mode** is the primary mode for the wall-mounted 32-inch Elo touchscreen. Production requires external private runtime configuration.
+- **Demo mode** uses tracked synthetic client configuration and never reads the Household runtime.
 
 Local development defaults to Household mode. Production builds default to Demo mode unless `VITE_EY_MODE` is explicitly set.
 
-To configure the household installation:
+For development without `EYOS_RUNTIME_DIR`, the ignored local file remains a
+server-side input only:
 
 1. Copy `app/src/config/household.example.json` to `app/src/config/household.local.json`.
 2. Add the real household members, address, location, destinations and calendar endpoint locally.
 3. Keep `household.local.json` private. It is ignored by Git and must never be committed.
-4. Restart `npm run dev` after changing configuration.
+4. Restart the backend after changing configuration.
 
 Household members belong inside the existing `household` section:
 
@@ -310,11 +326,20 @@ Household members belong inside the existing `household` section:
 }
 ```
 
-Use stable, non-identifying IDs such as `adult-1` and `child-1`. The real display names stay only in the ignored local file. Demo mode uses the safe example profiles from `household.example.json`.
+Use stable, non-identifying IDs such as `adult-1` and `child-1`. In production,
+the real values live only in external `config/household.json`. React receives
+an explicit projection containing display names, member types, timezone,
+leave buffer and Calendar refresh interval. Addresses, coordinates, provider
+endpoints, raw Calendar identities and semantic matching rules remain on the
+server. Settings intentionally retrieves the home address through a separate
+no-store presentation endpoint.
 
 The Family profile is derived automatically from `household.displayName`. A selected member remains active only for the current page session; a page reload or application restart returns to Family. Profile selection is context only. `memberType` is descriptive metadata and does not authenticate an adult or grant permissions.
 
-If Household mode is selected without the private local file, eY OS stops with a clear configuration error instead of silently showing demo data.
+If Household mode lacks valid configuration, eY OS fails closed instead of
+silently showing Demo data. Household Profiles remain UX context rather than
+authentication or authorization, and the service must not be exposed directly
+to the Internet.
 
 Do not store API keys, OAuth tokens, passwords or other credentials in the household JSON file. Secrets belong in ignored environment files or the backend.
 

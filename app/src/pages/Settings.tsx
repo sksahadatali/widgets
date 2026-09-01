@@ -1,6 +1,8 @@
 import {
   getTravelSettings,
 } from '../services/travelSettingsService';
+import { useEffect, useState } from 'react';
+import { getHouseholdSettings } from '../services/householdSettingsService';
 
 import {
   getPrayerSettings,
@@ -106,6 +108,13 @@ function Settings() {
     getTravelSettings();
   const prayerSettings =
     getPrayerSettings();
+  const [homeAddress, setHomeAddress] = useState('Loading…');
+
+  useEffect(() => {
+    void getHouseholdSettings()
+      .then(settings => setHomeAddress(settings.homeAddress))
+      .catch(() => setHomeAddress('Unavailable'));
+  }, []);
 
   return (
     <main className="settings-page">
@@ -449,7 +458,7 @@ function Settings() {
               <span>Home Address</span>
 
               <strong>
-                {travelSettings.homeAddress}
+                {homeAddress}
               </strong>
             </div>
 

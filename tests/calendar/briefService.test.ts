@@ -183,37 +183,17 @@ describe("Today's Brief School candidate integration", () => {
       Date.now() + 90 * 60 * 1000
     );
 
-    globalThis.fetch = async input => {
-      const url = String(input);
-
-      if (url.includes('geocode')) {
-        return new Response(JSON.stringify({
-          status: 'OK',
-          results: [
-            {
-              geometry: {
-                location: {
-                  lat: 51.5,
-                  lng: -0.1,
-                },
-              },
-            },
-          ],
-        }));
-      }
-
+    globalThis.fetch = async (_input, init) => {
+      assert.deepEqual(JSON.parse(String(init?.body)), {
+        destination: 'Example destination',
+      });
       return new Response(JSON.stringify({
-        routes: [
-          {
-            duration: '1200s',
-            distanceMeters: 5000,
-          },
-        ],
+        travelMinutes: 20,
+        distanceKm: 5,
       }));
     };
 
     await refreshTravelInfoIfNeeded(
-      'Example origin',
       'Example destination',
       meetingTime
     );

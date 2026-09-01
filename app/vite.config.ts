@@ -1,11 +1,3 @@
-import {
-  existsSync,
-} from 'node:fs';
-
-import {
-  fileURLToPath,
-} from 'node:url';
-
 import react from '@vitejs/plugin-react';
 
 import {
@@ -54,32 +46,6 @@ export default defineConfig(
             : 'demo'
         );
 
-    const configFile =
-      appMode === 'household'
-        ? './src/config/household.local.json'
-        : './src/config/household.example.json';
-
-    const configPath =
-      fileURLToPath(
-        new URL(
-          configFile,
-          import.meta.url
-        )
-      );
-
-    if (
-      appMode === 'household' &&
-      !existsSync(configPath)
-    ) {
-      throw new Error(
-        'eY OS is running in Household mode, but ' +
-        'app/src/config/household.local.json is missing. ' +
-        'Create it from household.example.json and add ' +
-        'the real household values locally. This file ' +
-        'must never be committed.'
-      );
-    }
-
     return {
       plugins: [
         react(),
@@ -104,13 +70,6 @@ export default defineConfig(
             target: 'http://localhost:3001',
             changeOrigin: true,
           },
-        },
-      },
-
-      resolve: {
-        alias: {
-          '@household-config':
-            configPath,
         },
       },
     };

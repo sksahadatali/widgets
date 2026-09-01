@@ -1,7 +1,7 @@
 import { apiGet } from './apiClient';
 
 import { getPrayerSettings } from './prayerSettingsService';
-import { getTravelSettings } from './travelSettingsService';
+import { apiUrl } from './clientApi';
 
 
 type PrayerName =
@@ -20,23 +20,7 @@ type PrayerTimings = {
   Isha: string;
 };
 
-type AladhanResponse = {
-  data: {
-    timings: PrayerTimings;
-
-    date: {
-      hijri: {
-        day: string;
-
-        month: {
-          en: string;
-        };
-
-        year: string;
-      };
-    };
-  };
-};
+type PrayerApiResponse = { timings: PrayerTimings; hijriDate: string };
 
 export type PrayerData = {
   // Next prayer
@@ -247,34 +231,11 @@ function findNextPrayer(
 
 export async function getNextPrayer(): Promise<PrayerData> {
 
-  const prayerSettings =
-    getPrayerSettings();
-
-  const travelSettings =
-    getTravelSettings();
-
-  const url =
-    'https://api.aladhan.com/v1/timingsByAddress' +
-    `?address=${encodeURIComponent(
-      travelSettings.homeAddress
-    )}` +
-    `&method=${prayerSettings.calculationMethod}` +
-    `&school=${prayerSettings.school}` +
-    `&shafaq=${prayerSettings.shafaq}`;
-
-  const data =
-    await apiGet<AladhanResponse>(
-      url
-    );
-
-  const hijriDate =
-    `${data.data.date.hijri.month.en} ` +
-    `${data.data.date.hijri.day}, ` +
-    `${data.data.date.hijri.year}`;
+  const data = await apiGet<PrayerApiResponse>(apiUrl('/api/prayer-times'));
 
   return findNextPrayer(
-    data.data.timings,
-    hijriDate
+    data.timings,
+    data.hijriDate
   );
 }
 

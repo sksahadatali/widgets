@@ -176,19 +176,16 @@ function Calendar() {
           <h2>Calendar</h2>
         </div>
 
-        <button
-          type="button"
-          className="calendar-card__view-all"
-          onClick={openCalendar}
-        >
-          View All
-
-          <ExternalLink
-            size={14}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        </button>
+        {calendarUrl && (
+          <button
+            type="button"
+            className="calendar-card__view-all"
+            onClick={openCalendar}
+          >
+            View All
+            <ExternalLink size={14} strokeWidth={2} aria-hidden="true" />
+          </button>
+        )}
       </header>
 
       {loading ? (

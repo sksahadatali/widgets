@@ -122,3 +122,9 @@ a {
     padding: var(--ey-space-4);
   }
 }
+.startup-error {
+  max-width: 34rem;
+  margin: 10vh auto;
+  padding: 2rem;
+  text-align: center;
+}

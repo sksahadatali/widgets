@@ -1,266 +1,61 @@
-import selectedConfig from '@household-config';
+import { apiUrl } from './clientApi';
 
-import type {
-  CalendarSourceConfig,
-} from '../calendar/calendarModel';
-
-import {
-  isValidCalendarSemanticRule,
-  type CalendarSemanticRule,
-} from '../calendar/calendarSemantics';
-
-export type AppMode =
-  | 'household'
-  | 'demo';
-
-export type HouseholdDestination = {
-  id: string;
-  name: string;
-  aliases: string[];
-  travelMinutes: number;
-};
-
-export type HouseholdMemberType =
-  | 'adult'
-  | 'child';
-
-export type HouseholdMember = {
-  id: string;
-  displayName: string;
-  memberType: HouseholdMemberType;
-};
-
+export type AppMode = 'household' | 'demo';
+export type HouseholdMemberType = 'adult' | 'child';
+export type HouseholdMember = { id: string; displayName: string; memberType: HouseholdMemberType };
 export type HouseholdConfig = {
-  household: {
-    displayName: string;
-    members: HouseholdMember[];
-  };
+  schemaVersion: 1;
+  appMode: AppMode;
+  household: { displayName: string; members: HouseholdMember[] };
+  location: { timezone: string };
+  travel: { leaveBufferMinutes: number };
+  calendar: { refreshMinutes: number };
+};
 
-  location: {
-    name: string;
-    latitude: number;
-    longitude: number;
-    timezone: string;
-  };
-
-  travel: {
-    homeAddress: string;
-    leaveBufferMinutes: number;
-    destinations: HouseholdDestination[];
-  };
-
-  calendar: {
-    endpoint: string;
-    refreshMinutes: number;
-    sources?: CalendarSourceConfig[];
-    semanticRules?: CalendarSemanticRule[];
-  };
+const DEMO_CONFIG: HouseholdConfig = {
+  schemaVersion: 1, appMode: 'demo',
+  household: { displayName: 'Example Household', members: [
+    { id: 'adult-1', displayName: 'Alex', memberType: 'adult' },
+    { id: 'child-1', displayName: 'Sam', memberType: 'child' },
+  ] },
+  location: { timezone: 'Europe/London' }, travel: { leaveBufferMinutes: 10 }, calendar: { refreshMinutes: 15 },
 };
 
 function resolveAppMode(): AppMode {
-  const configuredMode =
-    import.meta.env?.VITE_EY_MODE
-      ?.trim()
-      .toLowerCase();
-
-  if (
-    configuredMode === 'household' ||
-    configuredMode === 'demo'
-  ) {
-    return configuredMode;
-  }
-
-  return import.meta.env?.DEV
-    ? 'household'
-    : 'demo';
+  const configured = import.meta.env?.VITE_EY_MODE?.trim().toLowerCase();
+  if (configured === 'household' || configured === 'demo') return configured;
+  return import.meta.env?.DEV ? 'household' : 'demo';
 }
+export const APP_MODE = resolveAppMode();
+let config: HouseholdConfig | null = APP_MODE === 'demo' ? DEMO_CONFIG : null;
 
-export function validateHouseholdConfig(
-  config: HouseholdConfig,
-  mode: AppMode
-): void {
-  if (
-    !config.household?.displayName ||
-    !Array.isArray(
-      config.household.members
-    ) ||
-    config.household.members.length === 0
-  ) {
-    throw new Error(
-      'Household member profiles are not configured.'
-    );
-  }
-
-  const memberIds = new Set<string>();
-
-  config.household.members.forEach(
-    (member, index) => {
-      const memberId =
-        member.id?.trim();
-
-      if (
-        !memberId ||
-        memberId === 'family' ||
-        memberIds.has(memberId) ||
-        !member.displayName?.trim() ||
-        (
-          member.memberType !== 'adult' &&
-          member.memberType !== 'child'
-        )
-      ) {
-        throw new Error(
-          `Household member profile ${index + 1} is invalid.`
-        );
-      }
-
-      memberIds.add(memberId);
-    }
-  );
-
-  if (
-    !config.location?.name ||
-    typeof config.location.latitude !==
-      'number' ||
-    typeof config.location.longitude !==
-      'number' ||
-    !config.location.timezone
-  ) {
-    throw new Error(
-      'Household configuration has invalid location settings.'
-    );
-  }
-
-  if (
-    !config.travel?.homeAddress ||
-    !Array.isArray(
-      config.travel.destinations
-    )
-  ) {
-    throw new Error(
-      'Household configuration has invalid travel settings.'
-    );
-  }
-
-  if (
-    mode === 'household' &&
-    !config.calendar?.endpoint
-  ) {
-    throw new Error(
-      'Household calendar endpoint is not configured.'
-    );
-  }
-
-  if (
-    config.calendar?.sources !== undefined &&
-    !Array.isArray(config.calendar.sources)
-  ) {
-    throw new Error(
-      'Household calendar sources must be an array.'
-    );
-  }
-
-  const sourceDefinitions = new Map<string, string>();
-  const schoolSourceIds = new Set<string>();
-
-  (config.calendar?.sources ?? []).forEach(
-    (source, index) => {
-      const sourceId = source.sourceId?.trim();
-      const label = source.label?.trim();
-      const kind = source.kind?.trim();
-      const calendarId = source.calendarId?.trim();
-      const calendarName = source.calendarName?.trim();
-      const sourceKey = sourceId ?? '';
-      const existingDefinition = sourceDefinitions.get(sourceKey);
-      const definition = `${label}\u0000${kind}`;
-
-      if (
-        !sourceId ||
-        !label ||
-        !kind ||
-        (!calendarId && !calendarName) ||
-        (
-          existingDefinition !== undefined &&
-          existingDefinition !== definition
-        )
-      ) {
-        throw new Error(
-          `Household calendar source ${index + 1} is invalid.`
-        );
-      }
-
-      sourceDefinitions.set(sourceKey, definition);
-
-      if (kind === 'school') {
-        schoolSourceIds.add(sourceKey);
-      }
-    }
-  );
-
-  if (
-    config.calendar?.semanticRules !== undefined &&
-    !Array.isArray(config.calendar.semanticRules)
-  ) {
-    throw new Error(
-      'Household calendar semantic rules must be an array.'
-    );
-  }
-
-  const semanticRuleDefinitions = new Set<string>();
-
-  (config.calendar?.semanticRules ?? []).forEach(
-    (rule, index) => {
-      if (!isValidCalendarSemanticRule(rule)) {
-        throw new Error(
-          `Household calendar semantic rule ${index + 1} is invalid.`
-        );
-      }
-
-      if (!schoolSourceIds.has(rule.sourceId.trim())) {
-        throw new Error(
-          `Household calendar semantic rule ${index + 1} must reference a configured School source.`
-        );
-      }
-
-      const matchType = rule.titleEquals
-        ? 'equals'
-        : 'includes';
-      const matchValue = (
-        rule.titleEquals ??
-        rule.titleIncludes ??
-        ''
-      )
-        .trim()
-        .replace(/\s+/g, ' ')
-        .toLocaleLowerCase('en-GB');
-      const definition = [
-        rule.sourceId.trim(),
-        matchType,
-        matchValue,
-      ].join('\u0000');
-
-      if (semanticRuleDefinitions.has(definition)) {
-        throw new Error(
-          `Household calendar semantic rule ${index + 1} is duplicated.`
-        );
-      }
-
-      semanticRuleDefinitions.add(definition);
-    }
-  );
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
-
-export const APP_MODE =
-  resolveAppMode();
-
-validateHouseholdConfig(
-  selectedConfig as HouseholdConfig,
-  APP_MODE
-);
-
-export function getAppMode(): AppMode {
-  return APP_MODE;
+function exact(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return Object.keys(value).length === keys.length && Object.keys(value).every(key => keys.includes(key));
 }
-
-export function getHouseholdConfig(): HouseholdConfig {
-  return selectedConfig as HouseholdConfig;
+export function validateClientConfig(value: unknown): HouseholdConfig {
+  const root = record(value);
+  if (!root || !exact(root, ['schemaVersion', 'appMode', 'household', 'location', 'travel', 'calendar']) || root.schemaVersion !== 1 || root.appMode !== 'household') throw new Error('Household client configuration is invalid.');
+  const household = record(root.household); const location = record(root.location); const travel = record(root.travel); const calendar = record(root.calendar);
+  if (!household || !location || !travel || !calendar || !exact(household, ['displayName', 'members']) || !exact(location, ['timezone']) || !exact(travel, ['leaveBufferMinutes']) || !exact(calendar, ['refreshMinutes']) || typeof household.displayName !== 'string' || !household.displayName.trim() || !Array.isArray(household.members) || household.members.length === 0 || typeof location.timezone !== 'string' || !Number.isInteger(travel.leaveBufferMinutes) || !Number.isInteger(calendar.refreshMinutes)) throw new Error('Household client configuration is invalid.');
+  const ids = new Set<string>();
+  const members = household.members.map(item => {
+    const member = record(item);
+    if (!member || !exact(member, ['id', 'displayName', 'memberType']) || typeof member.id !== 'string' || !member.id.trim() || member.id === 'family' || ids.has(member.id) || typeof member.displayName !== 'string' || !member.displayName.trim() || (member.memberType !== 'adult' && member.memberType !== 'child')) throw new Error('Household client configuration is invalid.');
+    ids.add(member.id);
+    return { id: member.id, displayName: member.displayName, memberType: member.memberType } as HouseholdMember;
+  });
+  try { new Intl.DateTimeFormat('en-GB', { timeZone: location.timezone }).format(); } catch { throw new Error('Household client configuration is invalid.'); }
+  return { schemaVersion: 1, appMode: 'household', household: { displayName: household.displayName, members }, location: { timezone: location.timezone }, travel: { leaveBufferMinutes: Number(travel.leaveBufferMinutes) }, calendar: { refreshMinutes: Number(calendar.refreshMinutes) } };
 }
+export async function bootstrapHouseholdConfig(): Promise<void> {
+  if (APP_MODE === 'demo') return;
+  const response = await fetch(apiUrl('/api/config/client'), { cache: 'no-store', headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error('Household configuration is unavailable.');
+  config = validateClientConfig(await response.json());
+}
+export function setClientConfigForTests(value: HouseholdConfig): void { config = value; }
+export function getAppMode(): AppMode { return APP_MODE; }
+export function getHouseholdConfig(): HouseholdConfig { if (!config) throw new Error('Household configuration is unavailable.'); return config; }

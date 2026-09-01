@@ -1,7 +1,3 @@
-import {
-  getHouseholdConfig,
-} from '../services/householdConfigService';
-
 export interface Destination {
   id: string;
   name: string;
@@ -13,21 +9,8 @@ export function findDestination(
   location: string
 ): Destination | undefined {
 
-  const value =
-    location.trim().toLowerCase();
-
-  const destinations =
-    getHouseholdConfig()
-      .travel.destinations;
-
-  return destinations
-    .find(destination =>
-      destination.name.toLowerCase() === value ||
-      destination.aliases.some(
-        alias =>
-          alias.toLowerCase() === value
-      )
-    );
+  void location;
+  return undefined;
 }
 
 export function calculateLeaveTime(
