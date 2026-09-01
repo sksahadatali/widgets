@@ -431,3 +431,36 @@
   height: 34px;
   flex-basis: 34px;
 }
+
+@media (max-width: 700px) {
+  .lists-page {
+    padding: var(--ey-space-3);
+  }
+
+  .lists-icon-button {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .lists-item__custom-check {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .lists-item__actions,
+  .lists-manage-list__actions {
+    width: 100%;
+  }
+
+  .lists-inline-editor {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .lists-inline-editor input {
+    flex-basis: calc(100% - 104px);
+  }
+}

@@ -672,37 +672,39 @@ function RoutineEditor({
                 aria-label={`Step ${index + 1}`}
                 placeholder="Checklist step"
               />
-              <button
-                type="button"
-                onClick={() => moveStep(index, -1)}
-                disabled={index === 0}
-                aria-label={`Move step ${index + 1} up`}
-              >
-                <ArrowUp size={18} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => moveStep(index, 1)}
-                disabled={index === steps.length - 1}
-                aria-label={`Move step ${index + 1} down`}
-              >
-                <ArrowDown size={18} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setSteps(current =>
-                    current.filter(
-                      candidate =>
-                        candidate.id !== step.id
+              <div className="routine-editor-step__actions">
+                <button
+                  type="button"
+                  onClick={() => moveStep(index, -1)}
+                  disabled={index === 0}
+                  aria-label={`Move step ${index + 1} up`}
+                >
+                  <ArrowUp size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveStep(index, 1)}
+                  disabled={index === steps.length - 1}
+                  aria-label={`Move step ${index + 1} down`}
+                >
+                  <ArrowDown size={18} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSteps(current =>
+                      current.filter(
+                        candidate =>
+                          candidate.id !== step.id
+                      )
                     )
-                  )
-                }
-                disabled={steps.length === 1}
-                aria-label={`Remove step ${index + 1}`}
-              >
-                <Trash2 size={18} aria-hidden="true" />
-              </button>
+                  }
+                  disabled={steps.length === 1}
+                  aria-label={`Remove step ${index + 1}`}
+                >
+                  <Trash2 size={18} aria-hidden="true" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

@@ -330,3 +330,80 @@
 
   font-size: 0.72rem;
 }
+
+@media (max-width: 700px) {
+  .sidebar,
+  :where(:root[data-display-profile='compact']) .sidebar,
+  :where(:root[data-display-profile='desktop']) .sidebar,
+  :where(:root[data-display-profile='elo-touch']) .sidebar {
+    position: fixed;
+    z-index: var(--ey-z-modal);
+    inset: 0 auto 0 0;
+
+    width: min(84vw, 320px);
+    height: 100dvh;
+    min-height: 0;
+    padding: var(--ey-space-4);
+
+    overflow-y: auto;
+    visibility: hidden;
+    transform: translateX(-102%);
+
+    box-shadow: var(--ey-shadow-elevated);
+    transition:
+      transform var(--ey-transition-normal),
+      visibility var(--ey-transition-normal);
+  }
+
+  .sidebar.sidebar--mobile-open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .sidebar__brand {
+    align-items: flex-start;
+    min-height: 48px;
+    justify-content: center;
+    text-align: left;
+  }
+
+  .sidebar__brand p {
+    display: none;
+  }
+
+  .sidebar__divider,
+  :where(:root[data-display-profile='compact']) .sidebar__divider {
+    margin: var(--ey-space-3) 0;
+  }
+
+  .sidebar__nav,
+  :where(:root[data-display-profile='compact']) .sidebar__nav {
+    gap: var(--ey-space-1);
+  }
+
+  .sidebar__nav-item,
+  :where(:root[data-display-profile='compact']) .sidebar__nav-item {
+    min-height: 48px;
+    padding-inline: var(--ey-space-3);
+  }
+
+  .sidebar__nav-label,
+  :where(:root[data-display-profile='compact']) .sidebar__nav-label {
+    font-size: 0.95rem;
+  }
+
+  .sidebar__active-indicator,
+  :where(:root[data-display-profile='compact']) .sidebar__active-indicator {
+    height: 30px;
+    margin-right: var(--ey-space-2);
+  }
+
+  .sidebar__nav-icon,
+  :where(:root[data-display-profile='compact']) .sidebar__nav-icon {
+    margin-right: var(--ey-space-3);
+  }
+
+  .sidebar__bottom {
+    display: none;
+  }
+}

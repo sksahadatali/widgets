@@ -86,3 +86,20 @@
       var(--ey-page-padding);
   }
 }
+
+@media (max-width: 700px) {
+  .home {
+    grid-template-columns: 1fr;
+    gap: var(--ey-space-3);
+    padding: 0 var(--ey-space-3) var(--ey-space-3);
+  }
+
+  .home__brief,
+  .home__focus,
+  .home__status,
+  .home__due-soon,
+  .home__tasks,
+  .home__calendar {
+    grid-column: 1;
+  }
+}

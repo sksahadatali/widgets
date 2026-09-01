@@ -51,3 +51,12 @@
   --ey-touch-target-min: 56px;
   --ey-list-max-height: 360px;
 }
+
+@media (max-width: 700px) {
+  :root[data-display-profile='compact'],
+  :root[data-display-profile='desktop'],
+  :root[data-display-profile='elo-touch'] {
+    --ey-control-height: 44px;
+    --ey-touch-target-min: 44px;
+  }
+}

@@ -14,16 +14,25 @@ import {
 import {
   NavLink,
 } from 'react-router-dom';
+import {
+  useEffect,
+  useRef,
+} from 'react';
 
 import {
+  APP_ROUTES,
   getAppRoute,
   getNavigationItemClassName,
   type AppPage,
 } from '../../../navigation/appRoutes';
+import {
+  createNavigationSelectionHandler,
+} from '../../../navigation/mobileNavigation';
 
 import './Sidebar.css';
 
 type SidebarProps = {
+  isMobileOpen?: boolean;
   onNavigate?: () => void;
 };
 
@@ -32,55 +41,58 @@ type NavigationItem = {
   icon: typeof Home;
 };
 
-const navigationItems: NavigationItem[] = [
-  {
-    label: 'Home',
-    icon: Home,
-  },
-  {
-    label: 'Daily',
-    icon: CalendarDays,
-  },
-  {
-    label: 'Rewards',
-    icon: Gift,
-  },
-  {
-    label: 'Lists',
-    icon: ListChecks,
-  },
-  {
-    label: 'Meals',
-    icon: Utensils,
-  },
-  {
-    label: 'Personal',
-    icon: User,
-  },
-  {
-    label: 'RAEN',
-    icon: Building2,
-  },
-  {
-    label: 'AYANOH',
-    icon: ShoppingBag,
-  },
-  {
-    label: 'Settings',
-    icon: Settings,
-  },
-];
+const navigationIcons: Record<AppPage, typeof Home> = {
+  Home,
+  Daily: CalendarDays,
+  Rewards: Gift,
+  Lists: ListChecks,
+  Meals: Utensils,
+  Personal: User,
+  RAEN: Building2,
+  AYANOH: ShoppingBag,
+  Settings,
+};
+
+const navigationItems: NavigationItem[] =
+  APP_ROUTES.map(route => ({
+    label: route.page,
+    icon: navigationIcons[route.page],
+  }));
 
 function Sidebar({
+  isMobileOpen = false,
   onNavigate,
 }: SidebarProps) {
+  const drawerRef = useRef<HTMLElement>(null);
+  const handleNavigationSelection =
+    createNavigationSelectionHandler(onNavigate);
+
+  useEffect(() => {
+    if (!isMobileOpen) return;
+
+    drawerRef.current
+      ?.querySelector<HTMLElement>(
+        '.sidebar__nav-item--active, .sidebar__nav-item'
+      )
+      ?.focus();
+  }, [isMobileOpen]);
+
   return (
-    <aside className="sidebar">
+    <aside
+      ref={drawerRef}
+      id="primary-navigation-drawer"
+      className={`sidebar ${
+        isMobileOpen ? 'sidebar--mobile-open' : ''
+      }`}
+      role={isMobileOpen ? 'dialog' : undefined}
+      aria-modal={isMobileOpen ? true : undefined}
+      aria-label="eY OS navigation"
+    >
       <NavLink
         to={getAppRoute('Home').path}
         end
         className="sidebar__brand"
-        onClick={onNavigate}
+        onClick={handleNavigationSelection}
         aria-label="Go to Home"
       >
         <div className="sidebar__logo">
@@ -111,7 +123,7 @@ function Sidebar({
               className={({ isActive }) =>
                 getNavigationItemClassName(isActive)
               }
-              onClick={onNavigate}
+              onClick={handleNavigationSelection}
             >
               {({ isActive }) => (
                 <>

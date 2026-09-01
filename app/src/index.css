@@ -79,3 +79,46 @@ a {
 .home-page__content {
   padding: 0 32px 32px;
 }
+
+.mobile-navigation-backdrop {
+  display: none;
+}
+
+.placeholder-page {
+  padding: 48px;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --ey-touch-target-min: 44px;
+    --ey-control-height: 44px;
+  }
+
+  body.mobile-navigation-open {
+    overflow: hidden;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .app-main {
+    width: 100%;
+  }
+
+  .mobile-navigation-backdrop {
+    position: fixed;
+    z-index: calc(var(--ey-z-modal) - 1);
+    inset: 0;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(2, 6, 23, 0.68);
+    cursor: pointer;
+  }
+
+  .placeholder-page {
+    padding: var(--ey-space-4);
+  }
+}

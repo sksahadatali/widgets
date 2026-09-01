@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Header from './components/layout/Header/Header';
@@ -36,6 +36,8 @@ import {
 
 function App() {
   const navigate = useNavigate();
+  const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
+    useState(false);
   const [dailyRoutineTarget, setDailyRoutineTarget] =
     useState<{
       routineId: string;
@@ -44,7 +46,49 @@ function App() {
 
   const handlePrimaryNavigation = () => {
     setDailyRoutineTarget(null);
+    setIsMobileNavigationOpen(false);
   };
+
+  useEffect(() => {
+    if (!isMobileNavigationOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileNavigationOpen(false);
+      }
+    };
+
+    document.body.classList.add('mobile-navigation-open');
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.classList.remove('mobile-navigation-open');
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMobileNavigationOpen]);
+
+  useEffect(() => {
+    const phoneViewport = window.matchMedia(
+      '(max-width: 700px)'
+    );
+    const closeOutsidePhoneViewport = () => {
+      if (!phoneViewport.matches) {
+        setIsMobileNavigationOpen(false);
+      }
+    };
+
+    phoneViewport.addEventListener(
+      'change',
+      closeOutsidePhoneViewport
+    );
+
+    return () => {
+      phoneViewport.removeEventListener(
+        'change',
+        closeOutsidePhoneViewport
+      );
+    };
+  }, []);
 
   const openRoutine = (
     routineId: string,
@@ -79,14 +123,14 @@ function App() {
       case 'RAEN':
       case 'AYANOH':
         return (
-          <div style={{ padding: '48px' }}>
+          <main className="placeholder-page">
             <h1>{page}</h1>
             <p>
               {page === 'Personal'
                 ? 'Coming in Sprint 7.'
                 : 'Coming soon.'}
             </p>
-          </div>
+          </main>
         );
     }
   };
@@ -99,11 +143,29 @@ function App() {
             <RoutineProvider>
             <div className="app-shell">
               <Sidebar
+                isMobileOpen={isMobileNavigationOpen}
                 onNavigate={handlePrimaryNavigation}
               />
 
-              <div className="app-main">
-                <Header />
+              {isMobileNavigationOpen && (
+                <button
+                  type="button"
+                  className="mobile-navigation-backdrop"
+                  aria-label="Close navigation menu"
+                  onClick={() => setIsMobileNavigationOpen(false)}
+                />
+              )}
+
+              <div
+                className="app-main"
+                inert={isMobileNavigationOpen ? true : undefined}
+              >
+                <Header
+                  isMenuOpen={isMobileNavigationOpen}
+                  onMenuToggle={() =>
+                    setIsMobileNavigationOpen(current => !current)
+                  }
+                />
 
               <AppPageRoutes renderPage={renderPage} />
               </div>

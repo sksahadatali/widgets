@@ -142,3 +142,86 @@
 
   transition: color 180ms ease;
 }
+
+.header__menu-button,
+.header__mobile-identity {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .header,
+  :where(:root[data-display-profile='compact']) .header,
+  :where(:root[data-display-profile='desktop']) .header,
+  :where(:root[data-display-profile='elo-touch']) .header {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: var(--ey-space-2);
+    margin-bottom: var(--ey-space-2);
+    padding: var(--ey-space-2) var(--ey-space-3);
+  }
+
+  .header__menu-button {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--ey-border-default);
+    border-radius: var(--ey-control-radius);
+    background: var(--ey-bg-card-secondary);
+    color: var(--ey-text-secondary);
+    cursor: pointer;
+  }
+
+  .header__mobile-identity {
+    display: block;
+    min-width: 0;
+    color: var(--ey-text-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .header__mobile-identity span {
+    color: var(--ey-accent-primary);
+  }
+
+  .header__greeting {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .header__greeting h1,
+  :where(:root[data-display-profile='compact']) .header__greeting h1,
+  :where(:root[data-display-profile='desktop']) .header__greeting h1,
+  :where(:root[data-display-profile='elo-touch']) .header__greeting h1 {
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+  }
+
+  .header__actions {
+    display: contents;
+  }
+
+  .header__actions .search-box,
+  .header__date-time,
+  .header__actions > .icon-button {
+    display: none;
+  }
+
+  .header__actions .profile-switcher {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .header .avatar,
+  :where(:root[data-display-profile='compact']) .header .avatar,
+  :where(:root[data-display-profile='desktop']) .header .avatar,
+  :where(:root[data-display-profile='elo-touch']) .header .avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
