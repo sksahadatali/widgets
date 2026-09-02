@@ -56,7 +56,15 @@ let configuration: RuntimeDataConfiguration = {
   external: false,
 };
 
-function getAbsolutePathStyle(value: string) {
+export function getAbsolutePathStyle(value: string) {
+  if (
+    value.startsWith('\\\\') ||
+    value.startsWith('//') ||
+    /^\\\\[?.]\\/.test(value)
+  ) {
+    return null;
+  }
+
   if (posix.isAbsolute(value)) {
     return posix;
   }
@@ -68,7 +76,7 @@ function getAbsolutePathStyle(value: string) {
   return null;
 }
 
-function isWithin(
+export function isPathWithin(
   parentPath: string,
   candidatePath: string
 ): boolean {
@@ -126,11 +134,18 @@ function joinAbsolutePath(
 export function assertExternalRuntimePath(
   runtimePath: string
 ): string {
-  const normalized = normalizeAbsolutePath(runtimePath);
+  return assertExternalPath(runtimePath, 'EYOS_RUNTIME_DIR');
+}
 
-  if (isWithin(REPOSITORY_ROOT, normalized)) {
+export function assertExternalPath(
+  value: string,
+  label: string,
+): string {
+  const normalized = normalizeAbsolutePath(value, label);
+
+  if (isPathWithin(REPOSITORY_ROOT, normalized)) {
     throw new Error(
-      'EYOS_RUNTIME_DIR must be outside the Git checkout.'
+      `${label} must be outside the Git checkout.`
     );
   }
 

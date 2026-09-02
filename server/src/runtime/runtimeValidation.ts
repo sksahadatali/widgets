@@ -48,7 +48,7 @@ async function getValidators(): Promise<
   };
 }
 
-function assertManifest(value: unknown): void {
+export function assertRuntimeManifest(value: unknown): void {
   if (
     typeof value !== 'object' ||
     value === null ||
@@ -164,7 +164,7 @@ export async function preflightRuntimeData(
     );
   });
 
-  assertManifest(
+  assertRuntimeManifest(
     await readJson(
       join(
         configuration.rootPath,
