@@ -3,7 +3,6 @@ import {
 } from './householdConfigService';
 
 export type TravelSettings = {
-  homeAddress: string;
   leaveBufferMinutes: number;
 };
 
@@ -12,8 +11,6 @@ export function getTravelSettings(): TravelSettings {
     getHouseholdConfig();
 
   return {
-    homeAddress:
-      travel.homeAddress,
     leaveBufferMinutes:
       travel.leaveBufferMinutes,
   };

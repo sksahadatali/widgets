@@ -4,8 +4,8 @@ export interface RouteInfo {
   distanceKm: number;
 }
 
-const API_KEY =
-  import.meta.env.VITE_TOMTOM_API_KEY ?? '';
+// TomTom remains inactive; provider credentials are server-only.
+const API_KEY = '';
 
 const BASE_URL =
   'https://api.tomtom.com/routing/1/calculateRoute';

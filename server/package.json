@@ -9,6 +9,7 @@
         "start": "node dist/server.js --production",
         "runtime:migrate": "tsx src/scripts/migrateRuntimeData.ts",
         "runtime:validate": "tsx src/scripts/validateRuntimeData.ts",
+        "runtime:config:migrate": "tsx src/scripts/migrateRuntimeConfig.ts",
         "test:runtime": "node --import tsx --test ../tests/runtime/*.test.ts",
         "test:topology": "node --import tsx --test ../tests/server/*.test.ts",
         "test:routines": "node --import tsx --test ../tests/routines/*.test.ts",

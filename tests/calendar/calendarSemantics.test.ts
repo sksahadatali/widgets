@@ -17,7 +17,7 @@ import type {
 import {
   validateHouseholdConfig,
   type HouseholdConfig,
-} from '../../app/src/services/householdConfigService.ts';
+} from '../../server/src/config/householdConfig.ts';
 
 function event(
   title: string,
@@ -257,6 +257,7 @@ describe('Calendar School semantic classification', () => {
 
   it('validates semantic rules against a configured School source', () => {
     const config: HouseholdConfig = {
+      schemaVersion: 1,
       household: {
         displayName: 'Example Household',
         members: [
@@ -279,7 +280,7 @@ describe('Calendar School semantic classification', () => {
         destinations: [],
       },
       calendar: {
-        endpoint: '',
+        endpoint: 'https://calendar.example.test/provider',
         refreshMinutes: 15,
         sources: [
           {
@@ -294,7 +295,7 @@ describe('Calendar School semantic classification', () => {
     };
 
     assert.doesNotThrow(() =>
-      validateHouseholdConfig(config, 'demo')
+      validateHouseholdConfig(config)
     );
     assert.throws(
       () => validateHouseholdConfig(
@@ -309,10 +310,9 @@ describe('Calendar School semantic classification', () => {
               },
             ],
           },
-        },
-        'demo'
+        }
       ),
-      /must reference a configured School source/
+      /semanticRules\[0\] is invalid/
     );
     assert.throws(
       () => validateHouseholdConfig(
@@ -325,8 +325,7 @@ describe('Calendar School semantic classification', () => {
               RULES[0],
             ],
           },
-        },
-        'demo'
+        }
       ),
       /is duplicated/
     );

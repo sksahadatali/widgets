@@ -358,7 +358,7 @@ export function selectSchoolBriefInsight(
   events: readonly CalendarEvent[],
   timeZone: string,
   now: Date,
-  rules: readonly CalendarSemanticRule[]
+  rules: readonly CalendarSemanticRule[] = []
 ): SchoolBriefInsight | null {
   const today = getCalendarHouseholdDate(
     now,
@@ -371,10 +371,7 @@ export function selectSchoolBriefInsight(
   const classifiedEvents = events
     .map(event => ({
       event,
-      semantic: classifyCalendarEvent(
-        event,
-        rules
-      ),
+      semantic: event.semantic ?? classifyCalendarEvent(event, rules),
     }))
     .filter(
       (

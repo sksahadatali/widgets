@@ -28,6 +28,13 @@ import redemptionsRouter from './routes/redemptions.js';
 import rewardsRouter from './routes/rewards.js';
 import routinesRouter from './routes/routines.js';
 import tasksRouter from './routes/tasks.js';
+import calendarRouter from './routes/calendar.js';
+import clientConfigRouter from './routes/clientConfig.js';
+import prayerTimesRouter from './routes/prayerTimes.js';
+import travelRouter from './routes/travel.js';
+import weatherRouter from './routes/weather.js';
+import { getRuntimeAppMode } from './config/householdConfig.js';
+import type { RuntimeAppMode } from './config/runtimeData.js';
 
 export type ServerMode =
   | 'development'
@@ -35,6 +42,7 @@ export type ServerMode =
 
 export type CreateAppOptions = {
   mode: ServerMode;
+  appMode?: RuntimeAppMode;
   frontendOrigin?: string;
   frontendDistPath?: string;
 };
@@ -143,6 +151,14 @@ export function createApp(
   app.use('/api/lists', listsRouter);
   app.use('/api/meals', mealsRouter);
   app.use('/api/kumon', kumonRouter);
+  const appMode = options.appMode ?? getRuntimeAppMode();
+  app.use('/api/calendar', calendarRouter);
+  app.use('/api/weather', weatherRouter);
+  app.use('/api/prayer-times', prayerTimesRouter);
+  if (appMode === 'household') {
+    app.use('/api/config', clientConfigRouter);
+    app.use('/api/travel', travelRouter);
+  }
 
   app.use('/api', (_request, response) => {
     response.status(404).json({

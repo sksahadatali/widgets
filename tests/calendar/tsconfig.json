@@ -1,11 +1,4 @@
 {
   "extends": "../../app/tsconfig.app.json",
-  "compilerOptions": {
-    "baseUrl": "../..",
-    "paths": {
-      "@household-config": [
-        "app/src/config/household.example.json"
-      ]
-    }
-  }
+  "compilerOptions": {}
 }

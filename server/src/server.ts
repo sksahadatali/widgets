@@ -8,6 +8,7 @@ import {
 import {
   preflightRuntimeData,
 } from './runtime/runtimeValidation.js';
+import { loadHouseholdConfig } from './config/householdConfig.js';
 
 const isProduction =
   process.argv.includes('--production');
@@ -25,6 +26,11 @@ async function start(): Promise<void> {
     runtimeDirectory: env.runtimeDirectory,
   });
   await preflightRuntimeData(runtime);
+  await loadHouseholdConfig({
+    appMode,
+    rootPath: runtime.rootPath,
+    serverMode,
+  });
 
   const [
     { createApp },
@@ -35,6 +41,7 @@ async function start(): Promise<void> {
   ]);
   const app = createApp({
     mode: serverMode,
+    appMode,
     frontendOrigin: env.frontendOrigin,
   });
 

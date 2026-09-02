@@ -38,6 +38,7 @@ export type CalendarEvent = {
   description: string;
   calendarUrl: string;
   source: CalendarSource;
+  semantic?: import('./calendarSemantics').CalendarEventSemantic;
 };
 
 const LOCAL_DATE_PATTERN =

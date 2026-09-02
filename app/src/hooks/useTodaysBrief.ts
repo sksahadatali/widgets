@@ -23,10 +23,6 @@ import {
 } from '../services/travelSettingsService';
 
 import {
-  getHouseholdConfig,
-} from '../services/householdConfigService';
-
-import {
   selectSchoolBriefInsight,
 } from '../calendar/schoolBrief';
 
@@ -110,9 +106,6 @@ export function useTodaysBrief(): UseTodaysBriefResult {
 
   const updateTravel = useCallback(async () => {
 
-    const settings =
-      getTravelSettings();
-
     const now =
       new Date();
 
@@ -137,16 +130,9 @@ export function useTodaysBrief(): UseTodaysBriefResult {
     const meetingTime =
       new Date(nextEvent.start);
 
-    console.log('Next event selected:', {
-      title: nextEvent.title,
-      location: nextEvent.location,
-      start: nextEvent.start,
-    });
-
     try {
 
       await refreshTravelInfoIfNeeded(
-        settings.homeAddress,
         nextEvent.location!,
         meetingTime
       );
@@ -199,12 +185,6 @@ export function useTodaysBrief(): UseTodaysBriefResult {
         settings.leaveBufferMinutes
       );
   
-    console.log(
-      'Travel refresh interval:',
-      refreshMs / 60000,
-      'minutes'
-    );
-  
     const intervalId =
       window.setInterval(() => {
         void updateTravel();
@@ -222,9 +202,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
         selectSchoolBriefInsight(
           events,
           timeZone,
-          new Date(),
-          getHouseholdConfig().calendar
-            .semanticRules ?? []
+          new Date()
         );
 
       return buildTodaysBrief({
