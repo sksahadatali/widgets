@@ -8,7 +8,7 @@ export function parseArguments(
     if (!name.startsWith('--') || !allowed.includes(name) || name in result) {
       throw new Error(`Unknown or duplicated option: ${name}`);
     }
-    if (name.startsWith('--confirm-')) {
+    if (name.startsWith('--confirm-') && name !== '--confirm-restore') {
       result[name] = true;
       continue;
     }

@@ -5,7 +5,7 @@ export type SnapshotAuditRecord = {
   schemaVersion: 1;
   kind: 'eyos-snapshot-operation';
   operationId: string;
-  operation: 'create' | 'lock-clear';
+  operation: 'create' | 'lock-clear' | 'restore' | 'restore-recover';
   snapshotId?: string;
   startedAt: string;
   finishedAt: string;
@@ -13,6 +13,9 @@ export type SnapshotAuditRecord = {
   fileCount?: number;
   totalBytes?: number;
   errorCode?: string;
+  sourceState?: 'valid' | 'invalid' | 'incomplete' | 'absent';
+  preRestoreSnapshotId?: string;
+  recoveryAction?: 'abort' | 'rollback' | 'complete';
 };
 
 export async function appendSnapshotAudit(

@@ -14,6 +14,7 @@ import {
   releaseRuntimeOperationLock,
   type RuntimeOperationLock,
 } from './runtime/runtimeOperationLock.js';
+import { readRuntimeRestoreJournal } from './runtime/runtimeRestoreJournal.js';
 
 const isProduction =
   process.argv.includes('--production');
@@ -33,6 +34,9 @@ async function start(): Promise<void> {
   let operationLock: RuntimeOperationLock | null = null;
   try {
     if (runtime.policy === 'required' && runtime.rootPath) {
+      if (await readRuntimeRestoreJournal(runtime.rootPath)) {
+        throw new Error('RESTORE_RECOVERY_REQUIRED');
+      }
       operationLock = await acquireRuntimeOperationLock({
         runtimeRoot: runtime.rootPath,
         operation: 'server',
