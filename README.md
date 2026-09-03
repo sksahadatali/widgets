@@ -243,8 +243,57 @@ required. Demo production reads `eyos-build.json`, disables all six server
 datastores, and does not require or access an external runtime root.
 
 The local production service deliberately does not provide LAN exposure,
-HTTPS, authentication, process management, backup or PWA behavior. Those
-belong to later Home Service phases.
+HTTPS, authentication, process management, restore, scheduled/off-device
+backup or PWA behavior. Those belong to later Home Service phases.
+
+### Local validated snapshots
+
+Home Service 3A provides offline, whole-runtime snapshots for an initialized
+external Household runtime. Stop eY OS before creating a snapshot. Household
+production holds an exclusive sibling operation lock for its full process
+lifetime, so snapshot creation fails closed while the service is running.
+
+The backup root must be an existing local absolute path outside the runtime.
+Local Windows drive-letter and POSIX paths are supported. Relative, UNC,
+network, Windows device-namespace, checkout-contained and mutually contained
+runtime/backup paths are rejected.
+
+```bash
+npm run runtime:backup:create --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>"
+npm run runtime:backup:verify --prefix server -- --snapshot "<absolute-snapshot-directory>"
+npm run runtime:backup:list --prefix server -- --backup-root "<absolute-backup-root>"
+```
+
+Each atomically published snapshot contains exactly `runtime.json`, external
+`config/household.json`, and the six primary `data/*.local.json` stores. Its
+strict manifest records byte sizes and SHA-256 checksums, and creation performs
+an independent verification before reporting success. Per-store `.bak` files,
+temporary files, secrets and repository migration evidence are deliberately
+excluded. Verification and listing are strictly read-only.
+
+A failed audit append after publication does not invalidate or remove the
+verified snapshot; the create command reports a degraded-audit warning. An
+interrupted operation may leave a staging directory or stale operation lock,
+but staging is never listed as a snapshot and startup never clears a lock or
+selects backup data automatically.
+
+Inspect a lock before taking administrative action:
+
+```bash
+npm run runtime:operation:inspect --prefix server -- --root "<absolute-runtime-root>"
+```
+
+Only after confirming that no eY OS or snapshot process is running, clear a
+recorded stale lock with its exact operation ID and an explicit audit target:
+
+```bash
+npm run runtime:operation:clear --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>" --operation-id "<exact-id>" --confirm-clear
+```
+
+For an ownerless/malformed lock use `--confirm-orphaned-lock` instead. Locks
+are never cleared automatically. HS3A does not provide restore, pruning,
+scheduling, encryption or off-device export, and Git/GitHub must never store
+real Household snapshots.
 
 ---
 
