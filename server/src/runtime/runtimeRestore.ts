@@ -17,6 +17,9 @@ import {
   writeRuntimeRestoreJournal, type CurrentRuntimeState, type RestoreTransition, type RuntimeRestoreJournal,
 } from './runtimeRestoreJournal.js';
 import { classifyCurrentRuntime, estimateRuntimeBytes, runtimeMatchesSnapshot, validateRestoredRuntime } from './runtimeRestoreValidation.js';
+import { flushDirectory } from './runtimeDurability.js';
+
+type RuntimeDirectoryRenamer = (source: string, target: string) => Promise<void>;
 
 export type RestoreResult = {
   operationId: string;
@@ -101,7 +104,11 @@ async function bestEffortSpaceCheck(parent: string, requiredBytes: number): Prom
   }
 }
 
-async function stageSnapshot(snapshotPath: string, staging: string): Promise<void> {
+async function stageSnapshot(
+  snapshotPath: string,
+  staging: string,
+  directoryFlusher: typeof flushDirectory,
+): Promise<void> {
   const style = getAbsolutePathStyle(staging)!;
   await mkdir(staging, { mode: 0o700 });
   await mkdir(style.join(staging, 'config'), { mode: 0o700 });
@@ -113,6 +120,20 @@ async function stageSnapshot(snapshotPath: string, staging: string): Promise<voi
   }
   await validateRestoredRuntime(staging);
   await runtimeMatchesSnapshot(staging, snapshotPath);
+  await directoryFlusher(style.join(staging, 'config'));
+  await directoryFlusher(style.join(staging, 'data'));
+  await directoryFlusher(staging);
+}
+
+async function renameAndFlushParent(
+  source: string,
+  target: string,
+  parent: string,
+  renamer: RuntimeDirectoryRenamer,
+  directoryFlusher: typeof flushDirectory,
+): Promise<void> {
+  await renamer(source, target);
+  await directoryFlusher(parent);
 }
 
 export async function restoreRuntime(options: {
@@ -128,6 +149,8 @@ export async function restoreRuntime(options: {
   restoreStagingRemover?: (path: string) => Promise<void>;
   lockReleaser?: typeof releaseRuntimeOperationLock;
   journalRemover?: typeof removeRuntimeRestoreJournal;
+  runtimeRenamer?: RuntimeDirectoryRenamer;
+  directoryFlusher?: typeof flushDirectory;
 }): Promise<RestoreResult> {
   if (options.confirmRestore !== options.snapshotId) throw new Error('RESTORE_CONFIRMATION_REQUIRED');
   const resolved = await assertRestorePaths(options.runtimeRoot, options.backupRoot, options.snapshotId);
@@ -147,6 +170,9 @@ export async function restoreRuntime(options: {
   }
   const operationId = lock.owner.operationId;
   const restorePaths = paths(resolved.runtimeRoot, operationId, sourceState);
+  const runtimeParent = resolved.style.dirname(resolved.runtimeRoot);
+  const runtimeRenamer = options.runtimeRenamer ?? rename;
+  const directoryFlusher = options.directoryFlusher ?? flushDirectory;
   let journal: RuntimeRestoreJournal = {
     schemaVersion: 2, operationId, selectedSnapshotId: options.snapshotId,
     startedAt: new Date().toISOString(),
@@ -188,13 +214,19 @@ export async function restoreRuntime(options: {
     if (await pathExists(restorePaths.staging) || await pathExists(restorePaths.displaced)) throw new Error('RESTORE_PATH_EXISTS');
     await bestEffortSpaceCheck(resolved.style.dirname(resolved.runtimeRoot), (await estimateRuntimeBytes(resolved.snapshotPath)) * 2);
     await update('stage', 'intent', {}, 'staging');
-    await stageSnapshot(resolved.snapshotPath, restorePaths.staging);
+    await stageSnapshot(resolved.snapshotPath, restorePaths.staging, directoryFlusher);
     await verifyRuntimeSnapshot(resolved.snapshotPath);
     await update('stage', 'complete', {}, 'staged');
     if (sourceState !== 'absent') {
       await update('displace', 'intent', {}, 'displacing-current');
       destructive = true;
-      await rename(resolved.runtimeRoot, restorePaths.displaced);
+      await renameAndFlushParent(
+        resolved.runtimeRoot,
+        restorePaths.displaced,
+        runtimeParent,
+        runtimeRenamer,
+        directoryFlusher,
+      );
       await options.faultHook?.('displaced-before-completion');
       await update('displace', 'complete', {}, 'current-displaced');
     } else {
@@ -202,7 +234,13 @@ export async function restoreRuntime(options: {
       await update('displace', 'complete', {}, 'current-displaced');
     }
     await update('publish', 'intent', {}, 'publishing-replacement');
-    await rename(restorePaths.staging, resolved.runtimeRoot);
+    await renameAndFlushParent(
+      restorePaths.staging,
+      resolved.runtimeRoot,
+      runtimeParent,
+      runtimeRenamer,
+      directoryFlusher,
+    );
     await options.faultHook?.('published-before-completion');
     await update('publish', 'complete', {}, 'replacement-published');
     await update('verify', 'intent', {}, 'verifying-restored');

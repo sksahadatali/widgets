@@ -42,6 +42,7 @@ import {
   type RuntimeSnapshotManifest,
 } from './runtimeSnapshotManifest.js';
 import { verifyRuntimeSnapshot } from './runtimeSnapshotValidation.js';
+import { flushDirectory } from './runtimeDurability.js';
 
 export type SnapshotCreationResult = {
   snapshotId: string;
@@ -153,17 +154,6 @@ export async function flushCopiedFile(
   // the copied file intact while providing the required non-truncating handle.
   const handle = await openFile(path, 'r+');
   try { await handle.sync(); } finally { await handle.close(); }
-}
-
-async function flushDirectory(path: string): Promise<void> {
-  try {
-    const handle = await open(path, 'r');
-    try { await handle.sync(); } finally { await handle.close(); }
-  } catch (error) {
-    if (!['EISDIR', 'EINVAL', 'EPERM', 'ENOTSUP'].includes((error as NodeJS.ErrnoException).code ?? '')) {
-      throw error;
-    }
-  }
 }
 
 async function exists(path: string): Promise<boolean> {

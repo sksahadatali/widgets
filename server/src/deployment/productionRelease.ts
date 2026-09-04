@@ -12,7 +12,9 @@ export type ProductionReleaseManifest = {
 };
 
 async function requireReal(path: string, kind: 'file' | 'directory'): Promise<void> {
-  const value = await lstat(path);
+  const value = await lstat(path).catch(() => {
+    throw new Error(`Production release ${kind} is missing or unsafe.`);
+  });
   if (value.isSymbolicLink() || (kind === 'file' ? !value.isFile() : !value.isDirectory())) {
     throw new Error(`Production release ${kind} is missing or unsafe.`);
   }
@@ -30,6 +32,9 @@ export async function validateProductionRelease(releaseRoot: string): Promise<Pr
     requireReal(join(appDist, 'eyos-build.json'), 'file'),
     requireReal(serverDist, 'directory'),
     requireReal(join(serverDist, 'server.js'), 'file'),
+    requireReal(join(serverDist, 'scripts', 'restoreRuntime.js'), 'file'),
+    requireReal(join(serverDist, 'scripts', 'inspectRuntimeRestore.js'), 'file'),
+    requireReal(join(serverDist, 'scripts', 'recoverRuntimeRestore.js'), 'file'),
     requireReal(join(releaseRoot, 'server', 'node_modules'), 'directory'),
     requireReal(join(releaseRoot, 'server', 'package.json'), 'file'),
     requireReal(join(releaseRoot, 'node', process.platform === 'win32' ? 'node.exe' : 'node'), 'file'),

@@ -21,7 +21,7 @@ $runtimeRoot = ($runtimeLine -replace '^\s*EYOS_RUNTIME_DIR\s*=\s*', '').Trim().
 $runtimeLeaf = Split-Path -Leaf $runtimeRoot.TrimEnd('\')
 $runtimeParent = Split-Path -Parent $runtimeRoot.TrimEnd('\')
 $operationLock = Join-Path $runtimeParent (".$runtimeLeaf.operation-lock")
-$restoreJournal = Join-Path $runtimeParent (".$runtimeLeaf.restore-journal.json")
+$restoreJournal = Join-Path $runtimeParent (".$runtimeLeaf.restore-state.json")
 if ((Test-Path -LiteralPath $operationLock) -or (Test-Path -LiteralPath $restoreJournal)) {
   throw 'Runtime operation or restore evidence remains after controlled stop. Deployment refuses; resolve it explicitly.'
 }
