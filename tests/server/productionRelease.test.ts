@@ -12,6 +12,7 @@ async function release(): Promise<string> {
   await Promise.all([
     mkdir(join(root, 'app', 'dist'), { recursive: true }),
     mkdir(join(root, 'server', 'dist'), { recursive: true }),
+    mkdir(join(root, 'server', 'dist', 'scripts'), { recursive: true }),
     mkdir(join(root, 'server', 'node_modules'), { recursive: true }),
     mkdir(join(root, 'node'), { recursive: true }),
   ]);
@@ -19,6 +20,9 @@ async function release(): Promise<string> {
     writeFile(join(root, 'app', 'dist', 'index.html'), '<script src="/assets/app.js"></script>'),
     writeFile(join(root, 'app', 'dist', 'eyos-build.json'), JSON.stringify({ schemaVersion: 1, appMode: 'household' })),
     writeFile(join(root, 'server', 'dist', 'server.js'), '/* synthetic */'),
+    writeFile(join(root, 'server', 'dist', 'scripts', 'restoreRuntime.js'), '/* synthetic */'),
+    writeFile(join(root, 'server', 'dist', 'scripts', 'inspectRuntimeRestore.js'), '/* synthetic */'),
+    writeFile(join(root, 'server', 'dist', 'scripts', 'recoverRuntimeRestore.js'), '/* synthetic */'),
     writeFile(join(root, 'server', 'package.json'), '{"type":"module"}'),
     writeFile(join(root, 'node', process.platform === 'win32' ? 'node.exe' : 'node'), 'synthetic'),
   ]);
@@ -47,5 +51,11 @@ describe('validated production releases', () => {
     const root = await release();
     await symlink(join(root, 'server', 'dist', 'server.js'), join(root, 'app', 'dist', 'linked.js'));
     await assert.rejects(() => validateProductionRelease(root), /unsafe link/);
+  });
+
+  it('requires every compiled production restore administration script', async () => {
+    const root = await release();
+    await rm(join(root, 'server', 'dist', 'scripts', 'recoverRuntimeRestore.js'));
+    await assert.rejects(() => validateProductionRelease(root), /missing or unsafe/);
   });
 });

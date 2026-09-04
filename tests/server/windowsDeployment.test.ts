@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { getRuntimeRestoreJournalPath } from '../../server/src/runtime/runtimeRestoreJournal.js';
 
 const root = join(process.cwd(), '..', 'deployment', 'windows');
 const read = (name: string) => readFile(join(root, name), 'utf8');
@@ -36,5 +37,16 @@ describe('Windows home-host deployment contract', () => {
     const content = (await Promise.all(names.map(read))).join('\n');
     assert.doesNotMatch(content, /New-NetFirewallRule|netsh\s+advfirewall/i);
     assert.doesNotMatch(content, /runtime:(?:migrate|backup|restore|operation:clear)/i);
+  });
+
+  it('refuses release switching for the authoritative HS3B restore-state journal', async () => {
+    const switching = await read('Switch-EyosRelease.ps1');
+    const authoritativeName = getRuntimeRestoreJournalPath('C:\\synthetic\\runtime')
+      .split('\\')
+      .at(-1)!;
+    assert.equal(authoritativeName, '.runtime.restore-state.json');
+    assert.match(switching, /\.restore-state\.json/);
+    assert.doesNotMatch(switching, /\.restore-journal\.json/);
+    assert.doesNotMatch(switching, /runtime:operation:clear|runtime:restore:recover/);
   });
 });

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { lstat, open, readFile, realpath, rename, rm } from 'node:fs/promises';
 
 import { assertExternalRuntimePath, getAbsolutePathStyle } from '../config/runtimeData.js';
+import { flushDirectory } from './runtimeDurability.js';
 
 export const RESTORE_TRANSITIONS = ['prepare', 'stage', 'displace', 'publish', 'verify', 'rollback-quarantine', 'rollback-return', 'abort-cleanup', 'finalize'] as const;
 export type RestoreTransition = typeof RESTORE_TRANSITIONS[number];
@@ -71,7 +72,11 @@ export async function readRuntimeRestoreJournal(runtimeRoot: string): Promise<Ru
   catch (error) { if (error instanceof Error && error.message === 'RESTORE_JOURNAL_INVALID') throw error; throw new Error('RESTORE_JOURNAL_INVALID', { cause: error }); }
 }
 
-export async function writeRuntimeRestoreJournal(runtimeRoot: string, journal: RuntimeRestoreJournal): Promise<void> {
+export async function writeRuntimeRestoreJournal(
+  runtimeRoot: string,
+  journal: RuntimeRestoreJournal,
+  directoryFlusher: typeof flushDirectory = flushDirectory,
+): Promise<void> {
   validate(journal);
   const path = getRuntimeRestoreJournalPath(runtimeRoot);
   const style = getAbsolutePathStyle(path)!;
@@ -79,7 +84,10 @@ export async function writeRuntimeRestoreJournal(runtimeRoot: string, journal: R
   const temporary = `${path}.tmp-${journal.operationId}-${randomUUID()}`;
   const handle = await open(temporary, 'wx', 0o600);
   try { await handle.writeFile(`${JSON.stringify(journal, null, 2)}\n`, 'utf8'); await handle.sync(); } finally { await handle.close(); }
-  try { await rename(temporary, path); }
+  try {
+    await rename(temporary, path);
+    await directoryFlusher(style.dirname(path));
+  }
   catch (error) { await rm(temporary, { force: true }).catch(() => undefined); throw error; }
 }
 

@@ -7,6 +7,9 @@ import { verifyRuntimeSnapshot } from './runtimeSnapshotValidation.js';
 import { readRuntimeRestoreJournal, removeRuntimeRestoreJournal, writeRuntimeRestoreJournal, type RuntimeRestoreJournal } from './runtimeRestoreJournal.js';
 import { getRestorePaths } from './runtimeRestore.js';
 import { runtimeMatchesSnapshot, validateProductionRuntime, validateRestoredRuntime } from './runtimeRestoreValidation.js';
+import { flushDirectory } from './runtimeDurability.js';
+
+type RuntimeDirectoryRenamer = (source: string, target: string) => Promise<void>;
 
 export type RecoveryClassification = 'BEFORE' | 'AFTER' | 'TERMINAL' | 'AMBIGUOUS';
 export type RestoreFilesystemObservation = {
@@ -130,7 +133,16 @@ async function persist(runtimeRoot: string, journal: RuntimeRestoreJournal, chan
   return next;
 }
 
-export async function recoverRuntimeRestore(options: { runtimeRoot: string; backupRoot: string; action: 'abort' | 'rollback' | 'complete'; operationId: string; confirmRecover: boolean; auditAppender?: typeof appendSnapshotAudit }): Promise<{ action: 'abort' | 'rollback' | 'complete'; audit: 'recorded' | 'degraded' }> {
+export async function recoverRuntimeRestore(options: {
+  runtimeRoot: string;
+  backupRoot: string;
+  action: 'abort' | 'rollback' | 'complete';
+  operationId: string;
+  confirmRecover: boolean;
+  auditAppender?: typeof appendSnapshotAudit;
+  runtimeRenamer?: RuntimeDirectoryRenamer;
+  directoryFlusher?: typeof flushDirectory;
+}): Promise<{ action: 'abort' | 'rollback' | 'complete'; audit: 'recorded' | 'degraded' }> {
   if (!options.confirmRecover) throw new Error('RESTORE_RECOVERY_CONFIRMATION_REQUIRED');
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
   const backupRoot = assertExternalPath(options.backupRoot, 'Backup root');
@@ -141,6 +153,13 @@ export async function recoverRuntimeRestore(options: { runtimeRoot: string; back
   let journal = await readRuntimeRestoreJournal(runtimeRoot);
   if (!journal || journal.operationId !== options.operationId) throw new Error('RESTORE_STATE_AMBIGUOUS');
   const style = getAbsolutePathStyle(runtimeRoot)!;
+  const runtimeParent = style.dirname(runtimeRoot);
+  const runtimeRenamer = options.runtimeRenamer ?? rename;
+  const directoryFlusher = options.directoryFlusher ?? flushDirectory;
+  const renameDurably = async (source: string, target: string) => {
+    await runtimeRenamer(source, target);
+    await directoryFlusher(runtimeParent);
+  };
   const snapshotPath = style.join(backupRoot, 'snapshots', journal.selectedSnapshotId);
   await verifyRuntimeSnapshot(snapshotPath);
 
@@ -166,7 +185,10 @@ export async function recoverRuntimeRestore(options: { runtimeRoot: string; back
     if (journal.transition !== 'abort-cleanup') journal = await persist(runtimeRoot, journal, { decision: 'abort', transition: 'abort-cleanup', transitionState: 'intent' });
     state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
     classification = classifyRestoreRecoveryState(journal, state.observation);
-    if (classification === 'BEFORE') await rm(state.paths.staging, { recursive: true, force: false });
+    if (classification === 'BEFORE') {
+      await rm(state.paths.staging, { recursive: true, force: false });
+      await directoryFlusher(runtimeParent);
+    }
     else if (classification !== 'AFTER') throw new Error('RESTORE_STATE_AMBIGUOUS');
     journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });
     journal = await persist(runtimeRoot, journal, { transition: 'finalize', transitionState: 'intent', outcome: 'aborted' });
@@ -176,14 +198,14 @@ export async function recoverRuntimeRestore(options: { runtimeRoot: string; back
       journal = await persist(runtimeRoot, journal, { transition: 'finalize', transitionState: 'intent', outcome: 'restored' });
     } else {
       if (journal.transition === 'displace' && journal.transitionState === 'intent') {
-        if (classification === 'BEFORE') await rename(runtimeRoot, state.paths.displaced);
+        if (classification === 'BEFORE') await renameDurably(runtimeRoot, state.paths.displaced);
         journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });
       }
       if (journal.transition === 'displace') journal = await persist(runtimeRoot, journal, { decision: 'forward', transition: 'publish', transitionState: 'intent' });
       state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
       classification = classifyRestoreRecoveryState(journal, state.observation);
       if (journal.transition === 'publish') {
-        if (classification === 'BEFORE') await rename(state.paths.staging, runtimeRoot);
+        if (classification === 'BEFORE') await renameDurably(state.paths.staging, runtimeRoot);
         else if (classification !== 'AFTER') throw new Error('RESTORE_STATE_AMBIGUOUS');
         journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });
         journal = await persist(runtimeRoot, journal, { transition: 'verify', transitionState: 'intent' });
@@ -199,14 +221,14 @@ export async function recoverRuntimeRestore(options: { runtimeRoot: string; back
     state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
     classification = classifyRestoreRecoveryState(journal, state.observation);
     if (journal.transition === 'rollback-quarantine') {
-      if (classification === 'BEFORE') await rename(state.observation.runtime ? runtimeRoot : state.paths.staging, state.failed);
+      if (classification === 'BEFORE') await renameDurably(state.observation.runtime ? runtimeRoot : state.paths.staging, state.failed);
       else if (classification !== 'AFTER') throw new Error('RESTORE_STATE_AMBIGUOUS');
       journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });
       journal = await persist(runtimeRoot, journal, { transition: 'rollback-return', transitionState: 'intent' });
     }
     state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
     classification = classifyRestoreRecoveryState(journal, state.observation);
-    if (classification === 'BEFORE') await rename(state.paths.displaced, runtimeRoot);
+    if (classification === 'BEFORE') await renameDurably(state.paths.displaced, runtimeRoot);
     else if (classification !== 'AFTER') throw new Error('RESTORE_STATE_AMBIGUOUS');
     if (journal.source.state === 'valid' && !await matchesProtected(runtimeRoot, backupRoot, journal)) throw new Error('RESTORE_STATE_AMBIGUOUS');
     journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });

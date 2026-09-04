@@ -385,6 +385,12 @@ Restore never runs automatically,
 never selects a snapshot by recency, and does not provide per-domain restore,
 retention, remote administration or a web UI.
 
+On a validated Windows production release, invoke the compiled scripts with
+the bundled Node executable under `C:\Program Files\eY-OS\current`; production
+restore does not depend on `tsx`. See `deployment/windows/README.md` for the
+exact command and the separately administered `LocalService` inheritance
+requirement for the runtime parent. eY OS never changes runtime ACLs.
+
 ---
 
 # Environment Variables

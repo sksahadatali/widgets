@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, rename as fsRename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rename as fsRename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { afterEach, describe, it } from 'node:test';
@@ -67,6 +67,32 @@ async function marker(root: string): Promise<string> {
 afterEach(async () => { await Promise.all(temporaryPaths.splice(0).map(path => rm(path, { recursive: true, force: true }))); });
 
 describe('HS3B whole-runtime restore', () => {
+  it('classifies only the strict production runtime contract as valid protection', async () => {
+    const valid = await runtimeFixture('valid');
+    await writeFile(join(valid, 'data', 'lists.local.json.bak'), 'legitimate recovery evidence');
+    assert.equal(await classifyCurrentRuntime(valid), 'valid');
+
+    const unknown = await runtimeFixture('unknown');
+    await writeFile(join(unknown, 'data', 'unexpected.json'), '{}');
+    assert.equal(await classifyCurrentRuntime(unknown), 'invalid');
+
+    const missing = await runtimeFixture('missing');
+    await rm(join(missing, 'data', 'meals.local.json'));
+    assert.equal(await classifyCurrentRuntime(missing), 'incomplete');
+
+    const malformed = await runtimeFixture('malformed');
+    await writeFile(join(malformed, 'data', 'rewards.local.json'), '{bad');
+    assert.equal(await classifyCurrentRuntime(malformed), 'invalid');
+  });
+
+  it('does not classify linked authoritative data as a valid protected runtime', async () => {
+    const root = await runtimeFixture('linked');
+    const external = join(await temporaryDirectory('eyos-hs3b-linked-'), 'lists.json');
+    await writeFile(external, `${JSON.stringify(stores('external')['lists.local.json'])}\n`);
+    await rm(join(root, 'data', 'lists.local.json'));
+    await symlink(external, join(root, 'data', 'lists.local.json'));
+    assert.equal(await classifyCurrentRuntime(root), 'invalid');
+  });
   it('restores exact snapshot bytes, creates safety snapshot, and preserves displaced runtime', async () => {
     const runtimeRoot = await runtimeFixture('A');
     const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
@@ -114,6 +140,55 @@ describe('HS3B whole-runtime restore', () => {
     assert.equal((await verifyRuntimeSnapshot(
       join(backupRoot, 'snapshots', result.preRestoreSnapshotId),
     )).fileCount, 8);
+  });
+
+  it('flushes completed staging and each destructive rename boundary in order', async () => {
+    const runtimeRoot = await runtimeFixture('A');
+    const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+    const snapshotA = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+    await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    const events: string[] = [];
+    const runtimeParent = dirname(runtimeRoot);
+    await restoreRuntime({
+      runtimeRoot,
+      backupRoot,
+      snapshotId: snapshotA.snapshotId,
+      confirmRestore: snapshotA.snapshotId,
+      runtimeRenamer: async (source, target) => {
+        events.push(`rename:${basename(source)}->${basename(target)}`);
+        await fsRename(source, target);
+      },
+      directoryFlusher: async path => {
+        events.push(`flush:${path}`);
+      },
+    });
+    const renameIndexes = events
+      .map((event, index) => event.startsWith('rename:') ? index : -1)
+      .filter(index => index >= 0);
+    assert.equal(renameIndexes.length, 2);
+    for (const index of renameIndexes) {
+      assert.equal(events[index + 1], `flush:${runtimeParent}`);
+    }
+    assert.ok(events.findIndex(event => event.includes('.restore-staging-') && event.startsWith('flush:')) < renameIndexes[0]);
+  });
+
+  it('fails before destructive work when completed staging cannot be durably flushed', async () => {
+    const runtimeRoot = await runtimeFixture('A');
+    const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+    const snapshotA = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+    await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    await assert.rejects(() => restoreRuntime({
+      runtimeRoot,
+      backupRoot,
+      snapshotId: snapshotA.snapshotId,
+      confirmRestore: snapshotA.snapshotId,
+      directoryFlusher: async () => {
+        throw Object.assign(new Error('synthetic staging flush failure'), { code: 'EIO' });
+      },
+    }), /synthetic staging flush failure/);
+    assert.equal(await marker(runtimeRoot), 'Shopping B');
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+    assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
   });
 
   it('requires exact confirmation and excludes server ownership without mutation', async () => {
@@ -312,8 +387,29 @@ describe('HS3B whole-runtime restore', () => {
       faultHook: async phase => { if (phase === 'replacement-published') throw new Error('synthetic interruption'); },
     }));
     const state = await inspectRuntimeRestore(runtimeRoot);
-    const result = await recoverRuntimeRestore({ runtimeRoot, backupRoot, action: 'rollback', operationId: state.journal!.operationId, confirmRecover: true });
+    const durabilityEvents: string[] = [];
+    const result = await recoverRuntimeRestore({
+      runtimeRoot,
+      backupRoot,
+      action: 'rollback',
+      operationId: state.journal!.operationId,
+      confirmRecover: true,
+      runtimeRenamer: async (source, target) => {
+        durabilityEvents.push(`rename:${basename(source)}->${basename(target)}`);
+        await fsRename(source, target);
+      },
+      directoryFlusher: async path => {
+        durabilityEvents.push(`flush:${path}`);
+      },
+    });
     assert.equal(result.action, 'rollback');
+    const recoveryRenames = durabilityEvents
+      .map((event, index) => event.startsWith('rename:') ? index : -1)
+      .filter(index => index >= 0);
+    assert.equal(recoveryRenames.length, 2);
+    recoveryRenames.forEach(index => {
+      assert.equal(durabilityEvents[index + 1], `flush:${dirname(runtimeRoot)}`);
+    });
     assert.equal(await marker(runtimeRoot), 'Shopping B');
     assert.equal(
       await readFile(join(runtimeRoot, 'data', 'lists.local.json.bak'), 'utf8'),
@@ -351,6 +447,37 @@ describe('HS3B whole-runtime restore', () => {
     assert.equal(await classifyCurrentRuntime(runtimeRoot), 'valid');
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
     assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
+  });
+
+  it('retains recovery journal and lock when a rename-parent flush fails unexpectedly', async () => {
+    const runtimeRoot = await runtimeFixture('A');
+    const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+    const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+    await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    await assert.rejects(() => restoreRuntime({
+      runtimeRoot,
+      backupRoot,
+      snapshotId: snapshot.snapshotId,
+      confirmRestore: snapshot.snapshotId,
+      faultHook: async phase => {
+        if (phase === 'replacement-published') throw new Error('synthetic interruption');
+      },
+    }));
+    const interrupted = await inspectRuntimeRestore(runtimeRoot);
+    await assert.rejects(() => recoverRuntimeRestore({
+      runtimeRoot,
+      backupRoot,
+      action: 'rollback',
+      operationId: interrupted.journal!.operationId,
+      confirmRecover: true,
+      directoryFlusher: async () => {
+        throw Object.assign(new Error('synthetic recovery flush failure'), { code: 'EIO' });
+      },
+    }), /synthetic recovery flush failure/);
+    const retained = await inspectRuntimeRestore(runtimeRoot);
+    assert.equal(retained.journal?.transition, 'rollback-quarantine');
+    assert.equal(retained.journal?.transitionState, 'intent');
+    assert.equal(retained.lockOperationId, retained.journal?.operationId);
   });
 
   it('retains recovery evidence when a displaced valid primary is malformed', async () => {

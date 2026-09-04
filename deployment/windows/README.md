@@ -32,3 +32,42 @@ port forwarding or UPnP. Use a router DHCP reservation for the host address.
 Stale runtime operation locks remain fail-closed. Never delete one as part of
 deployment; inspect and clear it only through the explicit runtime operation
 workflow after proving its owner is no longer running.
+
+## Offline whole-runtime restore
+
+Stop the WinSW service and wait for its runtime operation lock to disappear
+before using HS3B. A retained sibling `.restore-state.json` is authoritative
+restore evidence: do not clear it or switch releases; inspect and recover the
+transaction explicitly.
+
+Production releases contain compiled restore CLIs and their own Node runtime,
+so Home-PC recovery does not depend on `tsx` or development dependencies:
+
+```powershell
+& 'C:\Program Files\eY-OS\current\node\node.exe' `
+  'C:\Program Files\eY-OS\current\server\dist\scripts\restoreRuntime.js' `
+  --root '<absolute-runtime-root>' --backup-root '<absolute-backup-root>' `
+  --snapshot '<snapshot-id>' --confirm-restore '<same-snapshot-id>'
+```
+
+Read-only inspection uses:
+
+```powershell
+& 'C:\Program Files\eY-OS\current\node\node.exe' `
+  'C:\Program Files\eY-OS\current\server\dist\scripts\inspectRuntimeRestore.js' `
+  --root '<absolute-runtime-root>'
+```
+
+Explicit recovery uses the exact recorded operation ID:
+
+```powershell
+& 'C:\Program Files\eY-OS\current\node\node.exe' `
+  'C:\Program Files\eY-OS\current\server\dist\scripts\recoverRuntimeRestore.js' `
+  --root '<absolute-runtime-root>' --backup-root '<absolute-backup-root>' `
+  --action '<abort|rollback|complete>' --operation-id '<exact-operation-id>' `
+  --confirm-recover
+```
+
+The runtime parent must be provisioned separately so newly created sibling
+directories inherit the required `LocalService` access. Deployment and restore
+scripts never grant or change runtime ACLs automatically.

@@ -32,10 +32,7 @@ export async function classifyCurrentRuntime(runtimeRoot: string): Promise<Curre
   ));
   if (required.some(value => !value)) return 'incomplete';
   try {
-    const style = getAbsolutePathStyle(root)!;
-    assertRuntimeManifest(JSON.parse(await readFile(style.join(root, 'runtime.json'), 'utf8')) as unknown);
-    validateHouseholdConfig(JSON.parse(await readFile(style.join(root, 'config', 'household.json'), 'utf8')) as unknown);
-    await validateStoreSet(style.join(root, 'data'));
+    await validateProductionRuntime(root);
     return 'valid';
   } catch { return 'invalid'; }
 }
