@@ -243,8 +243,8 @@ required. Demo production reads `eyos-build.json`, disables all six server
 datastores, and does not require or access an external runtime root.
 
 The local production service deliberately does not provide LAN exposure,
-HTTPS, authentication, process management, restore, scheduled/off-device
-backup or PWA behavior. Those belong to later Home Service phases.
+HTTPS, authentication, process management, scheduled/off-device backup or
+PWA behavior. Those belong to later Home Service phases.
 
 ### Local validated snapshots
 
@@ -291,9 +291,53 @@ npm run runtime:operation:clear --prefix server -- --root "<absolute-runtime-roo
 ```
 
 For an ownerless/malformed lock use `--confirm-orphaned-lock` instead. Locks
-are never cleared automatically. HS3A does not provide restore, pruning,
-scheduling, encryption or off-device export, and Git/GitHub must never store
-real Household snapshots.
+are never cleared automatically. HS3A does not provide pruning, scheduling,
+encryption or off-device export, and Git/GitHub must never store real
+Household snapshots.
+
+### Explicit whole-runtime restore
+
+Home Service 3B provides an offline administrative restore of all eight
+authoritative runtime files from one independently verified HS3A snapshot.
+Stop eY OS first. Restore requires the exact snapshot ID twice:
+
+```bash
+npm run runtime:restore --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>" --snapshot "<snapshot-id>" --confirm-restore "<same-snapshot-id>"
+```
+
+A valid current runtime first receives a mandatory, independently verified
+pre-restore snapshot. The complete replacement is staged and validated before
+rename publication. The former valid runtime remains in a sibling
+`.displaced-<operation-id>` directory through final verification; invalid or
+incomplete input is accepted only with `--confirm-invalid-runtime` and remains
+as separate `.invalid-evidence-<operation-id>` evidence. An absent input
+requires `--confirm-absent-runtime`. Restored runtime files never inherit old
+`.bak` files. Cleanup of displaced/evidence directories is deliberately not
+part of HS3B.
+
+An interrupted destructive restore retains its restore lock and sanitized
+sibling journal, and production startup fails closed. The version-2 journal
+records an explicit decision plus intent/completion for each atomic transition.
+Recovery first classifies the journal, filesystem and independently verified
+snapshot evidence without mutation; unsupported combinations fail with
+`RESTORE_STATE_AMBIGUOUS`. Inspection is read-only:
+
+```bash
+npm run runtime:restore:inspect --prefix server -- --root "<absolute-runtime-root>"
+```
+
+Recovery is always an explicit choice using the exact operation ID:
+
+```bash
+npm run runtime:restore:recover --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>" --action "<abort|rollback|complete>" --operation-id "<exact-id>" --confirm-recover
+```
+
+`complete` mutates nothing unless the journal, filesystem and independently
+verified selected snapshot establish exactly one safe continuation. Persisted
+forward, rollback and abort decisions cannot be changed by later retries.
+Restore never runs automatically,
+never selects a snapshot by recency, and does not provide per-domain restore,
+retention, remote administration or a web UI.
 
 ---
 

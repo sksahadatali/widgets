@@ -31,6 +31,7 @@ import {
 import { preflightRuntimeData } from './runtimeValidation.js';
 import {
   acquireRuntimeOperationLock,
+  inspectRuntimeOperationLock,
   releaseRuntimeOperationLock,
   type RuntimeOperationLock,
 } from './runtimeOperationLock.js';
@@ -50,6 +51,19 @@ export type SnapshotCreationResult = {
   audit: 'recorded' | 'degraded';
 };
 
+export class RuntimeSnapshotCleanupError extends Error {
+  readonly code = 'SNAPSHOT_CLEANUP_FAILED';
+
+  constructor(
+    readonly operationError: unknown,
+    readonly cleanupError: unknown,
+    readonly snapshotId: string,
+  ) {
+    super('SNAPSHOT_CLEANUP_FAILED', { cause: cleanupError });
+    this.name = 'RuntimeSnapshotCleanupError';
+  }
+}
+
 function errorCode(error: unknown): string {
   if (error instanceof Error && /^[A-Z0-9_]+$/.test(error.message)) return error.message;
   return 'SNAPSHOT_CREATE_FAILED';
@@ -60,6 +74,76 @@ type SyncFileOpener = (
   path: string,
   flags: 'r+',
 ) => Promise<SyncFileHandle>;
+
+const WINDOWS_PUBLICATION_RETRY_DELAYS_MS = [25, 50, 100, 200, 400, 800, 1600] as const;
+const WINDOWS_PUBLICATION_RETRYABLE_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
+
+type SnapshotDirectoryRenamer = (source: string, target: string) => Promise<void>;
+type SnapshotPublicationSleeper = (delayMs: number) => Promise<void>;
+
+async function sleep(delayMs: number): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
+async function assertStagingDirectorySafe(
+  stagingPath: string,
+  expectedRealPath: string,
+): Promise<void> {
+  let value;
+  try {
+    value = await lstat(stagingPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error('SNAPSHOT_STAGING_MISSING');
+    }
+    throw error;
+  }
+  if (!value.isDirectory() || value.isSymbolicLink()) {
+    throw new Error('SNAPSHOT_STAGING_UNSAFE');
+  }
+  let currentRealPath: string;
+  try {
+    currentRealPath = await realpath(stagingPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error('SNAPSHOT_STAGING_MISSING');
+    }
+    throw error;
+  }
+  if (currentRealPath !== expectedRealPath) throw new Error('SNAPSHOT_STAGING_UNSAFE');
+}
+
+export async function publishSnapshotDirectory(options: {
+  stagingPath: string;
+  finalPath: string;
+  expectedStagingRealPath: string;
+  platform?: NodeJS.Platform;
+  renamer?: SnapshotDirectoryRenamer;
+  sleeper?: SnapshotPublicationSleeper;
+}): Promise<void> {
+  const platform = options.platform ?? process.platform;
+  const renamer = options.renamer ?? rename;
+  const sleeper = options.sleeper ?? sleep;
+  const maximumAttempts = platform === 'win32'
+    ? WINDOWS_PUBLICATION_RETRY_DELAYS_MS.length + 1
+    : 1;
+
+  for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
+    if (await exists(options.finalPath)) throw new Error('SNAPSHOT_ALREADY_EXISTS');
+    await assertStagingDirectorySafe(options.stagingPath, options.expectedStagingRealPath);
+    try {
+      await renamer(options.stagingPath, options.finalPath);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code ?? '';
+      const canRetry = platform === 'win32' &&
+        WINDOWS_PUBLICATION_RETRYABLE_CODES.has(code) &&
+        attempt < WINDOWS_PUBLICATION_RETRY_DELAYS_MS.length;
+      if (!canRetry) throw error;
+      await sleeper(WINDOWS_PUBLICATION_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+}
 
 export async function flushCopiedFile(
   path: string,
@@ -127,6 +211,11 @@ export async function createRuntimeSnapshot(options: {
   randomPart?: string;
   auditAppender?: typeof appendSnapshotAudit;
   fileFlusher?: typeof flushCopiedFile;
+  heldLock?: RuntimeOperationLock;
+  stagingRemover?: (path: string) => Promise<void>;
+  publicationPlatform?: NodeJS.Platform;
+  publicationRenamer?: SnapshotDirectoryRenamer;
+  publicationSleeper?: SnapshotPublicationSleeper;
 }): Promise<SnapshotCreationResult> {
   const startedAt = new Date().toISOString();
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
@@ -153,10 +242,22 @@ export async function createRuntimeSnapshot(options: {
   const finalPath = join(snapshotsPath, snapshotId);
   const operationId = randomUUID();
   let lock: RuntimeOperationLock | null = null;
+  let ownsLock = false;
   let published = false;
 
   try {
-    lock = await acquireRuntimeOperationLock({ runtimeRoot, operation: 'snapshot' });
+    if (options.heldLock) {
+      const inspected = await inspectRuntimeOperationLock(runtimeRoot);
+      if (!inspected?.owner || inspected.owner.operation !== 'restore' ||
+        inspected.owner.operationId !== options.heldLock.owner.operationId ||
+        inspected.lockPath !== options.heldLock.lockPath) {
+        throw new Error('SNAPSHOT_HELD_LOCK_INVALID');
+      }
+      lock = options.heldLock;
+    } else {
+      lock = await acquireRuntimeOperationLock({ runtimeRoot, operation: 'snapshot' });
+      ownsLock = true;
+    }
     await assertSourceInventorySafe(runtimeRoot, runtimeReal);
     const runtime = {
       appMode: 'household' as const,
@@ -231,7 +332,14 @@ export async function createRuntimeSnapshot(options: {
     await flushDirectory(join(stagingPath, 'payload', 'data'));
     await flushDirectory(join(stagingPath, 'payload'));
     await flushDirectory(stagingPath);
-    await rename(stagingPath, finalPath);
+    await publishSnapshotDirectory({
+      stagingPath,
+      finalPath,
+      expectedStagingRealPath: await realpath(stagingPath),
+      platform: options.publicationPlatform,
+      renamer: options.publicationRenamer,
+      sleeper: options.publicationSleeper,
+    });
     await flushDirectory(snapshotsPath);
     published = true;
     const verified = await verifyRuntimeSnapshot(finalPath);
@@ -258,18 +366,25 @@ export async function createRuntimeSnapshot(options: {
       audit,
     };
   } catch (error) {
-    if (!published) await rm(stagingPath, { recursive: true, force: true }).catch(() => undefined);
+    let failure = error;
+    if (!published) {
+      try {
+        await (options.stagingRemover ?? (path => rm(path, { recursive: true, force: true })))(stagingPath);
+      } catch (cleanupError) {
+        failure = new RuntimeSnapshotCleanupError(error, cleanupError, snapshotId);
+      }
+    }
     if (!published) {
       await (options.auditAppender ?? appendSnapshotAudit)(backupRoot, {
         schemaVersion: 1,
         kind: 'eyos-snapshot-operation', operationId, operation: 'create',
         snapshotId, startedAt, finishedAt: new Date().toISOString(),
-        status: 'failed', errorCode: errorCode(error),
+        status: 'failed', errorCode: errorCode(failure),
       }).catch(() => undefined);
     }
-    throw error;
+    throw failure;
   } finally {
-    if (lock) await releaseRuntimeOperationLock(lock).catch(() => undefined);
+    if (lock && ownsLock) await releaseRuntimeOperationLock(lock).catch(() => undefined);
   }
 }
 

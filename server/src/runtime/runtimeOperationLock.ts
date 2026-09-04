@@ -13,8 +13,9 @@ import {
   assertExternalRuntimePath,
   getAbsolutePathStyle,
 } from '../config/runtimeData.js';
+import { readRuntimeRestoreJournal } from './runtimeRestoreJournal.js';
 
-export type RuntimeOperation = 'server' | 'snapshot';
+export type RuntimeOperation = 'server' | 'snapshot' | 'restore';
 
 export type RuntimeOperationOwner = {
   schemaVersion: 1;
@@ -45,7 +46,7 @@ function exactOwner(value: unknown): RuntimeOperationOwner {
     record.kind !== 'eyos-runtime-operation-lock' ||
     typeof record.operationId !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(record.operationId) ||
-    (record.operation !== 'server' && record.operation !== 'snapshot') ||
+    !['server', 'snapshot', 'restore'].includes(String(record.operation)) ||
     !Number.isInteger(record.pid) || Number(record.pid) <= 0 ||
     typeof record.createdAt !== 'string' ||
     Number.isNaN(Date.parse(record.createdAt))
@@ -159,6 +160,9 @@ export async function clearRuntimeOperationLock(options: {
 }): Promise<'cleared' | 'absent'> {
   const inspected = await inspectRuntimeOperationLock(options.runtimeRoot);
   if (!inspected) return 'absent';
+  if (inspected.owner?.operation === 'restore' || await readRuntimeRestoreJournal(options.runtimeRoot)) {
+    throw new Error('A restore lock must be resolved with runtime:restore:recover.');
+  }
   if (inspected.orphaned) {
     if (!options.confirmOrphaned) {
       throw new Error('The orphaned runtime lock requires --confirm-orphaned-lock.');

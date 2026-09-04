@@ -5,6 +5,8 @@ import {
   mkdir,
   readFile,
   readdir,
+  realpath,
+  rename as fsRename,
   rm,
   stat,
   writeFile,
@@ -29,6 +31,8 @@ import {
   createRuntimeSnapshot,
   flushCopiedFile,
   listRuntimeSnapshots,
+  publishSnapshotDirectory,
+  RuntimeSnapshotCleanupError,
 } from '../../server/src/runtime/runtimeSnapshot.js';
 import { verifyRuntimeSnapshot } from '../../server/src/runtime/runtimeSnapshotValidation.js';
 
@@ -128,6 +132,181 @@ describe('HS3A validated snapshots', () => {
     assert.equal(openedFlags, 'r+');
     assert.equal(synced, true);
     assert.equal(closed, true);
+  });
+
+  for (const code of ['EPERM', 'EACCES', 'EBUSY']) {
+    it(`retries a transient Windows ${code} publication failure and succeeds`, async () => {
+      const root = await temporaryDirectory('eyos-hs3-publication-');
+      const stagingPath = join(root, 'staging');
+      const finalPath = join(root, 'final');
+      await mkdir(stagingPath);
+      await writeFile(join(stagingPath, 'evidence'), 'unchanged');
+      const expectedStagingRealPath = await realpath(stagingPath);
+      let attempts = 0;
+      const delays: number[] = [];
+      await publishSnapshotDirectory({
+        stagingPath, finalPath, expectedStagingRealPath, platform: 'win32',
+        renamer: async (source, target) => {
+          attempts += 1;
+          if (attempts === 1) throw Object.assign(new Error(code), { code });
+          await fsRename(source, target);
+        },
+        sleeper: async delay => { delays.push(delay); },
+      });
+      assert.equal(attempts, 2);
+      assert.deepEqual(delays, [25]);
+      assert.equal(await readFile(join(finalPath, 'evidence'), 'utf8'), 'unchanged');
+    });
+  }
+
+  it('exhausts Windows publication after exactly eight attempts with exact backoff', async () => {
+    const root = await temporaryDirectory('eyos-hs3-publication-');
+    const stagingPath = join(root, 'staging');
+    await mkdir(stagingPath);
+    const finalPath = join(root, 'final');
+    const expectedStagingRealPath = await realpath(stagingPath);
+    const failure = Object.assign(new Error('transient sharing failure'), { code: 'EPERM' });
+    let attempts = 0;
+    const delays: number[] = [];
+    await assert.rejects(() => publishSnapshotDirectory({
+      stagingPath, finalPath, expectedStagingRealPath, platform: 'win32',
+      renamer: async () => { attempts += 1; throw failure; },
+      sleeper: async delay => { delays.push(delay); },
+    }), error => error === failure);
+    assert.equal(attempts, 8);
+    assert.deepEqual(delays, [25, 50, 100, 200, 400, 800, 1600]);
+  });
+
+  it('does not retry non-retryable Windows errors or retryable-looking POSIX errors', async () => {
+    for (const scenario of [
+      { platform: 'win32' as const, code: 'EIO' },
+      { platform: 'linux' as const, code: 'EPERM' },
+    ]) {
+      const root = await temporaryDirectory('eyos-hs3-publication-');
+      const stagingPath = join(root, 'staging');
+      await mkdir(stagingPath);
+      const expectedStagingRealPath = await realpath(stagingPath);
+      let attempts = 0;
+      await assert.rejects(() => publishSnapshotDirectory({
+        stagingPath, finalPath: join(root, 'final'), expectedStagingRealPath,
+        platform: scenario.platform,
+        renamer: async () => {
+          attempts += 1;
+          throw Object.assign(new Error(scenario.code), { code: scenario.code });
+        },
+        sleeper: async () => assert.fail('unexpected retry delay'),
+      }));
+      assert.equal(attempts, 1);
+    }
+  });
+
+  it('refuses without overwrite when the destination appears between attempts', async () => {
+    const root = await temporaryDirectory('eyos-hs3-publication-');
+    const stagingPath = join(root, 'staging');
+    const finalPath = join(root, 'final');
+    await mkdir(stagingPath);
+    const expectedStagingRealPath = await realpath(stagingPath);
+    let attempts = 0;
+    await assert.rejects(() => publishSnapshotDirectory({
+      stagingPath, finalPath, expectedStagingRealPath, platform: 'win32',
+      renamer: async () => {
+        attempts += 1;
+        await mkdir(finalPath);
+        await writeFile(join(finalPath, 'owner'), 'other publication');
+        throw Object.assign(new Error('transient'), { code: 'EPERM' });
+      },
+      sleeper: async () => undefined,
+    }), /SNAPSHOT_ALREADY_EXISTS/);
+    assert.equal(attempts, 1);
+    assert.equal(await readFile(join(finalPath, 'owner'), 'utf8'), 'other publication');
+  });
+
+  it('refuses when staging disappears between attempts', async () => {
+    const root = await temporaryDirectory('eyos-hs3-publication-');
+    const stagingPath = join(root, 'staging');
+    await mkdir(stagingPath);
+    const expectedStagingRealPath = await realpath(stagingPath);
+    let attempts = 0;
+    await assert.rejects(() => publishSnapshotDirectory({
+      stagingPath, finalPath: join(root, 'final'), expectedStagingRealPath, platform: 'win32',
+      renamer: async () => {
+        attempts += 1;
+        await rm(stagingPath, { recursive: true });
+        throw Object.assign(new Error('transient'), { code: 'EPERM' });
+      },
+      sleeper: async () => undefined,
+    }), /SNAPSHOT_STAGING_MISSING/);
+    assert.equal(attempts, 1);
+  });
+
+  it('refuses when staging becomes an unsafe replacement between attempts', async () => {
+    const root = await temporaryDirectory('eyos-hs3-publication-');
+    const stagingPath = join(root, 'staging');
+    await mkdir(stagingPath);
+    const expectedStagingRealPath = await realpath(stagingPath);
+    let attempts = 0;
+    await assert.rejects(() => publishSnapshotDirectory({
+      stagingPath, finalPath: join(root, 'final'), expectedStagingRealPath, platform: 'win32',
+      renamer: async () => {
+        attempts += 1;
+        await rm(stagingPath, { recursive: true });
+        await writeFile(stagingPath, 'unsafe replacement');
+        throw Object.assign(new Error('transient'), { code: 'EPERM' });
+      },
+      sleeper: async () => undefined,
+    }), /SNAPSHOT_STAGING_UNSAFE/);
+    assert.equal(attempts, 1);
+  });
+
+  it('reuses an unchanged independently validated staging directory across retries', async () => {
+    const runtimeRoot = await runtimeFixture();
+    const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
+    const observedManifests: Buffer[] = [];
+    let attempts = 0;
+    const result = await createRuntimeSnapshot({
+      runtimeRoot, backupRoot, publicationPlatform: 'win32',
+      publicationRenamer: async (source, target) => {
+        attempts += 1;
+        observedManifests.push(await readFile(join(source, 'snapshot.json')));
+        if (attempts < 4) throw Object.assign(new Error('transient'), { code: 'EPERM' });
+        await fsRename(source, target);
+      },
+      publicationSleeper: async () => undefined,
+    });
+    assert.equal(attempts, 4);
+    assert.ok(observedManifests.every(value => value.equals(observedManifests[0])));
+    assert.equal((await verifyRuntimeSnapshot(result.snapshotPath)).fileCount, 8);
+  });
+
+  it('still independently verifies the final published snapshot', async () => {
+    const runtimeRoot = await runtimeFixture();
+    const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
+    await assert.rejects(() => createRuntimeSnapshot({
+      runtimeRoot, backupRoot,
+      publicationRenamer: async (source, target) => {
+        await fsRename(source, target);
+        await writeFile(join(target, 'payload', 'runtime.json'), '{}');
+      },
+    }), /SNAPSHOT_(SIZE|CHECKSUM)_MISMATCH/);
+  });
+
+  it('uses existing cleanup and failure audit handling after publication retry exhaustion', async () => {
+    const runtimeRoot = await runtimeFixture();
+    const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
+    let attempts = 0;
+    await assert.rejects(() => createRuntimeSnapshot({
+      runtimeRoot, backupRoot, publicationPlatform: 'win32',
+      publicationRenamer: async () => {
+        attempts += 1;
+        throw Object.assign(new Error('transient publication failure'), { code: 'EPERM' });
+      },
+      publicationSleeper: async () => undefined,
+    }), /transient publication failure/);
+    assert.equal(attempts, 8);
+    assert.deepEqual(await readdir(join(backupRoot, 'snapshots')), []);
+    assert.equal((await readdir(backupRoot)).some(name => name.startsWith('.staging-')), false);
+    assert.match(await readFile(join(backupRoot, 'operations.jsonl'), 'utf8'), /SNAPSHOT_CREATE_FAILED/);
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
   });
 
   it('publishes and independently verifies the exact eight-file inventory', async () => {
@@ -254,6 +433,39 @@ describe('HS3A validated snapshots', () => {
       readFile(join(runtimeRoot, ...file.split('/'))),
     ));
     assert.deepEqual(after, before);
+  });
+
+  it('reports failed staging cleanup without hiding the original snapshot failure', async () => {
+    const runtimeRoot = await runtimeFixture();
+    const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
+    const operationError = new Error('synthetic snapshot operation failure');
+    const cleanupError = new Error('synthetic snapshot staging cleanup failure');
+    let stagingPath = '';
+    await assert.rejects(
+      () => createRuntimeSnapshot({
+        runtimeRoot,
+        backupRoot,
+        now: new Date('2026-09-02T14:30:15.123Z'),
+        randomPart: 'c1ea0a01',
+        fileFlusher: async () => { throw operationError; },
+        stagingRemover: async path => {
+          stagingPath = path;
+          throw cleanupError;
+        },
+      }),
+      error => {
+        assert.ok(error instanceof RuntimeSnapshotCleanupError);
+        assert.equal(error.message, 'SNAPSHOT_CLEANUP_FAILED');
+        assert.equal(error.operationError, operationError);
+        assert.equal(error.cleanupError, cleanupError);
+        assert.equal(error.snapshotId, '20260902T143015.123Z-c1ea0a01');
+        return true;
+      },
+    );
+    assert.match(stagingPath, /\.staging-20260902T143015\.123Z-c1ea0a01$/);
+    assert.equal((await stat(stagingPath)).isDirectory(), true);
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+    assert.deepEqual(await readdir(join(backupRoot, 'snapshots')), []);
   });
 
   it('rejects relative, UNC and Windows device namespace paths', () => {
