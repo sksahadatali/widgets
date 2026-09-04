@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { resolveNetworkBinding } from './networkBinding.js';
 
 dotenv.config({
   quiet: true,
@@ -26,6 +27,8 @@ function parsePort(value: string | undefined): number {
 
 export const env = {
   port: parsePort(process.env.PORT),
+
+  network: resolveNetworkBinding(),
 
   frontendOrigin:
     process.env.FRONTEND_ORIGIN?.trim() ??

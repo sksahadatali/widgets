@@ -408,6 +408,19 @@ describe('API and health precedence', () => {
       null
     );
   });
+
+  it('does not add CORS for a same-origin LAN deployment', async () => {
+    const response = await request('/health', {
+      headers: {
+        Origin: 'http://192.168.1.20:3001',
+      },
+    });
+
+    assert.equal(
+      response.headers.get('access-control-allow-origin'),
+      null
+    );
+  });
 });
 
 describe('development CORS', () => {
