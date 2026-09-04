@@ -18,6 +18,7 @@
         "runtime:restore:recover": "tsx src/scripts/recoverRuntimeRestore.ts",
         "runtime:operation:inspect": "tsx src/scripts/inspectRuntimeOperation.ts",
         "runtime:operation:clear": "tsx src/scripts/clearRuntimeOperation.ts",
+        "deployment:release:validate": "tsx src/scripts/validateProductionRelease.ts",
         "test:runtime": "node --import tsx --test ../tests/runtime/*.test.ts",
         "test:topology": "node --import tsx --test ../tests/server/*.test.ts",
         "test:routines": "node --import tsx --test ../tests/routines/*.test.ts",

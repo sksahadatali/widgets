@@ -1,9 +1,12 @@
 import dotenv from 'dotenv';
 import { resolveNetworkBinding } from './networkBinding.js';
+import { loadServiceEnvironment } from './serviceEnvironment.js';
 
-dotenv.config({
-  quiet: true,
-});
+if (process.env.EYOS_SERVICE_ENV_FILE) {
+  loadServiceEnvironment(process.env.EYOS_SERVICE_ENV_FILE);
+} else {
+  dotenv.config({ quiet: true });
+}
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
