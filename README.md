@@ -196,6 +196,22 @@ router port forwarding or UPnP, or expose this unauthenticated HTTP service to
 the internet. Firewall configuration remains an explicit deployment step;
 eY OS never changes it.
 
+## Continuous Windows home-host service
+
+The HS4B deployment foundation is documented in
+`deployment/windows/README.md`. It uses pinned WinSW 2.12.0 under
+`C:\Program Files\eY-OS`, runs as `LocalService`, and reads its private
+environment from the explicit external `EYOS_SERVICE_ENV_FILE` under
+`C:\ProgramData\eY-OS`. It records the current and two previous validated
+application releases so code can be rolled back independently of Household
+data. These tools never migrate, initialize, back up, restore or roll back
+`EYOS_RUNTIME_DIR`; `C:\ProgramData\eY-OS\runtime` is only a possible future
+Home-PC location requiring a separate controlled migration.
+
+Production builds fail if `VITE_API_BASE_URL` is nonempty. The deployed React
+application therefore continues to call same-origin `/api`, including from
+another device on the trusted LAN.
+
 Vite is not required while the production service is running. React routes
 such as `/daily`, `/rewards`, `/lists`, `/meals` and `/settings` support
 direct navigation and reload through the production application fallback.

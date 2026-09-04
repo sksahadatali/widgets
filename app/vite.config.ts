@@ -9,6 +9,17 @@ type AppMode =
   | 'household'
   | 'demo';
 
+export function assertProductionSameOriginApi(
+  mode: string,
+  apiBaseUrl: string | undefined
+): void {
+  if (mode !== 'development' && apiBaseUrl?.trim()) {
+    throw new Error(
+      'Production eY OS builds require VITE_API_BASE_URL to be empty so /api remains same-origin.'
+    );
+  }
+}
+
 export default defineConfig(
   ({ mode }) => {
     const env =
@@ -17,6 +28,9 @@ export default defineConfig(
         process.cwd(),
         ''
       );
+
+    assertProductionSameOriginApi(mode, process.env.VITE_API_BASE_URL);
+    assertProductionSameOriginApi(mode, env.VITE_API_BASE_URL);
 
     const configuredMode =
       (
