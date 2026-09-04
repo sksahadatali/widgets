@@ -153,7 +153,7 @@ Keep the terminal window open while developing.
 ## Running the local production service
 
 The production topology serves the compiled React application and the
-existing Express APIs from one localhost origin. From the project root,
+existing Express APIs from one origin. From the project root,
 build and start it with:
 
 ```bash
@@ -166,6 +166,35 @@ Open:
 ```text
 http://localhost:3001/
 ```
+
+The production service is loopback-only by default:
+
+```env
+EYOS_BIND_HOST=127.0.0.1
+EYOS_TRUSTED_LAN_ACCESS=false
+```
+
+To make the same application and APIs available to the Elo display and an
+Android phone on the same trusted private home LAN, explicitly set both:
+
+```env
+EYOS_BIND_HOST=0.0.0.0
+EYOS_TRUSTED_LAN_ACCESS=true
+```
+
+LAN mode is unauthenticated. Household Profiles are not authentication, and
+every device that can reach the service can call its read and mutation APIs.
+Use the Home PC's private IPv4 address, for example
+`http://192.168.1.20:3001`, and keep `VITE_API_BASE_URL` empty so React uses
+same-origin `/api` requests. eY OS does not discover or print the PC address.
+
+On Windows, classify the home network as **Private** and create a narrowly
+scoped inbound rule for TCP port `3001`, the **Private** firewall profile and
+remote scope `LocalSubnet`. Keep Android on the same trusted, non-guest Wi-Fi.
+Never enable the rule for the Public profile, disable Windows Firewall, use
+router port forwarding or UPnP, or expose this unauthenticated HTTP service to
+the internet. Firewall configuration remains an explicit deployment step;
+eY OS never changes it.
 
 Vite is not required while the production service is running. React routes
 such as `/daily`, `/rewards`, `/lists`, `/meals` and `/settings` support
@@ -242,9 +271,10 @@ external root is explicitly supplied during development it is strict and
 required. Demo production reads `eyos-build.json`, disables all six server
 datastores, and does not require or access an external runtime root.
 
-The local production service deliberately does not provide LAN exposure,
-HTTPS, authentication, process management, scheduled/off-device backup or
-PWA behavior. Those belong to later Home Service phases.
+The local production service provides only explicitly enabled trusted private
+LAN access. It deliberately does not provide HTTPS, authentication, remote or
+public-internet access, process management, scheduled/off-device backup or PWA
+behavior. Those belong to later Home Service phases.
 
 ### Local validated snapshots
 

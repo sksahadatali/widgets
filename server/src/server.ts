@@ -15,6 +15,8 @@ import {
   type RuntimeOperationLock,
 } from './runtime/runtimeOperationLock.js';
 import { readRuntimeRestoreJournal } from './runtime/runtimeRestoreJournal.js';
+import { handleListenFailure } from './serverLifecycle.js';
+import { listenWithNetworkBinding } from './config/networkBinding.js';
 
 const isProduction =
   process.argv.includes('--production');
@@ -62,35 +64,47 @@ async function start(): Promise<void> {
       frontendOrigin: env.frontendOrigin,
     });
 
-    const server = app.listen(env.port, () => {
-      server.removeListener('error', handleStartupError);
-      console.log(
-        `eY OS ${
-          isProduction
-            ? 'production service'
-            : 'development API'
-        } running at http://localhost:${env.port}`
-      );
-
-      if (runtime.policy !== 'disabled') {
-        void reconcileRoutineRewards().catch(() => {
-          console.error(
-            'Automatic Routine reward startup reconciliation is pending.'
+    const server = listenWithNetworkBinding(
+      app,
+      env.port,
+      env.network,
+      () => {
+        server.removeListener('error', handleStartupError);
+        if (env.network.trustedLanAccess) {
+          console.log(
+            `eY OS ${
+              isProduction
+                ? 'production service'
+                : 'development API'
+            } listening on trusted private LAN port ${env.port}.`
           );
-        });
+          console.warn(
+            'LAN access is unauthenticated. Use the Home PC private IPv4 address only on a trusted private LAN. Do not expose eY OS through router forwarding, UPnP, a Public firewall profile, or the internet.'
+          );
+        } else {
+          console.log(
+            `eY OS ${
+              isProduction
+                ? 'production service'
+                : 'development API'
+            } running at http://${env.network.host}:${env.port}`
+          );
+        }
+
+        if (runtime.policy !== 'disabled') {
+          void reconcileRoutineRewards().catch(() => {
+            console.error(
+              'Automatic Routine reward startup reconciliation is pending.'
+            );
+          });
+        }
       }
-    });
+    );
     let stopping = false;
     const handleStartupError = (serverError: Error) => {
       if (stopping) return;
       stopping = true;
-      void (operationLock
-        ? releaseRuntimeOperationLock(operationLock)
-        : Promise.resolve()
-      ).catch(lockError => {
-        console.error('eY OS runtime operation lock release failed.', lockError);
-      }).finally(() => {
-        console.error('eY OS server failed to listen.', serverError);
+      void handleListenFailure(operationLock, serverError).finally(() => {
         process.exitCode = 1;
       });
     };
