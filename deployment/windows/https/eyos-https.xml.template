@@ -1,0 +1,30 @@
+<service>
+  <id>eyos-https-service</id>
+  <name>eY OS Private HTTPS Service</name>
+  <description>Private-LAN HTTPS gateway for the loopback eY OS Home Service.</description>
+  <executable>%BASE%\caddy.exe</executable>
+  <arguments>run --config "C:\ProgramData\eY-OS\https\config\Caddyfile" --adapter caddyfile</arguments>
+  <workingdirectory>C:\ProgramData\eY-OS\https</workingdirectory>
+  <env name="XDG_DATA_HOME" value="C:\ProgramData\eY-OS\https\data" />
+  <env name="XDG_CONFIG_HOME" value="C:\ProgramData\eY-OS\https\config" />
+  <serviceaccount>
+    <domain>NT AUTHORITY</domain>
+    <user>LocalService</user>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>60sec</stoptimeout>
+  <onfailure action="restart" delay="15 sec" />
+  <onfailure action="restart" delay="60 sec" />
+  <onfailure action="none" />
+  <resetfailure>1 hour</resetfailure>
+  <logpath>C:\ProgramData\eY-OS\https\logs</logpath>
+  <log mode="roll-by-size-time">
+    <sizeThreshold>10485760</sizeThreshold>
+    <pattern>yyyyMMdd</pattern>
+    <autoRollAtTime>00:00:00</autoRollAtTime>
+    <zipOlderThanNumDays>7</zipOlderThanNumDays>
+    <zipDateFormat>yyyyMMdd</zipDateFormat>
+  </log>
+</service>

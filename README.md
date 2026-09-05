@@ -218,6 +218,20 @@ direct navigation and reload through the production application fallback.
 Existing APIs remain under `/api/*`, and unknown API routes always return a
 JSON 404 rather than the React application.
 
+## Private HTTPS for Android
+
+Android Phase 1A keeps the production React/API service on
+`http://127.0.0.1:3001` and adds a separately supervised Caddy gateway for the
+Home PC's private-LAN HTTPS origin. This preserves one frontend, one Express
+service, one external Household runtime and same-origin `/api` calls. It does
+not add a PWA, service worker, offline behavior, authentication or internet
+access.
+
+Installation, certificate export, Windows Firewall boundaries and Android
+trust acceptance are documented in `deployment/windows/README.md`. The
+private CA is sensitive operational state under `C:\ProgramData\eY-OS\https`;
+only its public root certificate may leave the Home PC.
+
 Production builds default to Demo mode. To build the private Household
 application, set `VITE_EY_MODE=household`, set `EYOS_RUNTIME_DIR` in
 `server/.env` to the initialized external runtime root, configure provider
