@@ -29,7 +29,7 @@ try {
   Copy-Item -Recurse (Join-Path $work 'server\node_modules') (Join-Path $candidate 'server\node_modules')
   Copy-Item (Join-Path $work 'server\package*.json') (Join-Path $candidate 'server')
   $buildNode = (Get-Command node -ErrorAction Stop).Source
-  if (![IO.Path]::IsPathFullyQualified($buildNode)) { throw 'The build-host Node.js executable path is not absolute.' }
+  if ($buildNode -notmatch '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+[\\/])') { throw 'The build-host Node.js executable path is not absolute.' }
   $nodeRoot = Split-Path -Parent $buildNode
   Copy-Item -Recurse $nodeRoot (Join-Path $candidate 'node')
   $bundledNode = Join-Path $candidate 'node\node.exe'

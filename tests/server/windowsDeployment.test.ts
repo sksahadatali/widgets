@@ -56,7 +56,8 @@ describe('Windows home-host deployment contract', () => {
   it('validates with one absolute build-host Node and verifies the bundled executable before publication', async () => {
     const release = await read('New-EyosRelease.ps1');
     assert.match(release, /\$buildNode = \(Get-Command node -ErrorAction Stop\)\.Source/);
-    assert.match(release, /IsPathFullyQualified\(\$buildNode\)/);
+    assert.match(release, /\$buildNode -notmatch '\^\(\?:\[A-Za-z\]:\[\\\\\/\]\|\[\\\\\/\]\{2\}/);
+    assert.doesNotMatch(release, /IsPathFullyQualified/);
     assert.match(release, /\$nodeRoot = Split-Path -Parent \$buildNode/);
     assert.match(release, /Get-FileHash -Algorithm SHA256 -LiteralPath \$buildNode/);
     assert.match(release, /Get-FileHash -Algorithm SHA256 -LiteralPath \$bundledNode/);
