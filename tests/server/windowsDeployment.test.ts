@@ -39,6 +39,20 @@ describe('Windows home-host deployment contract', () => {
     assert.doesNotMatch(content, /runtime:(?:migrate|backup|restore|operation:clear)/i);
   });
 
+  it('derives integer Node major metadata from node --version without fragile native-process JavaScript quoting', async () => {
+    const release = await read('New-EyosRelease.ps1');
+    assert.match(release, /\(& node --version\)\.Trim\(\)/);
+    assert.match(release, /\^v\(\?<major>\[0-9\]\+\)\(\?:\\\.\|\$\)/);
+    assert.match(release, /\$nodeMajor = \[int\]\$Matches\['major'\]/);
+    assert.match(release, /nodeMajor=\$nodeMajor/);
+    assert.doesNotMatch(release, /node\s+-p|process\.versions\.node|split\s*\(/);
+
+    const parsed = /^v(?<major>[0-9]+)(?:\.|$)/.exec('v24.18.0');
+    const nodeMajor = Number(parsed?.groups?.major);
+    assert.equal(nodeMajor, 24);
+    assert.equal(Number.isInteger(nodeMajor), true);
+  });
+
   it('refuses release switching for the authoritative HS3B restore-state journal', async () => {
     const switching = await read('Switch-EyosRelease.ps1');
     const authoritativeName = getRuntimeRestoreJournalPath('C:\\synthetic\\runtime')

@@ -29,7 +29,10 @@ try {
   Copy-Item (Join-Path $work 'server\package*.json') (Join-Path $candidate 'server')
   $nodeRoot = Split-Path -Parent (Get-Command node).Source
   Copy-Item -Recurse $nodeRoot (Join-Path $candidate 'node')
-  $manifest = [ordered]@{schemaVersion=1;commit=$commit;tree=$tree;appMode='household';apiTopology='same-origin';nodeMajor=[int](node -p 'process.versions.node.split(".")[0]');builtAt=(Get-Date).ToUniversalTime().ToString('o')}
+  $nodeVersion = (& node --version).Trim()
+  if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v(?<major>[0-9]+)(?:\.|$)') { throw 'Unable to determine the Node.js major version.' }
+  $nodeMajor = [int]$Matches['major']
+  $manifest = [ordered]@{schemaVersion=1;commit=$commit;tree=$tree;appMode='household';apiTopology='same-origin';nodeMajor=$nodeMajor;builtAt=(Get-Date).ToUniversalTime().ToString('o')}
   [IO.File]::WriteAllText((Join-Path $candidate 'eyos-release.json'), ($manifest | ConvertTo-Json) + "`n", [Text.UTF8Encoding]::new($false))
   & (Join-Path $candidate 'node\node.exe') (Join-Path $candidate 'server\dist\scripts\validateProductionRelease.js') --release $candidate
   if ($LASTEXITCODE -ne 0) { throw 'Release validation failed.' }
