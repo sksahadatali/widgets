@@ -1,0 +1,9 @@
+{
+  admin off
+  auto_https disable_redirects
+}
+
+https://__EYOS_PRIVATE_IPV4__ {
+  tls internal
+  reverse_proxy 127.0.0.1:3001
+}
