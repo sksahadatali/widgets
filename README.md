@@ -842,6 +842,9 @@ The following documents are available under the **docs/** folder.
 
 # Version
 
+Windows production deployment, private-LAN HTTPS and the separate outbound
+Cloudflare Tunnel foundation are documented in `deployment/windows/README.md`.
+
 Current Version
 
 **v0.3**

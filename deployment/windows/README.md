@@ -143,3 +143,64 @@ copy or export Caddy's private key. Android may label a user-installed CA as
 network monitoring; verify the fingerprint before trust and remove the CA when
 the eY OS installation is retired. No ADB or automated trust-store changes are
 part of this phase.
+
+## Cloudflare Tunnel deployment foundation
+
+Android Remote Access Phase 1B-A adds an independent outbound connector. It
+does not configure a Cloudflare tunnel, DNS hostname, Access application or
+identity policy. Create those in Cloudflare only during the later production
+acceptance phase. The one permitted origin mapping is the complete eY OS
+origin at `http://127.0.0.1:3001`; do not route the tunnel through Caddy,
+publish runtime files, add other HOME-HUB services or configure catch-all
+routes.
+
+Use the official `cloudflared-windows-amd64.exe` asset from pinned Cloudflare
+release 2026.9.1 and WinSW x64 2.12.0. The installer neither downloads software
+nor resolves a latest version. It requires the exact cloudflared filename and
+verifies SHA-256
+`2837888cc0f5d58f15b6dc478376de90b4d3ba5241c7947455d1e0a0df429712`.
+It also verifies the established pinned WinSW artifact before installation.
+
+Obtain the dedicated remotely managed tunnel token privately and place it in a
+separate administrator-controlled file. Never put it in Git, a command line,
+service XML or an application release. From an elevated Windows PowerShell 5.1
+session:
+
+```powershell
+.\Install-EyosTunnel.ps1 `
+  -CloudflaredSource 'C:\Install\cloudflared-windows-amd64.exe' `
+  -WinSWSource 'C:\Install\WinSW-x64.exe' `
+  -TunnelTokenFile 'C:\Private\eyos-tunnel-token'
+
+.\Test-EyosTunnel.ps1
+```
+
+The installed token lives at the fixed external path
+`C:\ProgramData\eY-OS\tunnel\config\tunnel-token`. Tunnel state and logs remain
+under `C:\ProgramData\eY-OS\tunnel`; binaries remain under
+`C:\Program Files\eY-OS\tunnel-service`, independent of application releases.
+ACLs permit SYSTEM and Administrators full control. LOCAL SERVICE receives
+read-only access to the token and modify access only to its log directory. The
+delayed automatic LocalService has two bounded restart attempts, then stops
+retrying. `--no-autoupdate` keeps upgrades explicit and validated.
+
+After Cloudflare DNS and Access are configured, the optional remote check can
+confirm that an unauthenticated request is intercepted by Access:
+
+```powershell
+.\Test-EyosTunnel.ps1 -RemoteUrl 'https://<private-operator-configured-hostname>/health'
+```
+
+This uses ordinary Windows TLS validation and proves only edge interception.
+Approved and denied human identity flows require manual browser acceptance.
+Configure Access for the entire hostname, including `/api/*` and `/health`,
+with an exact allowlist of approved adult identities. Household Profiles are
+not authentication. Initially bypass Cloudflare caching for the whole private
+application origin.
+
+No inbound firewall rule is required for Cloudflare Tunnel. Preserve Express
+on loopback, preserve the existing Private/LocalSubnet-only Caddy TCP
+443 rule for LAN access, and keep inbound TCP 3001 closed. Do not add a Public
+firewall rule, router forwarding, DMZ or UPnP. Uninstalling the service retains
+the protected external token and logs; revoke the tunnel token separately in
+Cloudflare before explicit administrator cleanup.

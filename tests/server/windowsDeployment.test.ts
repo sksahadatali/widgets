@@ -216,4 +216,91 @@ describe('Windows home-host deployment contract', () => {
     assert.doesNotMatch(testScript, /SkipCertificateCheck|ServerCertificateValidationCallback|curl(?:\.exe)?\s+-k/i);
     assert.doesNotMatch(content, /New-NetFirewallRule|netsh\s+advfirewall|adb\s+|certutil\s+-addstore/i);
   });
+
+  it('pins and verifies cloudflared 2026.9.1 and WinSW before Tunnel installation', async () => {
+    const installer = await read('Install-EyosTunnel.ps1');
+    assert.match(installer, /cloudflared-windows-amd64\.exe/);
+    assert.match(installer, /2837888cc0f5d58f15b6dc478376de90b4d3ba5241c7947455d1e0a0df429712/);
+    assert.match(installer, /05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da/);
+    assert.match(installer, /GetFileName\(\$CloudflaredSource\) -cne \$cloudflaredArtifact/);
+    assert.match(installer, /& \$CloudflaredSource --version/);
+    assert.match(installer, /\^cloudflared version 2026\\\.9\\\.1/);
+    const cloudflaredHash = installer.indexOf("Assert-FileHash $CloudflaredSource");
+    const winSwHash = installer.indexOf("Assert-FileHash $WinSWSource");
+    const version = installer.indexOf('& $CloudflaredSource --version');
+    const install = installer.indexOf("'eyos-tunnel-service.exe') install");
+    assert.ok(cloudflaredHash >= 0 && cloudflaredHash < version);
+    assert.ok(winSwHash >= 0 && winSwHash < install);
+    assert.ok(version >= 0 && version < install);
+    assert.doesNotMatch(installer, /Invoke-WebRequest|Start-BitsTransfer|latest/i);
+  });
+
+  it('installs a protected external token without putting it in service arguments', async () => {
+    const [installer, service] = await Promise.all([
+      read('Install-EyosTunnel.ps1'),
+      read('tunnel/eyos-tunnel.xml.template'),
+    ]);
+    assert.match(installer, /\$tunnelRoot = 'C:\\ProgramData\\eY-OS\\tunnel'/);
+    assert.match(installer, /icacls \$tunnelRoot \/inheritance:r/);
+    assert.match(installer, /icacls \$logsRoot \/grant:r[^\n]*S-1-5-19:\(OI\)\(CI\)M/);
+    assert.match(installer, /Unable to grant the restricted Tunnel log ACL/);
+    assert.match(installer, /icacls \$installedToken \/inheritance:r/);
+    assert.match(installer, /S-1-5-18:F/);
+    assert.match(installer, /S-1-5-32-544:F/);
+    assert.match(installer, /S-1-5-19:R/);
+    assert.match(service, /--token-file "C:\\ProgramData\\eY-OS\\tunnel\\config\\tunnel-token"/);
+    assert.doesNotMatch(service, /--token(?:\s|=)(?!-file)/);
+    assert.doesNotMatch(service, /ey\.|ayanoh|example\.com|@/i);
+  });
+
+  it('runs cloudflared independently as delayed LocalService with bounded restart and no auto-update', async () => {
+    const service = await read('tunnel/eyos-tunnel.xml.template');
+    assert.match(service, /<id>eyos-tunnel-service<\/id>/);
+    assert.match(service, /<user>LocalService<\/user>/);
+    assert.match(service, /<delayedAutoStart>true<\/delayedAutoStart>/);
+    assert.equal((service.match(/<onfailure/g) ?? []).length, 3);
+    assert.match(service, /<onfailure action="restart" delay="15 sec"/);
+    assert.match(service, /<onfailure action="restart" delay="60 sec"/);
+    assert.match(service, /<onfailure action="none"/);
+    assert.match(service, /tunnel --no-autoupdate run --token-file/);
+    assert.match(service, /C:\\ProgramData\\eY-OS\\tunnel/);
+    assert.doesNotMatch(service, /\\current\\|\\releases\\|<download|<downloadfrom|<downloadto/i);
+  });
+
+  it('keeps the remote origin at loopback Express and documents Cloudflare configuration as external', async () => {
+    const documentation = await read('README.md');
+    assert.match(documentation, /http:\/\/127\.0\.0\.1:3001/);
+    assert.match(documentation, /do not route the tunnel through Caddy/i);
+    assert.match(documentation, /does not configure a Cloudflare tunnel, DNS hostname, Access application or\s+identity policy/i);
+    assert.match(documentation, /entire hostname, including `\/api\/\*` and `\/health`/);
+    assert.match(documentation, /bypass Cloudflare caching for the whole private\s+application origin/i);
+    assert.doesNotMatch(documentation, /ey\.ayanoh\.com|@[A-Za-z0-9.-]+/i);
+  });
+
+  it('tests only host-observable Tunnel and Access interception state with normal TLS validation', async () => {
+    const tester = await read('Test-EyosTunnel.ps1');
+    assert.match(tester, /http:\/\/127\.0\.0\.1:3001\/health/);
+    assert.match(tester, /Get-Service -Name 'eyos-tunnel-service'/);
+    assert.match(tester, /Scheme -cne 'https'/);
+    assert.match(tester, /AllowAutoRedirect = \$false/);
+    assert.match(tester, /cloudflareaccess\\\.com/);
+    assert.doesNotMatch(tester, /SkipCertificateCheck|ServerCertificateValidationCallback|curl(?:\.exe)?\s+-k/i);
+    assert.doesNotMatch(tester, /approved|allowlisted|identity passed/i);
+  });
+
+  it('does not automate inbound firewall, DNS, Access, Android trust, or production configuration', async () => {
+    const names = ['Install-EyosTunnel.ps1', 'Test-EyosTunnel.ps1', 'Uninstall-EyosTunnel.ps1'];
+    const content = (await Promise.all(names.map(read))).join('\n');
+    assert.doesNotMatch(content, /New-NetFirewallRule|netsh\s+advfirewall|route(?:r)?\s+forward|UPnP|DMZ/i);
+    assert.doesNotMatch(content, /adb\s+|certutil\s+-addstore/i);
+    assert.doesNotMatch(content, /cloudflare.*(?:api|dns|access).*token|api\.cloudflare\.com/i);
+    assert.doesNotMatch(content, /ey\.ayanoh\.com|@[A-Za-z0-9.-]+/i);
+  });
+
+  it('retains protected Tunnel state on uninstall', async () => {
+    const uninstaller = await read('Uninstall-EyosTunnel.ps1');
+    assert.match(uninstaller, /eyos-tunnel-service/);
+    assert.match(uninstaller, /intentionally retained/);
+    assert.doesNotMatch(uninstaller, /Remove-Item|Clear-Content|Set-Content/);
+  });
 });
