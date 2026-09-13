@@ -55,8 +55,15 @@ async function createFrontendFixture(): Promise<string> {
     frontendDistPath,
     'assets'
   );
+  const iconsPath = join(
+    frontendDistPath,
+    'icons'
+  );
 
-  await mkdir(assetsPath);
+  await Promise.all([
+    mkdir(assetsPath),
+    mkdir(iconsPath),
+  ]);
   await Promise.all([
     writeFile(
       join(frontendDistPath, 'index.html'),
@@ -72,6 +79,28 @@ async function createFrontendFixture(): Promise<string> {
       join(frontendDistPath, 'icons.svg'),
       '<svg xmlns="http://www.w3.org/2000/svg"/>',
       'utf8'
+    ),
+    writeFile(
+      join(frontendDistPath, 'manifest.webmanifest'),
+      '{"name":"eY OS"}',
+      'utf8'
+    ),
+    writeFile(
+      join(frontendDistPath, 'service-worker.js'),
+      "self.addEventListener('install', () => undefined);",
+      'utf8'
+    ),
+    writeFile(
+      join(iconsPath, 'eyos-192.png'),
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    ),
+    writeFile(
+      join(iconsPath, 'eyos-512.png'),
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    ),
+    writeFile(
+      join(iconsPath, 'eyos-maskable-512.png'),
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
     ),
     writeFile(
       join(assetsPath, 'app-testhash.js'),
@@ -302,6 +331,28 @@ describe('production static assets', () => {
       assert.match(
         response.headers.get('content-type') ?? '',
         /^image\/svg\+xml/
+      );
+      assert.equal(
+        response.headers.get('cache-control'),
+        'public, max-age=0, must-revalidate'
+      );
+    });
+  }
+
+  for (const [path, contentType] of [
+    ['/manifest.webmanifest', /^application\/manifest\+json/],
+    ['/service-worker.js', /javascript/],
+    ['/icons/eyos-192.png', /^image\/png/],
+    ['/icons/eyos-512.png', /^image\/png/],
+    ['/icons/eyos-maskable-512.png', /^image\/png/],
+  ] as const) {
+    it(`revalidates the PWA asset ${path}`, async () => {
+      const response = await request(path);
+
+      assert.equal(response.status, 200);
+      assert.match(
+        response.headers.get('content-type') ?? '',
+        contentType
       );
       assert.equal(
         response.headers.get('cache-control'),

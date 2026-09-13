@@ -845,6 +845,15 @@ The following documents are available under the **docs/** folder.
 Windows production deployment, private-LAN HTTPS and the separate outbound
 Cloudflare Tunnel foundation are documented in `deployment/windows/README.md`.
 
+## Android PWA foundation
+
+The same React application can be installed from its current HTTPS origin on
+Android and launched in standalone mode. Its lifecycle-only service worker
+does not intercept requests, provide an offline shell, or cache application,
+authentication, API, or Household data. Same-origin `/api` remains
+authoritative on the Home Service, while private-LAN browser access remains
+independent of the installed remote-origin application.
+
 Current Version
 
 **v0.3**

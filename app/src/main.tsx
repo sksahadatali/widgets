@@ -2,9 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
+import { registerServiceWorker } from './pwa/registerServiceWorker.ts'
 import { bootstrapHouseholdConfig } from './services/householdConfigService.ts'
 
 const root = createRoot(document.getElementById('root')!)
+void registerServiceWorker()
 void bootstrapHouseholdConfig().then(async () => {
   const { default: App } = await import('./App.tsx')
   root.render(<StrictMode><BrowserRouter><App /></BrowserRouter></StrictMode>)
