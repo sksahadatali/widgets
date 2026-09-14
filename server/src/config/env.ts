@@ -40,6 +40,9 @@ export const env = {
   runtimeDirectory:
     process.env.EYOS_RUNTIME_DIR?.trim(),
 
+  backupDirectory:
+    process.env.EYOS_BACKUP_ROOT?.trim(),
+
   nest: {
     clientId: required('NEST_CLIENT_ID'),
     clientSecret: required('NEST_CLIENT_SECRET'),
