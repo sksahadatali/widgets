@@ -18,18 +18,23 @@ import { readRuntimeRestoreJournal } from './runtimeRestoreJournal.js';
 export type RuntimeOperation = 'server' | 'snapshot' | 'restore';
 
 export type RuntimeOperationOwner = {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   kind: 'eyos-runtime-operation-lock';
   operationId: string;
   operation: RuntimeOperation;
   pid: number;
   createdAt: string;
+  bootId?: string;
 };
 
 export type RuntimeOperationLock = {
   lockPath: string;
   owner: RuntimeOperationOwner;
 };
+
+function isBootIdentity(value: string): boolean {
+  return /^(?:win32:[0-9]{10,}|linux:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.test(value);
+}
 
 function exactOwner(value: unknown): RuntimeOperationOwner {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -38,11 +43,16 @@ function exactOwner(value: unknown): RuntimeOperationOwner {
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
   if (
-    keys.length !== 6 ||
+    (
+      record.schemaVersion === 1
+        ? keys.length !== 6 || 'bootId' in record
+        : keys.length !== 7 || typeof record.bootId !== 'string' ||
+          !isBootIdentity(record.bootId)
+    ) ||
     keys.some(key => ![
-      'schemaVersion', 'kind', 'operationId', 'operation', 'pid', 'createdAt',
+      'schemaVersion', 'kind', 'operationId', 'operation', 'pid', 'createdAt', 'bootId',
     ].includes(key)) ||
-    record.schemaVersion !== 1 ||
+    ![1, 2].includes(Number(record.schemaVersion)) ||
     record.kind !== 'eyos-runtime-operation-lock' ||
     typeof record.operationId !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(record.operationId) ||
@@ -69,19 +79,25 @@ export function getRuntimeOperationLockPath(runtimeRoot: string): string {
 export async function acquireRuntimeOperationLock(options: {
   runtimeRoot: string;
   operation: RuntimeOperation;
+  bootId?: string | null;
 }): Promise<RuntimeOperationLock> {
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
   const style = getAbsolutePathStyle(runtimeRoot)!;
   const parent = style.dirname(runtimeRoot);
   assertExternalRuntimePath(await realpath(parent));
   const lockPath = getRuntimeOperationLockPath(runtimeRoot);
+  const bootId = options.bootId?.trim();
+  if (bootId && !isBootIdentity(bootId)) {
+    throw new Error('Runtime operation boot identity is invalid.');
+  }
   const owner: RuntimeOperationOwner = {
-    schemaVersion: 1,
+    schemaVersion: bootId ? 2 : 1,
     kind: 'eyos-runtime-operation-lock',
     operationId: randomUUID(),
     operation: options.operation,
     pid: process.pid,
     createdAt: new Date().toISOString(),
+    ...(bootId ? { bootId } : {}),
   };
   try {
     await mkdir(lockPath, { recursive: false, mode: 0o700 });

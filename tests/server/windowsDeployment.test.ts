@@ -26,13 +26,19 @@ describe('Windows home-host deployment contract', () => {
   });
 
   it('uses an external private environment and keeps application release history bounded to two previous references', async () => {
-    const [service, switching] = await Promise.all([
+    const [service, switching, environment, documentation] = await Promise.all([
       read('eyos-service.xml.template'),
       read('Switch-EyosRelease.ps1'),
+      read('service.env.example'),
+      read('README.md'),
     ]);
     assert.match(service, /EYOS_SERVICE_ENV_FILE/);
     assert.match(service, /C:\\ProgramData\\eY-OS\\config\\service\.env/);
     assert.match(switching, /Select-Object -First 2/);
+    assert.match(environment, /^EYOS_BACKUP_ROOT=/m);
+    assert.match(documentation, /operating-system boot identity/);
+    assert.match(documentation, /PID absence is never recovery proof/);
+    assert.match(documentation, /legacy\s+locks/i);
   });
 
   it('does not automate firewall or runtime migration, backup, restore, or lock clearing', async () => {

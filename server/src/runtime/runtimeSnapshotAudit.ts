@@ -5,17 +5,18 @@ export type SnapshotAuditRecord = {
   schemaVersion: 1;
   kind: 'eyos-snapshot-operation';
   operationId: string;
-  operation: 'create' | 'lock-clear' | 'restore' | 'restore-recover';
+  operation: 'create' | 'lock-clear' | 'restore' | 'restore-recover' | 'server-lock-recovery';
   snapshotId?: string;
   startedAt: string;
   finishedAt: string;
-  status: 'succeeded' | 'failed';
+  status: 'started' | 'succeeded' | 'failed';
   fileCount?: number;
   totalBytes?: number;
   errorCode?: string;
   sourceState?: 'valid' | 'invalid' | 'incomplete' | 'absent';
   preRestoreSnapshotId?: string;
   recoveryAction?: 'abort' | 'rollback' | 'complete';
+  recoveredOperationId?: string;
 };
 
 export async function appendSnapshotAudit(

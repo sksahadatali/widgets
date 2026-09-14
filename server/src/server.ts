@@ -17,6 +17,8 @@ import {
 import { readRuntimeRestoreJournal } from './runtime/runtimeRestoreJournal.js';
 import { handleListenFailure } from './serverLifecycle.js';
 import { listenWithNetworkBinding } from './config/networkBinding.js';
+import { readSystemBootIdentity } from './runtime/systemBootIdentity.js';
+import { recoverServerLockFromPreviousBoot } from './runtime/serverLockRecovery.js';
 
 const isProduction =
   process.argv.includes('--production');
@@ -39,9 +41,21 @@ async function start(): Promise<void> {
       if (await readRuntimeRestoreJournal(runtime.rootPath)) {
         throw new Error('RESTORE_RECOVERY_REQUIRED');
       }
+      const bootId = await readSystemBootIdentity();
+      const recovery = await recoverServerLockFromPreviousBoot({
+        runtimeRoot: runtime.rootPath,
+        backupRoot: env.backupDirectory,
+        currentBootId: bootId,
+      });
+      if (recovery === 'recovered') {
+        console.warn(
+          'A stale eY OS server lock from a previous operating-system boot was safely recovered.',
+        );
+      }
       operationLock = await acquireRuntimeOperationLock({
         runtimeRoot: runtime.rootPath,
         operation: 'server',
+        bootId,
       });
     }
     await preflightRuntimeData(runtime);

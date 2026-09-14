@@ -350,10 +350,18 @@ recorded stale lock with its exact operation ID and an explicit audit target:
 npm run runtime:operation:clear --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>" --operation-id "<exact-id>" --confirm-clear
 ```
 
-For an ownerless/malformed lock use `--confirm-orphaned-lock` instead. Locks
-are never cleared automatically. HS3A does not provide pruning, scheduling,
-encryption or off-device export, and Git/GitHub must never store real
-Household snapshots.
+Windows Household production records an operating-system boot identity in new
+operation locks. On startup it may automatically recover only an exact,
+well-formed `server` lock proven to belong to a different boot, with recovery
+intent and outcome appended to the existing external backup repository audit
+configured by `EYOS_BACKUP_ROOT`. PID absence alone is never sufficient.
+Legacy, same-boot, snapshot, restore, malformed, orphaned or restore-associated
+locks continue to require explicit investigation and remain fail-closed.
+
+For an ownerless/malformed lock use `--confirm-orphaned-lock` instead. No lock
+outside the narrowly proven previous-boot `server` case is cleared
+automatically. HS3A does not provide pruning, scheduling, encryption or
+off-device export, and Git/GitHub must never store real Household snapshots.
 
 ### Explicit whole-runtime restore
 

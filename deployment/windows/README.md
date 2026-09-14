@@ -18,7 +18,7 @@ accepts it only when SHA-256 is
 `05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da`.
 Create and validate a release first. Copy `service.env.example` to
 `C:\ProgramData\eY-OS\config\service.env`, set the
-existing runtime path and secrets, and restrict the file ACL to Administrators,
+existing runtime path, existing HS3 backup root and secrets, and restrict the file ACL to Administrators,
 SYSTEM and LOCAL SERVICE. Never put that file in Git or a release directory.
 Then run `Install-EyosService.ps1` with that release's full commit as
 `-InitialCommit`; installation refuses an unvalidated first release and ends
@@ -29,9 +29,16 @@ Windows Firewall configuration is manual: Private profile, TCP 3001,
 `LocalSubnet` remote scope only. Do not enable a Public-profile rule, router
 port forwarding or UPnP. Use a router DHCP reservation for the host address.
 
-Stale runtime operation locks remain fail-closed. Never delete one as part of
-deployment; inspect and clear it only through the explicit runtime operation
-workflow after proving its owner is no longer running.
+The server records the current operating-system boot identity in every new
+runtime operation lock. After a Windows reboot, startup may recover only a
+structurally valid `server` lock whose recorded boot identity provably differs
+from the current boot, and only when `EYOS_BACKUP_ROOT` identifies an existing
+external HS3 repository where recovery intent and outcome can be audited in
+`operations.jsonl`. PID absence is never recovery proof. Same-boot and legacy
+locks, snapshot/restore locks, restore-state evidence, ownerless/malformed
+locks and audit failures remain fail-closed. A legacy lock left by the release
+preceding this capability therefore requires the existing explicit inspection
+and confirmed-clear workflow once; never delete it manually.
 
 ## Offline whole-runtime restore
 
