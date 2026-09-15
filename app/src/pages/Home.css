@@ -47,6 +47,16 @@
   height: 100%;
 }
 
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='elo-touch'])
+    .home {
+    --ey-list-max-height: 260px;
+
+    gap: 16px;
+    padding-bottom: 20px;
+  }
+}
+
 :where(:root[data-display-profile='compact'])
   .home__brief {
   grid-column: span 7;

@@ -226,6 +226,44 @@
   text-decoration: line-through;
 }
 
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus__list {
+    gap: 2px;
+    margin-top: 10px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus__item {
+    gap: 12px;
+    min-height: var(--ey-touch-target-min);
+    padding: 2px 0;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus__actions {
+    gap: 6px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus__why-button {
+    min-width: var(--ey-touch-target-min);
+    min-height: var(--ey-touch-target-min);
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-focus__reasons {
+    margin-bottom: 8px;
+    padding: 10px;
+  }
+}
+
 @media (max-width: 700px) {
 
   .todays-focus {
