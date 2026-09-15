@@ -89,6 +89,41 @@
     color var(--ey-transition-normal);
 }
 
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief__content {
+    margin-top: 8px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief__content p {
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief__list {
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief__list li {
+    line-height: 1.4;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .todays-brief__notice {
+    margin-top: 6px;
+  }
+}
+
 :where(:root[data-display-profile='compact'])
   .todays-brief {
   min-height: 0;

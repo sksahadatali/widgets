@@ -456,6 +456,48 @@
   font-weight: 600;
 }
 
+/* Elo keeps full-size type while reducing non-interactive vertical space. */
+
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__primary {
+    margin-top: 12px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__secondary {
+    margin-top: 4px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__content {
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__footer {
+    padding-top: 8px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__rates {
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__rate--petrol {
+    margin-top: 8px;
+    padding-top: 7px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status .status-card__weather-divider {
+    margin: 6px 0;
+  }
+}
+
 /* Compact display density */
 
 :where(:root[data-display-profile='compact'])

@@ -18,6 +18,22 @@
   margin-top: var(--ey-card-gap);
 }
 
+@media (min-width: 1201px) {
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status {
+    --ey-status-card-min-height: 170px;
+    --ey-status-card-padding: 18px;
+
+    padding: 18px;
+  }
+
+  :where(:root[data-display-profile='elo-touch'])
+    .quick-status__grid {
+    gap: 12px;
+    margin-top: 12px;
+  }
+}
+
 :where(:root[data-display-profile='compact'])
   .quick-status__grid {
   grid-template-columns:
