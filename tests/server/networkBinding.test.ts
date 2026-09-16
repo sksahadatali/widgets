@@ -6,7 +6,10 @@ import {
   listenWithNetworkBinding,
   resolveNetworkBinding,
 } from '../../server/src/config/networkBinding.js';
-import { handleListenFailure } from '../../server/src/serverLifecycle.js';
+import {
+  handleListenFailure,
+  shutdownServer,
+} from '../../server/src/serverLifecycle.js';
 import type { RuntimeOperationLock } from '../../server/src/runtime/runtimeOperationLock.js';
 
 describe('Home Service network binding', () => {
@@ -141,6 +144,56 @@ describe('listener lifecycle', () => {
       'eY OS server failed to listen.',
       listenError,
     ]]);
+  });
+
+  it('releases the server lock only after graceful listener shutdown', async () => {
+    const lock = {} as RuntimeOperationLock;
+    const events: string[] = [];
+    const server = {
+      close(callback: (error?: Error) => void) {
+        events.push('close-requested');
+        callback();
+        return this;
+      },
+      closeIdleConnections() {
+        events.push('idle-closed');
+      },
+    };
+
+    await shutdownServer(server, lock, {
+      releaseLock: async () => { events.push('lock-released'); },
+      timeoutMs: 1_000,
+    });
+
+    assert.deepEqual(events, [
+      'close-requested',
+      'idle-closed',
+      'lock-released',
+    ]);
+  });
+
+  it('retains the lock when graceful shutdown exceeds its bounded timeout', async () => {
+    const lock = {} as RuntimeOperationLock;
+    let scheduled: (() => void) | undefined;
+    let released = false;
+    const server = {
+      close() { return this; },
+      closeIdleConnections() {},
+    };
+
+    const result = shutdownServer(server, lock, {
+      releaseLock: async () => { released = true; },
+      setTimeout: ((callback: () => void) => {
+        scheduled = callback;
+        return { unref() {} };
+      }) as unknown as typeof globalThis.setTimeout,
+      clearTimeout: (() => undefined) as typeof globalThis.clearTimeout,
+      timeoutMs: 45_000,
+    });
+    scheduled?.();
+
+    await assert.rejects(result, /timed out; the runtime lock was retained/);
+    assert.equal(released, false);
   });
 
   it('reports lock-release failure as well as listener failure', async () => {

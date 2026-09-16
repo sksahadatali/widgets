@@ -212,6 +212,12 @@ Production builds fail if `VITE_API_BASE_URL` is nonempty. The deployed React
 application therefore continues to call same-origin `/api`, including from
 another device on the trusted LAN.
 
+All three WinSW services use append-only wrapper logging. Do not reintroduce
+WinSW 2.12.0 `roll-by-size-time`: its time-rolling appender can terminate the
+wrapper during rollover even while the child process is healthy. Review and
+archive wrapper logs only during controlled maintenance with the relevant
+service stopped; automatic application-log retention is not provided here.
+
 Vite is not required while the production service is running. React routes
 such as `/daily`, `/rewards`, `/lists`, `/meals` and `/settings` support
 direct navigation and reload through the production application fallback.
@@ -350,13 +356,16 @@ recorded stale lock with its exact operation ID and an explicit audit target:
 npm run runtime:operation:clear --prefix server -- --root "<absolute-runtime-root>" --backup-root "<absolute-backup-root>" --operation-id "<exact-id>" --confirm-clear
 ```
 
-Windows Household production records an operating-system boot identity in new
-operation locks. On startup it may automatically recover only an exact,
-well-formed `server` lock proven to belong to a different boot, with recovery
-intent and outcome appended to the existing external backup repository audit
-configured by `EYOS_BACKUP_ROOT`. PID absence alone is never sufficient.
-Legacy, same-boot, snapshot, restore, malformed, orphaned or restore-associated
-locks continue to require explicit investigation and remain fail-closed.
+Windows Household production records the operating-system boot identity and
+the server process creation identity in new server locks. Startup may recover
+only an exact, well-formed `server` lock whose owner is proven stale: either it
+belongs to a different boot, or its recorded same-boot process instance no
+longer exists. PID absence alone is never sufficient, and PID reuse is handled
+by comparing the recorded process-creation identity. Recovery intent and
+outcome are appended to the existing external backup repository audit
+configured by `EYOS_BACKUP_ROOT`. A live matching process, an ownership-query
+failure, legacy evidence without sufficient identity, snapshot/restore locks,
+restore-state evidence, malformed or orphaned locks all remain fail-closed.
 
 For an ownerless/malformed lock use `--confirm-orphaned-lock` instead. No lock
 outside the narrowly proven previous-boot `server` case is cleared

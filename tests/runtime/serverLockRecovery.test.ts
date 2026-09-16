@@ -28,10 +28,17 @@ import {
   getWindowsPowerShellPath,
   readSystemBootIdentity,
 } from '../../server/src/runtime/systemBootIdentity.js';
+import {
+  parseLinuxProcessStat,
+  parseWindowsProcessTicks,
+  readSystemProcessIdentity,
+} from '../../server/src/runtime/systemProcessIdentity.js';
 
 const temporaryPaths: string[] = [];
 const previousBoot = 'win32:638925120000000000';
 const currentBoot = 'win32:638926848000000000';
+const previousProcess = 'win32:638926848010000000';
+const replacementProcess = 'win32:638926848020000000';
 
 async function fixture(): Promise<{
   runtimeRoot: string;
@@ -103,6 +110,38 @@ describe('system boot identity', () => {
   });
 });
 
+describe('system process identity', () => {
+  it('parses Windows process creation ticks and an absent process', () => {
+    assert.equal(
+      parseWindowsProcessTicks('638926848010000000\r\n'),
+      previousProcess,
+    );
+    assert.equal(parseWindowsProcessTicks('absent'), null);
+    assert.throws(
+      () => parseWindowsProcessTicks('Access denied'),
+      /process identity is invalid/,
+    );
+  });
+
+  it('parses Linux start time even when the command contains spaces', () => {
+    const prefix = '123 (node household service) S';
+    const fields = Array.from({ length: 19 }, (_, index) => String(index + 4));
+    fields[18] = '987654';
+    assert.equal(
+      parseLinuxProcessStat(`${prefix} ${fields.join(' ')}`),
+      'linux:987654',
+    );
+  });
+
+  it('reads the current process identity where supported', async () => {
+    if (!['linux', 'win32'].includes(process.platform)) return;
+    assert.match(
+      await readSystemProcessIdentity(process.pid) ?? '',
+      /^(?:linux:[0-9]+|win32:[0-9]{10,})$/,
+    );
+  });
+});
+
 describe('previous-boot server lock recovery', () => {
   it('recovers only a server lock proven to belong to a different boot and audits it', async () => {
     const { runtimeRoot, backupRoot } = await fixture();
@@ -129,6 +168,7 @@ describe('previous-boot server lock recovery', () => {
       operation: string;
       status: string;
       recoveredOperationId: string;
+      recoveryReason: string;
     });
     assert.equal(records.length, 2);
     assert.equal(records[0].operation, 'server-lock-recovery');
@@ -140,6 +180,8 @@ describe('previous-boot server lock recovery', () => {
       lock.owner.operationId,
     );
     assert.equal(records[1].recoveredOperationId, lock.owner.operationId);
+    assert.equal(records[0].recoveryReason, 'previous-boot');
+    assert.equal(records[1].recoveryReason, 'previous-boot');
     for (const record of records) {
       assert.equal('pid' in record, false);
       assert.equal('bootId' in record, false);
@@ -163,6 +205,100 @@ describe('previous-boot server lock recovery', () => {
         currentBootId: currentBoot,
       }),
       'retained',
+    );
+    assert.equal(
+      (await inspectRuntimeOperationLock(runtimeRoot))?.owner?.operationId,
+      lock.owner.operationId,
+    );
+    await releaseRuntimeOperationLock(lock);
+  });
+
+  it('recovers a same-boot server lock only when its exact process instance is gone', async () => {
+    const { runtimeRoot, backupRoot } = await fixture();
+    const lock = await acquireRuntimeOperationLock({
+      runtimeRoot,
+      operation: 'server',
+      bootId: currentBoot,
+      processIdentity: previousProcess,
+    });
+
+    assert.equal(
+      await recoverServerLockFromPreviousBoot(
+        { runtimeRoot, backupRoot, currentBootId: currentBoot },
+        { readProcessIdentity: async () => null },
+      ),
+      'recovered',
+    );
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+    const records = (await readFile(
+      join(backupRoot, 'operations.jsonl'),
+      'utf8',
+    )).trim().split('\n').map(line => JSON.parse(line) as {
+      recoveryReason: string;
+      recoveredOperationId: string;
+    });
+    assert.equal(records[0].recoveryReason, 'same-boot-process-ended');
+    assert.equal(records[0].recoveredOperationId, lock.owner.operationId);
+  });
+
+  it('retains a same-boot lock while the exact owner process is live', async () => {
+    const { runtimeRoot, backupRoot } = await fixture();
+    const lock = await acquireRuntimeOperationLock({
+      runtimeRoot,
+      operation: 'server',
+      bootId: currentBoot,
+      processIdentity: previousProcess,
+    });
+
+    assert.equal(
+      await recoverServerLockFromPreviousBoot(
+        { runtimeRoot, backupRoot, currentBootId: currentBoot },
+        { readProcessIdentity: async () => previousProcess },
+      ),
+      'retained',
+    );
+    assert.equal(
+      (await inspectRuntimeOperationLock(runtimeRoot))?.owner?.operationId,
+      lock.owner.operationId,
+    );
+    await releaseRuntimeOperationLock(lock);
+  });
+
+  it('handles PID reuse without treating the replacement process as the lock owner', async () => {
+    const { runtimeRoot, backupRoot } = await fixture();
+    await acquireRuntimeOperationLock({
+      runtimeRoot,
+      operation: 'server',
+      bootId: currentBoot,
+      processIdentity: previousProcess,
+    });
+
+    assert.equal(
+      await recoverServerLockFromPreviousBoot(
+        { runtimeRoot, backupRoot, currentBootId: currentBoot },
+        { readProcessIdentity: async () => replacementProcess },
+      ),
+      'recovered',
+    );
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+  });
+
+  it('fails closed when same-boot process ownership cannot be inspected', async () => {
+    const { runtimeRoot, backupRoot } = await fixture();
+    const lock = await acquireRuntimeOperationLock({
+      runtimeRoot,
+      operation: 'server',
+      bootId: currentBoot,
+      processIdentity: previousProcess,
+    });
+    const inspectionError = new Error('synthetic process inspection failure');
+
+    await assert.rejects(
+      () => recoverServerLockFromPreviousBoot(
+        { runtimeRoot, backupRoot, currentBootId: currentBoot },
+        { readProcessIdentity: async () => { throw inspectionError; } },
+      ),
+      error => error === inspectionError,
     );
     assert.equal(
       (await inspectRuntimeOperationLock(runtimeRoot))?.owner?.operationId,
@@ -361,7 +497,7 @@ describe('previous-boot server lock recovery', () => {
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
 
     assert.deepEqual(warnings, [
-      'WARNING: The previous-boot server lock was safely recovered, but its completion audit could not be appended.',
+      'WARNING: The stale server lock was safely recovered, but its completion audit could not be appended.',
     ]);
     assert.equal(warnings[0].includes(runtimeRoot), false);
     assert.equal(warnings[0].includes(backupRoot), false);

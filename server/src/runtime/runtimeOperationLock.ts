@@ -14,17 +14,19 @@ import {
   getAbsolutePathStyle,
 } from '../config/runtimeData.js';
 import { readRuntimeRestoreJournal } from './runtimeRestoreJournal.js';
+import { isSystemProcessIdentity } from './systemProcessIdentity.js';
 
 export type RuntimeOperation = 'server' | 'snapshot' | 'restore';
 
 export type RuntimeOperationOwner = {
-  schemaVersion: 1 | 2;
+  schemaVersion: 1 | 2 | 3;
   kind: 'eyos-runtime-operation-lock';
   operationId: string;
   operation: RuntimeOperation;
   pid: number;
   createdAt: string;
   bootId?: string;
+  processIdentity?: string;
 };
 
 export type RuntimeOperationLock = {
@@ -45,14 +47,19 @@ function exactOwner(value: unknown): RuntimeOperationOwner {
   if (
     (
       record.schemaVersion === 1
-        ? keys.length !== 6 || 'bootId' in record
-        : keys.length !== 7 || typeof record.bootId !== 'string' ||
-          !isBootIdentity(record.bootId)
+        ? keys.length !== 6 || 'bootId' in record || 'processIdentity' in record
+        : record.schemaVersion === 2
+          ? keys.length !== 7 || 'processIdentity' in record ||
+            typeof record.bootId !== 'string' || !isBootIdentity(record.bootId)
+          : keys.length !== 8 || typeof record.bootId !== 'string' ||
+            !isBootIdentity(record.bootId) ||
+            typeof record.processIdentity !== 'string' ||
+            !isSystemProcessIdentity(record.processIdentity)
     ) ||
     keys.some(key => ![
-      'schemaVersion', 'kind', 'operationId', 'operation', 'pid', 'createdAt', 'bootId',
+      'schemaVersion', 'kind', 'operationId', 'operation', 'pid', 'createdAt', 'bootId', 'processIdentity',
     ].includes(key)) ||
-    ![1, 2].includes(Number(record.schemaVersion)) ||
+    ![1, 2, 3].includes(Number(record.schemaVersion)) ||
     record.kind !== 'eyos-runtime-operation-lock' ||
     typeof record.operationId !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(record.operationId) ||
@@ -80,6 +87,7 @@ export async function acquireRuntimeOperationLock(options: {
   runtimeRoot: string;
   operation: RuntimeOperation;
   bootId?: string | null;
+  processIdentity?: string | null;
 }): Promise<RuntimeOperationLock> {
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
   const style = getAbsolutePathStyle(runtimeRoot)!;
@@ -90,14 +98,22 @@ export async function acquireRuntimeOperationLock(options: {
   if (bootId && !isBootIdentity(bootId)) {
     throw new Error('Runtime operation boot identity is invalid.');
   }
+  const processIdentity = options.processIdentity?.trim();
+  if (processIdentity && !isSystemProcessIdentity(processIdentity)) {
+    throw new Error('Runtime operation process identity is invalid.');
+  }
+  if (processIdentity && !bootId) {
+    throw new Error('Runtime operation process identity requires a boot identity.');
+  }
   const owner: RuntimeOperationOwner = {
-    schemaVersion: bootId ? 2 : 1,
+    schemaVersion: processIdentity ? 3 : bootId ? 2 : 1,
     kind: 'eyos-runtime-operation-lock',
     operationId: randomUUID(),
     operation: options.operation,
     pid: process.pid,
     createdAt: new Date().toISOString(),
     ...(bootId ? { bootId } : {}),
+    ...(processIdentity ? { processIdentity } : {}),
   };
   try {
     await mkdir(lockPath, { recursive: false, mode: 0o700 });

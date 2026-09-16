@@ -17,6 +17,7 @@ export type SnapshotAuditRecord = {
   preRestoreSnapshotId?: string;
   recoveryAction?: 'abort' | 'rollback' | 'complete';
   recoveredOperationId?: string;
+  recoveryReason?: 'previous-boot' | 'same-boot-process-ended';
 };
 
 export async function appendSnapshotAudit(

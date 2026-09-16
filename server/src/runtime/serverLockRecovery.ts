@@ -21,6 +21,9 @@ import {
 import {
   readSystemBootIdentity,
 } from './systemBootIdentity.js';
+import {
+  readSystemProcessIdentity,
+} from './systemProcessIdentity.js';
 
 type RecoveryResult =
   | 'absent'
@@ -31,6 +34,7 @@ interface RecoveryDependencies {
   inspectLock?: typeof inspectRuntimeOperationLock;
   readRestoreJournal?: typeof readRuntimeRestoreJournal;
   readBootIdentity?: typeof readSystemBootIdentity;
+  readProcessIdentity?: typeof readSystemProcessIdentity;
   releaseLock?: typeof releaseRuntimeOperationLock;
   appendAudit?: typeof appendSnapshotAudit;
   now?: () => string;
@@ -80,7 +84,7 @@ export async function recoverServerLockFromPreviousBoot(options: {
     inspected.orphaned ||
     !owner ||
     owner.operation !== 'server' ||
-    owner.schemaVersion !== 2 ||
+    ![2, 3].includes(owner.schemaVersion) ||
     !owner.bootId
   ) {
     return 'retained';
@@ -96,8 +100,24 @@ export async function recoverServerLockFromPreviousBoot(options: {
     dependencies.readBootIdentity ?? readSystemBootIdentity;
   const currentBootId =
     options.currentBootId ?? await readBootIdentity();
-  if (!currentBootId || currentBootId === owner.bootId) {
+  if (!currentBootId) {
     return 'retained';
+  }
+
+  let recoveryReason: 'previous-boot' | 'same-boot-process-ended';
+  if (currentBootId !== owner.bootId) {
+    recoveryReason = 'previous-boot';
+  } else {
+    if (owner.schemaVersion !== 3 || !owner.processIdentity) {
+      return 'retained';
+    }
+    const readProcessIdentity =
+      dependencies.readProcessIdentity ?? readSystemProcessIdentity;
+    const observedIdentity = await readProcessIdentity(owner.pid);
+    if (observedIdentity === owner.processIdentity) {
+      return 'retained';
+    }
+    recoveryReason = 'same-boot-process-ended';
   }
 
   if (!options.backupRoot?.trim()) {
@@ -123,6 +143,7 @@ export async function recoverServerLockFromPreviousBoot(options: {
     operationId: recoveryId,
     operation: 'server-lock-recovery',
     recoveredOperationId: owner.operationId,
+    recoveryReason,
     startedAt,
     finishedAt: startedAt,
     status: 'started',
@@ -140,6 +161,7 @@ export async function recoverServerLockFromPreviousBoot(options: {
       operationId: recoveryId,
       operation: 'server-lock-recovery',
       recoveredOperationId: owner.operationId,
+      recoveryReason,
       startedAt,
       finishedAt: now(),
       status: 'failed',
@@ -157,13 +179,14 @@ export async function recoverServerLockFromPreviousBoot(options: {
     operationId: recoveryId,
     operation: 'server-lock-recovery',
     recoveredOperationId: owner.operationId,
+    recoveryReason,
     startedAt,
     finishedAt: now(),
     status: 'succeeded',
   }).catch(() => {
     const reportWarning = dependencies.reportWarning ?? console.warn;
     reportWarning(
-      'WARNING: The previous-boot server lock was safely recovered, but its completion audit could not be appended.',
+      'WARNING: The stale server lock was safely recovered, but its completion audit could not be appended.',
     );
   });
 
