@@ -25,6 +25,20 @@ describe('Windows home-host deployment contract', () => {
     assert.match(service, /<onfailure action="none"/);
   });
 
+  it('avoids the WinSW time-rolling appender crash path for every service', async () => {
+    const [home, https, tunnel] = await Promise.all([
+      read('eyos-service.xml.template'),
+      read('https/eyos-https.xml.template'),
+      read('tunnel/eyos-tunnel.xml.template'),
+    ]);
+    for (const service of [home, https, tunnel]) {
+      assert.match(service, /<log mode="append"\s*\/>/);
+      assert.doesNotMatch(service, /roll-by-size-time/);
+      assert.doesNotMatch(service, /autoRollAtTime|zipOlderThanNumDays/);
+      assert.match(service, /<stoptimeout>60sec<\/stoptimeout>/);
+    }
+  });
+
   it('uses an external private environment and keeps application release history bounded to two previous references', async () => {
     const [service, switching, environment, documentation] = await Promise.all([
       read('eyos-service.xml.template'),
@@ -37,7 +51,9 @@ describe('Windows home-host deployment contract', () => {
     assert.match(switching, /Select-Object -First 2/);
     assert.match(environment, /^EYOS_BACKUP_ROOT=/m);
     assert.match(documentation, /operating-system boot identity/);
-    assert.match(documentation, /PID absence is never recovery proof/);
+    assert.match(documentation, /process\s+creation identity/);
+    assert.match(documentation, /reused PID/);
+    assert.match(documentation, /45 seconds/);
     assert.match(documentation, /legacy\s+locks/i);
   });
 

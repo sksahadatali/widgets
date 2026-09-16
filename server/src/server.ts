@@ -15,10 +15,11 @@ import {
   type RuntimeOperationLock,
 } from './runtime/runtimeOperationLock.js';
 import { readRuntimeRestoreJournal } from './runtime/runtimeRestoreJournal.js';
-import { handleListenFailure } from './serverLifecycle.js';
+import { handleListenFailure, shutdownServer } from './serverLifecycle.js';
 import { listenWithNetworkBinding } from './config/networkBinding.js';
 import { readSystemBootIdentity } from './runtime/systemBootIdentity.js';
 import { recoverServerLockFromPreviousBoot } from './runtime/serverLockRecovery.js';
+import { readSystemProcessIdentity } from './runtime/systemProcessIdentity.js';
 
 const isProduction =
   process.argv.includes('--production');
@@ -42,6 +43,10 @@ async function start(): Promise<void> {
         throw new Error('RESTORE_RECOVERY_REQUIRED');
       }
       const bootId = await readSystemBootIdentity();
+      const processIdentity = await readSystemProcessIdentity(process.pid);
+      if (!bootId || !processIdentity) {
+        throw new Error('SERVER_OWNERSHIP_IDENTITY_UNAVAILABLE');
+      }
       const recovery = await recoverServerLockFromPreviousBoot({
         runtimeRoot: runtime.rootPath,
         backupRoot: env.backupDirectory,
@@ -56,6 +61,7 @@ async function start(): Promise<void> {
         runtimeRoot: runtime.rootPath,
         operation: 'server',
         bootId,
+        processIdentity,
       });
     }
     await preflightRuntimeData(runtime);
@@ -126,19 +132,11 @@ async function start(): Promise<void> {
     const stop = () => {
       if (stopping) return;
       stopping = true;
-      server.close(serverError => {
-        if (serverError) {
-          console.error('eY OS server shutdown failed.', serverError);
-        }
-        void (operationLock
-          ? releaseRuntimeOperationLock(operationLock)
-          : Promise.resolve()
-        ).then(() => {
-          process.exitCode = serverError ? 1 : 0;
-        }).catch(lockError => {
-          console.error('eY OS runtime operation lock release failed.', lockError);
-          process.exitCode = 1;
-        });
+      void shutdownServer(server, operationLock).then(() => {
+        process.exitCode = 0;
+      }).catch(shutdownError => {
+        console.error('eY OS server shutdown did not complete safely.', shutdownError);
+        process.exit(1);
       });
     };
     process.once('SIGINT', stop);

@@ -13,6 +13,17 @@ two previous validated releases. This is a fixed three-release policy, not a
 general pruning or update system; removal of unreferenced older application
 directories remains an explicit administrator action.
 
+The pinned wrapper remains WinSW 2.12.0 because it is the current stable
+release used by the validated deployment; WinSW 3 releases are prerelease.
+Every eY OS wrapper deliberately uses append-only logging. WinSW's
+`roll-by-size-time` appender has a known rollover race that can terminate the
+wrapper with `ObjectDisposedException`, so it must not be used. Inspect log
+growth and archive old wrapper logs only during controlled maintenance while
+the corresponding service is stopped. This change applies to newly installed
+Home Service, private-HTTPS and Tunnel wrappers; an existing Home PC must have
+each installed XML replaced from the matching validated source template while
+that service is stopped, before it is restarted and accepted.
+
 Download `WinSW-x64.exe` v2.12.0 from the official WinSW release. The installer
 accepts it only when SHA-256 is
 `05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da`.
@@ -29,16 +40,25 @@ Windows Firewall configuration is manual: Private profile, TCP 3001,
 `LocalSubnet` remote scope only. Do not enable a Public-profile rule, router
 port forwarding or UPnP. Use a router DHCP reservation for the host address.
 
-The server records the current operating-system boot identity in every new
-runtime operation lock. After a Windows reboot, startup may recover only a
-structurally valid `server` lock whose recorded boot identity provably differs
-from the current boot, and only when `EYOS_BACKUP_ROOT` identifies an existing
-external HS3 repository where recovery intent and outcome can be audited in
-`operations.jsonl`. PID absence is never recovery proof. Same-boot and legacy
-locks, snapshot/restore locks, restore-state evidence, ownerless/malformed
-locks and audit failures remain fail-closed. A legacy lock left by the release
-preceding this capability therefore requires the existing explicit inspection
-and confirmed-clear workflow once; never delete it manually.
+The server records the current operating-system boot identity and exact process
+creation identity in every new server lock. Startup may recover only a
+structurally valid `server` lock proven stale: a previous-boot owner, or a
+same-boot owner whose exact process instance has ended. A reused PID does not
+match the recorded creation identity. An ownership-query failure is ambiguous
+and fails closed. Recovery also requires `EYOS_BACKUP_ROOT` to identify an
+existing external HS3 repository where intent and outcome are audited in
+`operations.jsonl`. Legacy locks without sufficient identity, live owners,
+snapshot/restore locks, restore-state evidence, ownerless/malformed locks and
+audit failures remain fail-closed. Never delete a lock manually; inspect it and
+use the existing exact-operation-ID confirmed-clear workflow when explicit
+recovery is required.
+
+On SIGINT/SIGTERM the Home Service stops accepting connections, closes idle
+connections and waits up to 45 seconds for the listener to close. It releases
+the runtime lock only after closure is proven. This fits inside the wrapper's
+60-second stop timeout. If shutdown cannot complete, the process exits with an
+error and deliberately retains its version-3 server lock; the replacement
+instance may recover it only through the proof and audit rules above.
 
 ## Offline whole-runtime restore
 
