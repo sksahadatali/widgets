@@ -54,7 +54,7 @@ function Header({
   const currentDate = getCurrentDate();
   const currentTime = getCurrentTime();
   const profileName =
-    selectedProfile.displayName;
+    selectedProfile.kind === 'family' ? 'Family' : selectedProfile.displayName;
 
   return (
     <header className="header">
@@ -72,6 +72,8 @@ function Header({
         <h1>{greeting} {profileName}</h1>
       </div>
 
+      <ProfileSwitcher />
+
       <div className="header__actions">
         <SearchBox placeholder="Search eY OS..." />
 
@@ -87,8 +89,6 @@ function Header({
           icon={Bell}
           ariaLabel="Notifications"
         />
-
-        <ProfileSwitcher />
       </div>
     </header>
   );
