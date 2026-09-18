@@ -113,6 +113,17 @@ describe('shared household profile navigation', () => {
     assert.doesNotMatch(app, /<HouseholdProfileProvider\s+key=/);
   });
 
+  it('allows intrinsic single-line wide greetings while retaining constrained layouts', async () => {
+    const layout = await readFile(new URL('../../app/src/components/layout/Header/Header.css', import.meta.url), 'utf8');
+    const wide = layout.slice(layout.indexOf('@media (min-width: 1101px)'), layout.indexOf('@media (max-width: 1100px)'));
+    assert.match(wide, /data-display-profile='desktop'/);
+    assert.match(wide, /data-display-profile='elo-touch'/);
+    assert.doesNotMatch(wide, /data-display-profile='compact'/);
+    assert.match(wide, /width: max-content;\s*max-width: 35vw;/);
+    assert.match(wide, /white-space: nowrap;\s*overflow-wrap: normal;\s*overflow: hidden;\s*text-overflow: ellipsis;/);
+    assert.match(layout, /@media \(max-width: 1100px\)/);
+  });
+
   it('contains overflow and provides Compact/Desktop/Elo sizing and visible keyboard focus', async () => {
     const css = await readFile(new URL('../../app/src/components/household/ProfileSwitcher/ProfileSwitcher.css', import.meta.url), 'utf8');
     const layout = await readFile(new URL('../../app/src/components/layout/Header/Header.css', import.meta.url), 'utf8');

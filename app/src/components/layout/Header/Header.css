@@ -117,6 +117,24 @@
   width: 260px;
 }
 
+/* Let wide-layout greetings claim their natural width before the scrollable
+   profile strip takes the remaining space. Bound exceptionally long names. */
+@media (min-width: 1101px) {
+  :root:is([data-display-profile='desktop'], [data-display-profile='elo-touch'])
+    .header__greeting {
+    width: max-content;
+    max-width: 35vw;
+  }
+
+  :root:is([data-display-profile='desktop'], [data-display-profile='elo-touch'])
+    .header__greeting h1 {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 @media (max-width: 1100px) {
   .header {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
