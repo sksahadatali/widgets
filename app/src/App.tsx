@@ -10,6 +10,7 @@ import Settings from './pages/Settings';
 import Rewards from './pages/Rewards';
 import Lists from './pages/Lists';
 import Meals from './pages/Meals';
+import WeeklyCalendar from './pages/WeeklyCalendar';
 
 import {
   ThemeProvider,
@@ -107,6 +108,8 @@ function App() {
         return (
           <Home onOpenRoutine={openRoutine} />
         );
+      case 'Weekly Calendar':
+        return <WeeklyCalendar />;
       case 'Settings':
         return <Settings />;
       case 'Daily':

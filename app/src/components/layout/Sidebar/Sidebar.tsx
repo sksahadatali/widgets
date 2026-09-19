@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarRange,
   CalendarDays,
   Home,
   Gift,
@@ -43,6 +44,7 @@ type NavigationItem = {
 
 const navigationIcons: Record<AppPage, typeof Home> = {
   Home,
+  'Weekly Calendar': CalendarRange,
   Daily: CalendarDays,
   Rewards: Gift,
   Lists: ListChecks,

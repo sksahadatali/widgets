@@ -9,12 +9,14 @@ import { fileURLToPath } from 'node:url';
 let vite: ViteDevServer;
 let picker: typeof import('../../app/src/components/modules/Calendar/CalendarPeoplePicker');
 let context: typeof import('../../app/src/household/useHouseholdProfile');
+let weekly: typeof import('../../app/src/pages/WeeklyCalendar');
 before(async () => {
   vite = await createServer({ root: fileURLToPath(new URL('../../app', import.meta.url)), mode: 'test', appType: 'custom', logLevel: 'error', server: { middlewareMode: true, hmr: false } });
   const configuration = await vite.ssrLoadModule('/src/services/householdConfigService.ts') as typeof import('../../app/src/services/householdConfigService');
   configuration.setClientConfigForTests({ schemaVersion: 1, appMode: 'household', household: { displayName: 'Family', members: [{ id: 'adult', displayName: 'Adult', memberType: 'adult' }, { id: 'child', displayName: 'Child', memberType: 'child' }] }, location: { timezone: 'Europe/London' }, travel: { leaveBufferMinutes: 10 }, calendar: { refreshMinutes: 15 } });
   context = await vite.ssrLoadModule('/src/household/useHouseholdProfile.ts');
   picker = await vite.ssrLoadModule('/src/components/modules/Calendar/CalendarPeoplePicker.tsx');
+  weekly = await vite.ssrLoadModule('/src/pages/WeeklyCalendar.tsx');
 });
 after(async () => vite.close());
 
@@ -46,5 +48,34 @@ describe('Calendar People picker', () => {
     assert.match(component, /kind: 'unassigned'/);
     assert.match(component, /type="checkbox"/);
     assert.doesNotMatch(component, /selectProfile\(/);
+  });
+
+  it('renders resolved Family, member, and Unassigned identities on weekly event cards', () => {
+    const profiles = [
+      { id: 'family', kind: 'family' as const, displayName: 'Family' },
+      { id: 'adult', kind: 'member' as const, displayName: 'Adult', memberType: 'adult' as const },
+      { id: 'child', kind: 'member' as const, displayName: 'Child', memberType: 'child' as const },
+    ];
+    const value = {
+      profiles,
+      selectedProfile: profiles[0],
+      selectedProfileId: 'family',
+      isFamilySelected: true,
+      selectProfile() {},
+      resetToFamily() {},
+    };
+    const renderTarget = (target: import('../../app/src/calendar/calendarModel').CalendarAssignmentTarget) =>
+      renderToStaticMarkup(createElement(
+        context.HouseholdProfileContext.Provider,
+        { value },
+        createElement(weekly.CalendarAssignmentAvatars, { target })
+      ));
+
+    assert.match(renderTarget({ kind: 'family' }), />Family</);
+    assert.match(
+      renderTarget({ kind: 'members', profileIds: ['adult', 'child'] }),
+      /aria-label="Assigned to Adult, Child"/
+    );
+    assert.match(renderTarget({ kind: 'unassigned' }), /Unassigned/);
   });
 });
