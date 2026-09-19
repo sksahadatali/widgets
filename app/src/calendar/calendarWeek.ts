@@ -43,13 +43,6 @@ export function selectRollingCalendarWeek(
   timeZone: string
 ): RollingCalendarDay[] {
   const today = getCalendarHouseholdDate(now, timeZone);
-  const visibleEvents = events.filter(event => {
-    if (event.allDay) return true;
-
-    const end = new Date(event.end).getTime();
-
-    return !Number.isNaN(end) && end > now.getTime();
-  });
 
   return Array.from({ length: 7 }, (_, index) => {
     const localDate = shiftCalendarLocalDate(today, index);
@@ -57,7 +50,7 @@ export function selectRollingCalendarWeek(
     return {
       localDate,
       isToday: index === 0,
-      events: visibleEvents
+      events: events
         .filter(event => overlapsDay(event, localDate))
         .sort(compareEvents),
     };
