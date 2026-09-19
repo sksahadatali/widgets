@@ -30,6 +30,7 @@ test('mobile navigation preserves the Phase A route model', () => {
     APP_ROUTES.map(route => route.page),
     [
       'Home',
+      'Weekly Calendar',
       'Daily',
       'Rewards',
       'Lists',
@@ -40,6 +41,27 @@ test('mobile navigation preserves the Phase A route model', () => {
       'Settings',
     ]
   );
+});
+
+test('Weekly Calendar uses the shared route and responsive display-profile architecture', async () => {
+  const pageSource = await readFile(
+    new URL('../../app/src/pages/WeeklyCalendar.tsx', import.meta.url),
+    'utf8'
+  );
+  const pageStyles = await readFile(
+    new URL('../../app/src/pages/WeeklyCalendar.css', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(pageSource, /selectRollingCalendarWeek/);
+  assert.match(pageSource, /CalendarPeoplePicker/);
+  assert.match(pageSource, /CalendarSourceIndicator/);
+  assert.match(pageSource, /profileAssignment\.target/);
+  assert.match(pageSource, /event\.description/);
+  assert.match(pageStyles, /data-display-profile='compact'/);
+  assert.match(pageStyles, /data-display-profile='elo-touch'/);
+  assert.match(pageStyles, /@media \(max-width: 700px\)/);
+  assert.match(pageStyles, /overflow-x: auto/);
 });
 
 test('mobile drawer consumes the shared route model', async () => {
