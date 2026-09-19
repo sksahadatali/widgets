@@ -51,6 +51,7 @@ const stores: Record<string, unknown> = {
   },
   'meals.local.json': { schemaVersion: 1, entries: [] },
   'kumon.local.json': { schemaVersion: 1, assignments: [] },
+  'calendar-profile-assignments.local.json': { schemaVersion: 1, assignments: [] },
 };
 
 const config = {
@@ -275,7 +276,7 @@ describe('HS3A validated snapshots', () => {
     });
     assert.equal(attempts, 4);
     assert.ok(observedManifests.every(value => value.equals(observedManifests[0])));
-    assert.equal((await verifyRuntimeSnapshot(result.snapshotPath)).fileCount, 8);
+    assert.equal((await verifyRuntimeSnapshot(result.snapshotPath)).fileCount, 9);
   });
 
   it('still independently verifies the final published snapshot', async () => {
@@ -309,7 +310,7 @@ describe('HS3A validated snapshots', () => {
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
   });
 
-  it('publishes and independently verifies the exact eight-file inventory', async () => {
+  it('publishes and independently verifies the exact nine-file inventory', async () => {
     const runtimeRoot = await runtimeFixture();
     const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
     await writeFile(join(runtimeRoot, 'data', 'rewards.local.json.bak'), 'private evidence');
@@ -327,7 +328,7 @@ describe('HS3A validated snapshots', () => {
     assert.deepEqual(await readdir(join(result.snapshotPath, 'payload')), ['config', 'data', 'runtime.json']);
     assert.deepEqual((await readdir(join(result.snapshotPath, 'payload', 'data'))).sort(), [...RUNTIME_STORE_FILES].sort());
     const verified = await verifyRuntimeSnapshot(result.snapshotPath);
-    assert.equal(verified.fileCount, 8);
+    assert.equal(verified.fileCount, 9);
     const after = await Promise.all([
       readFile(join(runtimeRoot, 'runtime.json')),
       ...RUNTIME_STORE_FILES.map(file => readFile(join(runtimeRoot, 'data', file))),

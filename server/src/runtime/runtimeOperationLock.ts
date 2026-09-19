@@ -16,7 +16,7 @@ import {
 import { readRuntimeRestoreJournal } from './runtimeRestoreJournal.js';
 import { isSystemProcessIdentity } from './systemProcessIdentity.js';
 
-export type RuntimeOperation = 'server' | 'snapshot' | 'restore';
+export type RuntimeOperation = 'server' | 'snapshot' | 'restore' | 'migration';
 
 export type RuntimeOperationOwner = {
   schemaVersion: 1 | 2 | 3;
@@ -63,7 +63,7 @@ function exactOwner(value: unknown): RuntimeOperationOwner {
     record.kind !== 'eyos-runtime-operation-lock' ||
     typeof record.operationId !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(record.operationId) ||
-    !['server', 'snapshot', 'restore'].includes(String(record.operation)) ||
+    !['server', 'snapshot', 'restore', 'migration'].includes(String(record.operation)) ||
     !Number.isInteger(record.pid) || Number(record.pid) <= 0 ||
     typeof record.createdAt !== 'string' ||
     Number.isNaN(Date.parse(record.createdAt))

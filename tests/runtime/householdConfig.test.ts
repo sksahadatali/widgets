@@ -24,6 +24,7 @@ const stores: Record<string, unknown> = {
   'lists.local.json': { schemaVersion: 1, lists: [{ id: SHOPPING_LIST_ID, systemKey: 'shopping', name: 'Shopping', active: true, items: [], createdAt: timestamp, updatedAt: timestamp }] },
   'meals.local.json': { schemaVersion: 1, entries: [] },
   'kumon.local.json': { schemaVersion: 1, assignments: [] },
+  'calendar-profile-assignments.local.json': { schemaVersion: 1, assignments: [] },
 };
 
 function validConfig(): HouseholdConfig {
@@ -58,6 +59,15 @@ describe('external Household configuration', () => {
     assert.throws(() => validateHouseholdConfig({ ...validConfig(), location: { ...validConfig().location, timezone: 'Invalid/Zone' } }), /timezone/);
     assert.throws(() => validateHouseholdConfig({ ...validConfig(), location: { ...validConfig().location, latitude: 91 } }), /latitude/);
     assert.throws(() => validateHouseholdConfig({ ...validConfig(), calendar: { ...validConfig().calendar, endpoint: 'http://calendar.invalid' } }), /HTTPS/);
+  });
+
+  it('validates private source profile defaults without exposing them to the client', () => {
+    const value = validConfig();
+    value.calendar.sources[0].defaultProfileAssignment = { kind: 'members', profileIds: ['adult-1'] };
+    assert.deepEqual(validateHouseholdConfig(value).calendar.sources[0].defaultProfileAssignment, { kind: 'members', profileIds: ['adult-1'] });
+    assert.equal(JSON.stringify(createClientProjection(value)).includes('defaultProfileAssignment'), false);
+    value.calendar.sources[0].defaultProfileAssignment = { kind: 'members', profileIds: ['missing'] };
+    assert.throws(() => validateHouseholdConfig(value), /defaultProfileAssignment/);
   });
 
   it('rejects duplicate member, source and destination IDs and numeric bounds', () => {

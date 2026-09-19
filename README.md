@@ -263,9 +263,10 @@ root with this fixed layout:
     lists.local.json
     meals.local.json
     kumon.local.json
+    calendar-profile-assignments.local.json
 ```
 
-The manifest is versioned independently from the six unchanged domain-store
+The layout-2 manifest is versioned independently from the seven domain-store
 schemas. Production validates the manifest, directory access, and every
 primary store before the API routers or startup reconciliation are loaded.
 Missing, partial, malformed, relative, checkout-local, unreadable, or
@@ -288,7 +289,22 @@ the copied stores, writes the manifest last, and atomically publishes the
 whole root. It neither copies `.bak` evidence nor changes/deletes the source.
 It refuses an existing target and provides no clean-install initialization.
 
-After the six stores are present, copy an existing ignored Household
+An existing layout-1 Household runtime requires a separate explicit offline
+copy-only migration before a layout-2 release can use it. Stop eY OS, create
+and verify a layout-1 snapshot, choose a new absent sibling target, then run:
+
+```bash
+npm run runtime:migrate:layout-2 --prefix server -- --source "<absolute-layout-1-runtime>" --target "<new-absolute-layout-2-runtime>" --confirm-layout-2-migration
+npm run runtime:validate --prefix server -- --root "<new-absolute-layout-2-runtime>"
+```
+
+The command acquires the source runtime operation lock, rejects restore-state
+evidence, validates layout 1, preserves every existing authoritative byte,
+adds an empty Calendar profile-assignment store, writes the layout-2 manifest,
+validates staging and atomically publishes the new target. It never updates
+the source in place. Production startup never performs this migration.
+
+After the seven stores are present, copy an existing ignored Household
 configuration into the same runtime with the separate explicit command:
 
 ```bash
@@ -304,7 +320,7 @@ configuration is missing or invalid.
 Development remains compatible with repository-local `server/data` and its
 existing first-use initialization when `EYOS_RUNTIME_DIR` is absent. If an
 external root is explicitly supplied during development it is strict and
-required. Demo production reads `eyos-build.json`, disables all six server
+required. Demo production reads `eyos-build.json`, disables all seven server
 datastores, and does not require or access an external runtime root.
 
 The local production service provides only explicitly enabled trusted private
@@ -331,7 +347,7 @@ npm run runtime:backup:list --prefix server -- --backup-root "<absolute-backup-r
 ```
 
 Each atomically published snapshot contains exactly `runtime.json`, external
-`config/household.json`, and the six primary `data/*.local.json` stores. Its
+`config/household.json`, and the seven primary `data/*.local.json` stores. Its
 strict manifest records byte sizes and SHA-256 checksums, and creation performs
 an independent verification before reporting success. Per-store `.bak` files,
 temporary files, secrets and repository migration evidence are deliberately
@@ -374,7 +390,7 @@ off-device export, and Git/GitHub must never store real Household snapshots.
 
 ### Explicit whole-runtime restore
 
-Home Service 3B provides an offline administrative restore of all eight
+Home Service 3B provides an offline administrative restore of all nine
 authoritative runtime files from one independently verified HS3A snapshot.
 Stop eY OS first. Restore requires the exact snapshot ID twice:
 
@@ -520,6 +536,16 @@ to the Internet.
 Do not store API keys, OAuth tokens, passwords or other credentials in the household JSON file. Secrets belong in ignored environment files or the backend.
 
 Calendar source labels are configured only in the ignored local household file. Add an optional `calendar.sources` array with a stable safe `sourceId`, a display `label`, a generic `kind`, and either the exact provider `calendarName` or private `calendarId` used for matching. Multiple provider calendars can map to the same safe source, for example `sourceId: "school"`, `label: "School"`, and `kind: "school"`. Keep real calendar names and provider IDs out of the tracked example configuration.
+
+Calendar profile assignments persist only the opaque Calendar v2 `eventKey`,
+existing Household profile IDs, the assignment target and its update time in
+`calendar-profile-assignments.local.json`. Family, one or several members and
+explicit Unassigned are distinct targets. An optional private
+`calendar.sources[].defaultProfileAssignment` supplies a Family/member source
+default; an explicit event assignment always wins, including explicit
+Unassigned. Clearing the override returns to that default. Provider event IDs,
+calendar IDs, recurrence locators, titles and dates are never written to this
+store or exposed by the client configuration projection.
 
 School-source events can optionally be classified for Today's Brief with private `calendar.semanticRules`. A rule uses the safe configured `sourceId`, exactly one case-insensitive `titleEquals` or explicitly chosen `titleIncludes`, one of `school.training-day`, `school.holiday` or `school.reopens`, and an optional short `label`. Exact-title rules take precedence over contains rules. An editable event description may instead contain a validated `eyos.kind=...` line and optional `eyos.label=...` line; valid markers take precedence over private rules. Unsupported or malformed markers and ambiguous rules remain semantically unclassified. Keep real academic-event titles and mappings only in the ignored local file.
 

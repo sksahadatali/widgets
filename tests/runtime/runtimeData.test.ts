@@ -85,6 +85,10 @@ const stores: Record<string, unknown> = {
     schemaVersion: 1,
     assignments: [],
   },
+  'calendar-profile-assignments.local.json': {
+    schemaVersion: 1,
+    assignments: [],
+  },
 };
 
 async function temporaryDirectory(
@@ -277,7 +281,7 @@ describe('strict store access', () => {
     await assert.rejects(() => stat(join(directory, 'never')));
   });
 
-  it('resolves all six default stores under the configured root', async () => {
+  it('resolves all seven default stores under the configured root', async () => {
     const parent = await temporaryDirectory('ey-root-parent-');
     const root = join(parent, 'runtime');
     await mkdir(root);
@@ -456,7 +460,7 @@ describe('external cross-store operations', () => {
 });
 
 describe('copy-only migration', () => {
-  it('validates, hashes, stages, and atomically publishes six primaries', async () => {
+  it('validates, hashes, stages, and atomically publishes seven primaries', async () => {
     const source = await temporaryDirectory('ey-source-');
     await writeStoreSet(source);
     const parent = await temporaryDirectory('ey-target-parent-');

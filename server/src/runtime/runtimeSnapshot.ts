@@ -47,7 +47,7 @@ import { flushDirectory } from './runtimeDurability.js';
 export type SnapshotCreationResult = {
   snapshotId: string;
   snapshotPath: string;
-  fileCount: 8;
+  fileCount: number;
   totalBytes: number;
   audit: 'recorded' | 'degraded';
 };

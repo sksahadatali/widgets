@@ -35,6 +35,7 @@ export async function validateProductionRelease(releaseRoot: string): Promise<Pr
     requireReal(join(serverDist, 'scripts', 'restoreRuntime.js'), 'file'),
     requireReal(join(serverDist, 'scripts', 'inspectRuntimeRestore.js'), 'file'),
     requireReal(join(serverDist, 'scripts', 'recoverRuntimeRestore.js'), 'file'),
+    requireReal(join(serverDist, 'scripts', 'migrateRuntimeLayout2.js'), 'file'),
     requireReal(join(releaseRoot, 'server', 'node_modules'), 'directory'),
     requireReal(join(releaseRoot, 'server', 'package.json'), 'file'),
     requireReal(join(releaseRoot, 'node', process.platform === 'win32' ? 'node.exe' : 'node'), 'file'),

@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 
+import { RUNTIME_STORE_FILES } from '../config/runtimeData.js';
 import { migrateRuntimeData } from '../runtime/runtimeMigration.js';
 
 function option(name: string): string | undefined {
@@ -26,5 +27,5 @@ await migrateRuntimeData({
 });
 
 console.log(
-  `Validated and copied all six stores to ${targetRuntimePath}.`
+  `Validated and copied all ${String(RUNTIME_STORE_FILES.length)} stores to ${targetRuntimePath}.`
 );

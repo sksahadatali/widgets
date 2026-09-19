@@ -42,6 +42,17 @@ export type CalendarEvent = {
   calendarUrl: string;
   source: CalendarSource;
   semantic?: import('./calendarSemantics').CalendarEventSemantic;
+  profileAssignment: ResolvedCalendarProfileAssignment;
+};
+
+export type CalendarAssignmentTarget =
+  | { kind: 'family' }
+  | { kind: 'members'; profileIds: string[] }
+  | { kind: 'unassigned' };
+
+export type ResolvedCalendarProfileAssignment = {
+  target: CalendarAssignmentTarget;
+  basis: 'explicit' | 'source-default' | 'none';
 };
 
 const LOCAL_DATE_PATTERN =
@@ -323,6 +334,10 @@ export function normalizeCalendarEvent(
       calendarName,
       sources
     ),
+    profileAssignment: {
+      target: { kind: 'unassigned' },
+      basis: 'none',
+    },
   };
 }
 

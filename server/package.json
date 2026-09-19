@@ -8,6 +8,7 @@
         "build": "tsc",
         "start": "node dist/server.js --production",
         "runtime:migrate": "tsx src/scripts/migrateRuntimeData.ts",
+        "runtime:migrate:layout-2": "tsx src/scripts/migrateRuntimeLayout2.ts",
         "runtime:validate": "tsx src/scripts/validateRuntimeData.ts",
         "runtime:config:migrate": "tsx src/scripts/migrateRuntimeConfig.ts",
         "runtime:backup:create": "tsx src/scripts/createRuntimeSnapshot.ts",

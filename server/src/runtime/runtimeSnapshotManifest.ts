@@ -56,7 +56,7 @@ export function validateSnapshotManifest(value: unknown): RuntimeSnapshotManifes
     !source || !exactKeys(source, ['runtimeManifest', 'householdConfigSchemaVersion']) ||
     source.householdConfigSchemaVersion !== 1 ||
     !runtime || !exactKeys(runtime, ['schemaVersion', 'kind', 'dataLayoutVersion']) ||
-    runtime.schemaVersion !== 1 || runtime.kind !== 'eyos-household-runtime' || runtime.dataLayoutVersion !== 1 ||
+    runtime.schemaVersion !== 1 || runtime.kind !== 'eyos-household-runtime' || runtime.dataLayoutVersion !== 2 ||
     !consistency || !exactKeys(consistency, ['mode', 'operationLockHeld']) ||
     consistency.mode !== 'offline' || consistency.operationLockHeld !== true ||
     !Array.isArray(root.files) || root.files.length !== RUNTIME_SNAPSHOT_FILES.length

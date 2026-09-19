@@ -28,6 +28,7 @@ async function getValidators(): Promise<
     lists,
     meals,
     kumon,
+    calendarAssignments,
   ] = await Promise.all([
     import('../services/routineStore.js'),
     import('../services/rewardStore.js'),
@@ -35,6 +36,7 @@ async function getValidators(): Promise<
     import('../services/familyListStore.js'),
     import('../services/mealPlanStore.js'),
     import('../services/kumonStore.js'),
+    import('../services/calendarProfileAssignmentStore.js'),
   ]);
 
   return {
@@ -45,6 +47,7 @@ async function getValidators(): Promise<
     'lists.local.json': lists.validateFamilyListStore,
     'meals.local.json': meals.validateMealPlanStore,
     'kumon.local.json': kumon.validateKumonStore,
+    'calendar-profile-assignments.local.json': calendarAssignments.validateCalendarProfileAssignmentStore,
   };
 }
 
