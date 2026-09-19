@@ -28,6 +28,7 @@ export type CalendarApiEvent = {
 
 export type CalendarEvent = {
   id: string;
+  eventKey?: string;
   title: string;
   start: string;
   end: string;
@@ -36,6 +37,8 @@ export type CalendarEvent = {
   allDay: boolean;
   location: string;
   description: string;
+  status?: string;
+  writable?: boolean;
   calendarUrl: string;
   source: CalendarSource;
   semantic?: import('./calendarSemantics').CalendarEventSemantic;
