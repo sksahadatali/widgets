@@ -17,6 +17,7 @@ import type {
 import {
   CalendarSourceIndicator,
 } from './CalendarSourceIndicator';
+import { CalendarPeoplePicker } from './CalendarPeoplePicker';
 
 import './Calendar.css';
 
@@ -25,6 +26,7 @@ type EventGroupProps = {
   events: CalendarEvent[];
   timeZone: string;
   showDate?: boolean;
+  onAssignmentChanged: () => Promise<void>;
 };
 
 function formatTime(
@@ -65,10 +67,12 @@ export function CalendarEventRow({
   event,
   timeZone,
   showDate = false,
+  onAssignmentChanged,
 }: {
   event: CalendarEvent;
   timeZone: string;
   showDate?: boolean;
+  onAssignmentChanged: () => Promise<void>;
 }) {
   return (
     <article className="calendar-card__event">
@@ -104,6 +108,9 @@ export function CalendarEventRow({
             {event.location}
           </span>
         )}
+        {event.eventKey?.match(/^calendar-event-v1-[a-f0-9]{64}$/) && (
+          <CalendarPeoplePicker eventKey={event.eventKey} assignment={event.profileAssignment} onChanged={onAssignmentChanged} />
+        )}
       </div>
     </article>
   );
@@ -114,6 +121,7 @@ function EventGroup({
   events,
   timeZone,
   showDate = false,
+  onAssignmentChanged,
 }: EventGroupProps) {
   if (events.length === 0) {
     return null;
@@ -132,6 +140,7 @@ function EventGroup({
             event={event}
             timeZone={timeZone}
             showDate={showDate}
+            onAssignmentChanged={onAssignmentChanged}
           />
         ))}
       </div>
@@ -217,12 +226,14 @@ function Calendar() {
             title="Today"
             events={todayEvents}
             timeZone={timeZone}
+            onAssignmentChanged={refresh}
           />
 
           <EventGroup
             title="Tomorrow"
             events={tomorrowEvents}
             timeZone={timeZone}
+            onAssignmentChanged={refresh}
           />
 
           <EventGroup
@@ -230,6 +241,7 @@ function Calendar() {
             events={comingUpEvents}
             timeZone={timeZone}
             showDate
+            onAssignmentChanged={refresh}
           />
         </div>
       )}

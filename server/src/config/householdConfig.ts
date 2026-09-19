@@ -28,6 +28,9 @@ export type CalendarSourceConfig = {
   kind: string;
   calendarId?: string;
   calendarName?: string;
+  defaultProfileAssignment?:
+    | { kind: 'family' }
+    | { kind: 'members'; profileIds: string[] };
 };
 
 export type CalendarSemanticRule = {
@@ -168,14 +171,40 @@ function validateMembers(value: unknown): HouseholdMember[] {
   });
 }
 
-function validateSources(value: unknown): CalendarSourceConfig[] {
+function validateDefaultProfileAssignment(
+  value: unknown,
+  memberIds: ReadonlySet<string>,
+  path: string,
+): CalendarSourceConfig['defaultProfileAssignment'] {
+  const assignment = object(value, path);
+  if (assignment.kind === 'family') {
+    exactKeys(assignment, ['kind'], path);
+    return { kind: 'family' };
+  }
+  if (assignment.kind !== 'members') throw new Error(`${path} is invalid.`);
+  exactKeys(assignment, ['kind', 'profileIds'], path);
+  if (!Array.isArray(assignment.profileIds) || assignment.profileIds.length < 1 || assignment.profileIds.length > 20) {
+    throw new Error(`${path}.profileIds is invalid.`);
+  }
+  const profileIds = assignment.profileIds.map((profileId, index) =>
+    text(profileId, `${path}.profileIds[${index}]`, 80));
+  if (new Set(profileIds).size !== profileIds.length || profileIds.some(id => id === 'family' || !memberIds.has(id))) {
+    throw new Error(`${path}.profileIds is invalid.`);
+  }
+  return { kind: 'members', profileIds };
+}
+
+function validateSources(
+  value: unknown,
+  memberIds: ReadonlySet<string>,
+): CalendarSourceConfig[] {
   if (!Array.isArray(value) || value.length > 100) {
     throw new Error('calendar.sources is invalid.');
   }
   const ids = new Set<string>();
   return value.map((item, index) => {
     const source = object(item, `calendar.sources[${index}]`);
-    exactKeys(source, ['sourceId', 'label', 'kind', 'calendarId', 'calendarName'], `calendar.sources[${index}]`);
+    exactKeys(source, ['sourceId', 'label', 'kind', 'calendarId', 'calendarName', 'defaultProfileAssignment'], `calendar.sources[${index}]`);
     const sourceId = text(source.sourceId, `calendar.sources[${index}].sourceId`, 80);
     const calendarId = source.calendarId === undefined ? undefined : text(source.calendarId, `calendar.sources[${index}].calendarId`, 300);
     const calendarName = source.calendarName === undefined ? undefined : text(source.calendarName, `calendar.sources[${index}].calendarName`, 200);
@@ -189,6 +218,13 @@ function validateSources(value: unknown): CalendarSourceConfig[] {
       kind: text(source.kind, `calendar.sources[${index}].kind`, 80),
       ...(calendarId ? { calendarId } : {}),
       ...(calendarName ? { calendarName } : {}),
+      ...(source.defaultProfileAssignment === undefined ? {} : {
+        defaultProfileAssignment: validateDefaultProfileAssignment(
+          source.defaultProfileAssignment,
+          memberIds,
+          `calendar.sources[${index}].defaultProfileAssignment`,
+        ),
+      }),
     };
   });
 }
@@ -272,12 +308,13 @@ export function validateHouseholdConfig(value: unknown): HouseholdConfig {
     try { parsed = new URL(presentationUrl); } catch { throw new Error('calendar.presentationUrl is invalid.'); }
     if (parsed.protocol !== 'https:') throw new Error('calendar.presentationUrl must use HTTPS.');
   }
-  const sources = validateSources(calendar.sources);
+  const members = validateMembers(household.members);
+  const sources = validateSources(calendar.sources, new Set(members.map(member => member.id)));
   return {
     schemaVersion: 1,
     household: {
       displayName: text(household.displayName, 'household.displayName', 100),
-      members: validateMembers(household.members),
+      members,
     },
     location: {
       name: text(location.name, 'location.name', 150),

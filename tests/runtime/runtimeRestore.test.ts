@@ -42,6 +42,7 @@ function stores(marker: string): Record<string, unknown> {
     'lists.local.json': { schemaVersion: 1, lists: [{ id: '00000000-0000-4000-8000-000000000001', systemKey: 'shopping', name: `Shopping ${marker}`, active: true, items: [], createdAt: timestamp, updatedAt: timestamp }] },
     'meals.local.json': { schemaVersion: 1, entries: [] },
     'kumon.local.json': { schemaVersion: 1, assignments: [] },
+    'calendar-profile-assignments.local.json': { schemaVersion: 1, assignments: marker === 'A' ? [] : [{ eventKey: `calendar-event-v1-${'a'.repeat(64)}`, target: { kind: 'family' }, updatedAt: timestamp }] },
   };
 }
 
@@ -62,6 +63,11 @@ async function runtimeFixture(marker: string): Promise<string> {
 async function marker(root: string): Promise<string> {
   const value = JSON.parse(await readFile(join(root, 'data', 'lists.local.json'), 'utf8')) as { lists: Array<{ name: string }> };
   return value.lists[0].name;
+}
+
+async function assignmentCount(root: string): Promise<number> {
+  const value = JSON.parse(await readFile(join(root, 'data', 'calendar-profile-assignments.local.json'), 'utf8')) as { assignments: unknown[] };
+  return value.assignments.length;
 }
 
 afterEach(async () => { await Promise.all(temporaryPaths.splice(0).map(path => rm(path, { recursive: true, force: true }))); });
@@ -98,14 +104,17 @@ describe('HS3B whole-runtime restore', () => {
     const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
     const snapshotA = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
     await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    await writeFile(join(runtimeRoot, 'data', 'calendar-profile-assignments.local.json'), `${JSON.stringify(stores('B')['calendar-profile-assignments.local.json'])}\n`);
     await writeFile(join(runtimeRoot, 'data', 'lists.local.json.bak'), 'old evidence');
     const result = await restoreRuntime({ runtimeRoot, backupRoot, snapshotId: snapshotA.snapshotId, confirmRestore: snapshotA.snapshotId });
     assert.equal(await marker(runtimeRoot), 'Shopping A');
+    assert.equal(await assignmentCount(runtimeRoot), 0);
     assert.ok(result.preRestoreSnapshotId);
     assert.match(result.displacedPath!, /\.displaced-/);
     assert.equal(await marker(result.displacedPath!), 'Shopping B');
+    assert.equal(await assignmentCount(result.displacedPath!), 1);
     assert.equal((await readdir(join(runtimeRoot, 'data'))).includes('lists.local.json.bak'), false);
-    assert.equal((await verifyRuntimeSnapshot(join(backupRoot, 'snapshots', result.preRestoreSnapshotId!))).fileCount, 8);
+    assert.equal((await verifyRuntimeSnapshot(join(backupRoot, 'snapshots', result.preRestoreSnapshotId!))).fileCount, 9);
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
     assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
   });
@@ -139,7 +148,7 @@ describe('HS3B whole-runtime restore', () => {
     assert.ok(result.preRestoreSnapshotId);
     assert.equal((await verifyRuntimeSnapshot(
       join(backupRoot, 'snapshots', result.preRestoreSnapshotId),
-    )).fileCount, 8);
+    )).fileCount, 9);
   });
 
   it('flushes completed staging and each destructive rename boundary in order', async () => {

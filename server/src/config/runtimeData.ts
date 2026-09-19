@@ -22,6 +22,7 @@ export const RUNTIME_STORE_FILES = [
   'lists.local.json',
   'meals.local.json',
   'kumon.local.json',
+  'calendar-profile-assignments.local.json',
 ] as const;
 
 export type RuntimeStoreFile =
@@ -30,7 +31,7 @@ export type RuntimeStoreFile =
 export const EXPECTED_RUNTIME_MANIFEST = {
   schemaVersion: 1,
   kind: 'eyos-household-runtime',
-  dataLayoutVersion: 1,
+  dataLayoutVersion: 2,
 } as const;
 
 const REPOSITORY_ROOT = fileURLToPath(

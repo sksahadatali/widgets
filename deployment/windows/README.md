@@ -60,6 +60,25 @@ the runtime lock only after closure is proven. This fits inside the wrapper's
 error and deliberately retains its version-3 server lock; the replacement
 instance may recover it only through the proof and audit rules above.
 
+## Offline Calendar assignment layout migration
+
+A release that introduces runtime layout 2 contains the compiled, explicit
+copy-only migration CLI. With the Home Service stopped, a verified layout-1
+snapshot available and a new absent target path, run it with the release's
+bundled Node executable. Never point the target at the authoritative source:
+
+```powershell
+& 'C:\Program Files\eY-OS\current\node\node.exe' `
+  'C:\Program Files\eY-OS\current\server\dist\scripts\migrateRuntimeLayout2.js' `
+  --source '<layout-1-runtime>' --target '<new-layout-2-runtime>' `
+  --confirm-layout-2-migration
+```
+
+The operation does not edit the source and does not run automatically during
+service startup. Validate and review the new target before changing the
+external service environment. Real Household migration remains a separately
+approved production operation.
+
 ## Offline whole-runtime restore
 
 Stop the WinSW service and wait for its runtime operation lock to disappear

@@ -23,6 +23,7 @@ async function release(): Promise<string> {
     writeFile(join(root, 'server', 'dist', 'scripts', 'restoreRuntime.js'), '/* synthetic */'),
     writeFile(join(root, 'server', 'dist', 'scripts', 'inspectRuntimeRestore.js'), '/* synthetic */'),
     writeFile(join(root, 'server', 'dist', 'scripts', 'recoverRuntimeRestore.js'), '/* synthetic */'),
+    writeFile(join(root, 'server', 'dist', 'scripts', 'migrateRuntimeLayout2.js'), '/* synthetic */'),
     writeFile(join(root, 'server', 'package.json'), '{"type":"module"}'),
     writeFile(join(root, 'node', process.platform === 'win32' ? 'node.exe' : 'node'), 'synthetic'),
   ]);

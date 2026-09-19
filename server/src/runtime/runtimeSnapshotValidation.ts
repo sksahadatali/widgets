@@ -27,7 +27,7 @@ import {
 
 export type SnapshotVerification = {
   snapshotId: string;
-  fileCount: 8;
+  fileCount: number;
   totalBytes: number;
 };
 
@@ -83,10 +83,11 @@ export async function verifyRuntimeSnapshot(
   await assertSafeDirectory(join(payload, 'config'), rootRealPath);
   await assertSafeDirectory(join(payload, 'data'), rootRealPath);
   exactEntries(await readdir(join(payload, 'config')), ['household.json'], 'SNAPSHOT_INVENTORY_INVALID');
-  exactEntries(await readdir(join(payload, 'data')), [
-    'routines.local.json', 'rewards.local.json', 'redemptions.local.json',
-    'lists.local.json', 'meals.local.json', 'kumon.local.json',
-  ], 'SNAPSHOT_INVENTORY_INVALID');
+  exactEntries(
+    await readdir(join(payload, 'data')),
+    RUNTIME_SNAPSHOT_FILES.filter(path => path.startsWith('data/')).map(path => path.slice(5)),
+    'SNAPSHOT_INVENTORY_INVALID',
+  );
 
   const manifestPath = join(snapshotPath, 'snapshot.json');
   await assertSafeRegularFile(manifestPath, rootRealPath);
@@ -118,5 +119,5 @@ export async function verifyRuntimeSnapshot(
   } catch (error) {
     throw new Error('SNAPSHOT_PAYLOAD_INVALID', { cause: error });
   }
-  return { snapshotId, fileCount: 8, totalBytes };
+  return { snapshotId, fileCount: RUNTIME_SNAPSHOT_FILES.length, totalBytes };
 }
