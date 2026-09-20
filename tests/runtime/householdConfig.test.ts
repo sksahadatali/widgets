@@ -70,6 +70,16 @@ describe('external Household configuration', () => {
     assert.throws(() => validateHouseholdConfig(value), /defaultProfileAssignment/);
   });
 
+  it('validates private edit-existing capability without exposing it to the client', () => {
+    const value = validConfig();
+    value.calendar.sources[0].writeAccess = 'edit-existing';
+    assert.equal(validateHouseholdConfig(value).calendar.sources[0].writeAccess, 'edit-existing');
+    assert.equal(JSON.stringify(createClientProjection(value)).includes('writeAccess'), false);
+    const invalid = validConfig() as unknown as { calendar: { sources: Array<Record<string, unknown>> } };
+    invalid.calendar.sources[0].writeAccess = 'write-all';
+    assert.throws(() => validateHouseholdConfig(invalid), /writeAccess/);
+  });
+
   it('rejects duplicate member, source and destination IDs and numeric bounds', () => {
     const value = validConfig();
     assert.throws(() => validateHouseholdConfig({ ...value, household: { ...value.household, members: [value.household.members[0], value.household.members[0]] } }), /members\[1\]/);

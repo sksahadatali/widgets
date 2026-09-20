@@ -606,3 +606,52 @@
     min-height: 12.5rem;
   }
 }
+
+.weekly-details__edit,
+.calendar-event-editor__actions button,
+.calendar-event-editor__error button {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--ey-space-2);
+  justify-content: center;
+  min-height: 40px;
+}
+
+.calendar-event-editor {
+  display: grid;
+  gap: var(--ey-space-3);
+  min-width: min(28rem, calc(100vw - 4rem));
+}
+
+.calendar-event-editor label {
+  display: grid;
+  font-weight: 700;
+  gap: var(--ey-space-1);
+}
+
+.calendar-event-editor input {
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-control-radius);
+  background: var(--ey-bg-input);
+  font: inherit;
+  min-height: 42px;
+  padding: var(--ey-space-2);
+}
+
+.calendar-event-editor__scope,
+.calendar-event-editor__error {
+  border-radius: var(--ey-radius-small);
+  margin: 0;
+  padding: var(--ey-space-2);
+}
+
+.calendar-event-editor__scope { background: var(--ey-bg-card-secondary); }
+.calendar-event-editor__error { background: var(--ey-danger-soft); color: var(--ey-danger); }
+.calendar-event-editor__error button { margin-left: var(--ey-space-2); }
+.calendar-event-editor__actions { display: flex; gap: var(--ey-space-2); justify-content: flex-end; }
+
+@media (max-width: 700px) {
+  .weekly-details { max-width: calc(100vw - 1.5rem); }
+  .calendar-event-editor { min-width: 0; }
+  .calendar-event-editor__actions button { flex: 1; }
+}

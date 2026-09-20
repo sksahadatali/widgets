@@ -41,6 +41,46 @@ export async function getCalendarEvents(
 }
 export const CALENDAR_REFRESH_MS = getHouseholdConfig().calendar.refreshMinutes * 60 * 1000;
 
+export type CalendarEditTiming =
+  | { kind: 'date'; startDate: string; endDateExclusive: string }
+  | { kind: 'dateTime'; start: string; end: string; timeZone: 'Europe/London' };
+export type CalendarEditContext = {
+  eventKey: string;
+  revision: string;
+  scope: 'event' | 'occurrence';
+  recurring: boolean;
+  title: string;
+  location: string;
+  timing: CalendarEditTiming;
+};
+export type CalendarEditInput = Omit<CalendarEditContext, 'eventKey' | 'recurring'>;
+
+export class CalendarEditApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) { super(message); this.status = status; }
+}
+
+async function calendarEditRequest(path: string, init?: RequestInit): Promise<CalendarEditContext> {
+  const response = await fetch(apiUrl(path), { cache: 'no-store', ...init });
+  const payload = await response.json() as { success?: boolean; context?: CalendarEditContext; error?: string };
+  if (!response.ok || !payload.success || !payload.context) throw new CalendarEditApiError(response.status, payload.error ?? 'Calendar event could not be updated.');
+  return payload.context;
+}
+
+export async function getCalendarEditContext(eventKey: string): Promise<CalendarEditContext> {
+  if (getAppMode() === 'demo') throw new CalendarEditApiError(403, 'Calendar editing is disabled in Demo mode.');
+  return calendarEditRequest(`/api/calendar/events/${encodeURIComponent(eventKey)}/edit-context`);
+}
+
+export async function updateCalendarEvent(eventKey: string, input: CalendarEditInput): Promise<CalendarEditContext> {
+  if (getAppMode() === 'demo') throw new CalendarEditApiError(403, 'Calendar editing is disabled in Demo mode.');
+  return calendarEditRequest(`/api/calendar/events/${encodeURIComponent(eventKey)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-EYOS-Calendar-Write': '1' },
+    body: JSON.stringify(input),
+  });
+}
+
 async function mutateAssignment(path: string, init: RequestInit): Promise<void> {
   const response = await fetch(apiUrl(path), {
     ...init,

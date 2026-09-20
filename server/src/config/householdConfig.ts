@@ -28,6 +28,7 @@ export type CalendarSourceConfig = {
   kind: string;
   calendarId?: string;
   calendarName?: string;
+  writeAccess?: 'edit-existing';
   defaultProfileAssignment?:
     | { kind: 'family' }
     | { kind: 'members'; profileIds: string[] };
@@ -204,12 +205,16 @@ function validateSources(
   const ids = new Set<string>();
   return value.map((item, index) => {
     const source = object(item, `calendar.sources[${index}]`);
-    exactKeys(source, ['sourceId', 'label', 'kind', 'calendarId', 'calendarName', 'defaultProfileAssignment'], `calendar.sources[${index}]`);
+    exactKeys(source, ['sourceId', 'label', 'kind', 'calendarId', 'calendarName', 'writeAccess', 'defaultProfileAssignment'], `calendar.sources[${index}]`);
     const sourceId = text(source.sourceId, `calendar.sources[${index}].sourceId`, 80);
     const calendarId = source.calendarId === undefined ? undefined : text(source.calendarId, `calendar.sources[${index}].calendarId`, 300);
     const calendarName = source.calendarName === undefined ? undefined : text(source.calendarName, `calendar.sources[${index}].calendarName`, 200);
+    const writeAccess = source.writeAccess === undefined ? undefined : text(source.writeAccess, `calendar.sources[${index}].writeAccess`, 30);
     if (!SOURCE_ID_PATTERN.test(sourceId) || ids.has(sourceId) || (!calendarId && !calendarName)) {
       throw new Error(`calendar.sources[${index}] is invalid.`);
+    }
+    if (writeAccess !== undefined && writeAccess !== 'edit-existing') {
+      throw new Error(`calendar.sources[${index}].writeAccess is invalid.`);
     }
     ids.add(sourceId);
     return {
@@ -218,6 +223,7 @@ function validateSources(
       kind: text(source.kind, `calendar.sources[${index}].kind`, 80),
       ...(calendarId ? { calendarId } : {}),
       ...(calendarName ? { calendarName } : {}),
+      ...(writeAccess ? { writeAccess: writeAccess as 'edit-existing' } : {}),
       ...(source.defaultProfileAssignment === undefined ? {} : {
         defaultProfileAssignment: validateDefaultProfileAssignment(
           source.defaultProfileAssignment,
