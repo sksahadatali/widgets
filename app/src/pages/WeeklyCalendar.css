@@ -50,7 +50,8 @@
 }
 
 .weekly-calendar-page__message button,
-.weekly-details button {
+.weekly-details button,
+.weekly-calendar-toolbar button {
   min-width: var(--ey-touch-target-min);
   min-height: var(--ey-touch-target-min);
   border: 1px solid var(--ey-border-default);
@@ -58,6 +59,50 @@
   background: var(--ey-bg-card-secondary);
   color: inherit;
   cursor: pointer;
+}
+
+.weekly-calendar-toolbar,
+.weekly-calendar-toolbar__actions,
+.weekly-calendar-toolbar button {
+  display: flex;
+  align-items: center;
+}
+
+.weekly-calendar-toolbar {
+  justify-content: space-between;
+  gap: var(--ey-space-3);
+  margin-bottom: var(--ey-space-3);
+  padding: var(--ey-space-2) var(--ey-space-3);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-card-radius);
+  background: var(--ey-bg-card);
+  box-shadow: var(--ey-shadow-card);
+}
+
+.weekly-calendar-toolbar strong {
+  font-size: var(--ey-font-lg);
+}
+
+.weekly-calendar-toolbar__actions {
+  gap: var(--ey-space-2);
+}
+
+.weekly-calendar-toolbar button {
+  justify-content: center;
+  gap: var(--ey-space-1);
+  padding-inline: var(--ey-space-3);
+  font: inherit;
+  font-weight: 700;
+}
+
+.weekly-calendar-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: var(--ey-opacity-disabled);
+}
+
+.weekly-calendar-toolbar button:focus-visible {
+  outline: none;
+  box-shadow: var(--ey-focus-ring);
 }
 
 .weekly-calendar {
@@ -154,8 +199,7 @@
   text-align: left;
 }
 
-.weekly-event__summary:focus-visible,
-.weekly-event__assignment:focus-visible {
+.weekly-event__summary:focus-visible {
   outline: none;
   box-shadow: var(--ey-focus-ring);
 }
@@ -166,8 +210,7 @@
 }
 
 .weekly-event__time,
-.weekly-event__location,
-.weekly-event__assignment {
+.weekly-event__location {
   display: flex;
   align-items: center;
   gap: var(--ey-space-1);
@@ -183,33 +226,6 @@
 .weekly-event .calendar-card__source {
   width: fit-content;
   margin: var(--ey-space-1) 0 0;
-}
-
-.weekly-event__assignment {
-  margin-top: var(--ey-space-2);
-}
-
-.weekly-event__avatar,
-.weekly-event__avatar-stack {
-  display: inline-flex;
-  align-items: center;
-}
-
-.weekly-event__avatar {
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border: 1px solid var(--ey-border-default);
-  border-radius: 50%;
-  background: var(--ey-bg-elevated);
-  color: var(--ey-accent-primary);
-  font-size: 0.65rem;
-  font-weight: 800;
-}
-
-.weekly-event__avatar-stack .weekly-event__avatar + .weekly-event__avatar {
-  margin-left: -7px;
 }
 
 .weekly-event .calendar-people {
@@ -282,6 +298,20 @@
   padding-block: var(--ey-space-3);
 }
 
+:root[data-display-profile='compact'] .weekly-calendar-toolbar {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+:root[data-display-profile='compact'] .weekly-calendar-toolbar__actions {
+  width: 100%;
+}
+
+:root[data-display-profile='compact'] .weekly-calendar-toolbar button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 :root[data-display-profile='compact'] .weekly-calendar {
   grid-template-columns: repeat(7, minmax(10.5rem, 1fr));
   overflow-x: auto;
@@ -315,6 +345,26 @@
   .weekly-calendar-page__header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .weekly-calendar-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .weekly-calendar-toolbar__actions {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    width: 100%;
+  }
+
+  .weekly-calendar-toolbar button {
+    min-width: 0;
+    padding-inline: var(--ey-space-2);
+  }
+
+  .weekly-calendar-toolbar button svg {
+    display: none;
   }
 
   .weekly-calendar {

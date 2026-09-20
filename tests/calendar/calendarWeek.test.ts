@@ -8,6 +8,12 @@ import type {
   CalendarEvent,
 } from '../../app/src/calendar/calendarModel.ts';
 import {
+  canNavigateCalendarWindowPrevious,
+  createCalendarWindowState,
+  formatCalendarWindowRange,
+  navigateCalendarWindow,
+  resetCalendarWindowToToday,
+  selectCalendarWindow,
   selectRollingCalendarWeek,
 } from '../../app/src/calendar/calendarWeek.ts';
 
@@ -78,6 +84,56 @@ describe('rolling Weekly Family Calendar', () => {
     assert.equal(days[0].localDate, '2026-09-19');
   });
 
+  it('moves forward and back in seven Household-local civil days', () => {
+    const today = createCalendarWindowState(
+      new Date('2026-09-19T12:00:00.000Z'),
+      TIME_ZONE
+    );
+    const next = navigateCalendarWindow(today, 7);
+    const returned = navigateCalendarWindow(next, -7);
+
+    assert.equal(next.startLocalDate, '2026-09-26');
+    assert.equal(returned.startLocalDate, '2026-09-19');
+    assert.equal(canNavigateCalendarWindowPrevious(next), true);
+  });
+
+  it('refuses navigation before Household Today and resets to Today', () => {
+    const today = createCalendarWindowState(
+      new Date('2026-09-19T12:00:00.000Z'),
+      TIME_ZONE
+    );
+
+    assert.equal(canNavigateCalendarWindowPrevious(today), false);
+    assert.deepEqual(navigateCalendarWindow(today, -7), today);
+    assert.deepEqual(
+      resetCalendarWindowToToday(navigateCalendarWindow(today, 7)),
+      today
+    );
+  });
+
+  it('formats the selected rolling range and crosses years safely', () => {
+    assert.equal(
+      formatCalendarWindowRange('2026-09-20'),
+      '20 Sept – 26 Sept 2026'
+    );
+    assert.equal(
+      formatCalendarWindowRange('2026-12-29'),
+      '29 Dec 2026 – 4 Jan 2027'
+    );
+  });
+
+  it('moves by civil dates across Europe/London DST changes', () => {
+    const state = {
+      householdToday: '2026-10-24',
+      startLocalDate: '2026-10-24',
+    };
+
+    assert.equal(
+      navigateCalendarWindow(state, 7).startLocalDate,
+      '2026-10-31'
+    );
+  });
+
   it('excludes past and day-eight events', () => {
     const days = selectRollingCalendarWeek(
       [
@@ -123,6 +179,23 @@ describe('rolling Weekly Family Calendar', () => {
     );
 
     assert.deepEqual(days[3].events.map(item => item.id), ['timed']);
+  });
+
+  it('places only events inside a selected future seven-day window', () => {
+    const days = selectCalendarWindow(
+      [
+        event('before-window', '2026-09-25', '2026-09-26'),
+        event('inside-window', '2026-09-26', '2026-09-27'),
+        event('after-window', '2026-10-03', '2026-10-04'),
+      ],
+      '2026-09-26',
+      '2026-09-19'
+    );
+
+    assert.deepEqual(
+      days.flatMap(day => day.events.map(item => item.id)),
+      ['inside-window']
+    );
   });
 
   it('places a multi-day all-day event on every overlapping displayed day', () => {

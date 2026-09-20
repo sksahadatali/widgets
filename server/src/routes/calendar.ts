@@ -7,6 +7,10 @@ import {
   calendarProfileAssignmentStore,
   resolveCalendarProfileAssignment,
 } from '../services/calendarProfileAssignmentStore.js';
+import {
+  CalendarWindowRequestError,
+  parseCalendarWindowStart,
+} from '../services/calendarWindow.js';
 const router = Router();
 
 function sendAssignmentError(error: unknown, response: import('express').Response): void {
@@ -50,17 +54,23 @@ router.delete('/profile-assignments/:eventKey', async (request, response) => {
   } catch (error) { sendAssignmentError(error, response); }
 });
 
-router.get('/', async (_request, response) => {
+router.get('/', async (request, response) => {
   if (getRuntimeAppMode() === 'demo') {
     response.json({ calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: 'Europe/London', events: [] });
     return;
   }
   try {
+    const config = getHouseholdConfig();
+    const startDate = parseCalendarWindowStart(
+      request.query,
+      new Date(),
+      config.location.timezone,
+    );
     const [data, store] = await Promise.all([
-      getSafeCalendarData(),
+      getSafeCalendarData(startDate),
       calendarProfileAssignmentStore.read(),
     ]);
-    const sources = getHouseholdConfig().calendar.sources;
+    const sources = config.calendar.sources;
     response.json({
       ...data,
       events: data.events.map(event => ({
@@ -69,7 +79,9 @@ router.get('/', async (_request, response) => {
       })),
     });
   } catch (error) {
-    if (error instanceof CalendarProfileAssignmentStoreError) sendAssignmentError(error, response);
+    if (error instanceof CalendarWindowRequestError) {
+      response.status(400).json({ error: error.message });
+    } else if (error instanceof CalendarProfileAssignmentStoreError) sendAssignmentError(error, response);
     else response.status(502).json({ error: 'Calendar unavailable' });
   }
 });

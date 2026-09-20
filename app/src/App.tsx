@@ -108,7 +108,7 @@ function App() {
         return (
           <Home onOpenRoutine={openRoutine} />
         );
-      case 'Weekly Calendar':
+      case 'Calendar':
         return <WeeklyCalendar />;
       case 'Settings':
         return <Settings />;
