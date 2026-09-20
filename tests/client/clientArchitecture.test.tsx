@@ -124,7 +124,7 @@ test('primary destination routing', async t => {
     readonly [AppPage, string]
   > = [
     ['Home', '/'],
-    ['Weekly Calendar', '/calendar'],
+    ['Calendar', '/calendar'],
     ['Daily', '/daily'],
     ['Rewards', '/rewards'],
     ['Lists', '/lists'],

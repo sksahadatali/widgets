@@ -30,7 +30,7 @@ test('mobile navigation preserves the Phase A route model', () => {
     APP_ROUTES.map(route => route.page),
     [
       'Home',
-      'Weekly Calendar',
+      'Calendar',
       'Daily',
       'Rewards',
       'Lists',
@@ -43,7 +43,7 @@ test('mobile navigation preserves the Phase A route model', () => {
   );
 });
 
-test('Weekly Calendar uses the shared route and responsive display-profile architecture', async () => {
+test('Calendar uses the shared route and responsive display-profile architecture', async () => {
   const pageSource = await readFile(
     new URL('../../app/src/pages/WeeklyCalendar.tsx', import.meta.url),
     'utf8'
@@ -53,10 +53,12 @@ test('Weekly Calendar uses the shared route and responsive display-profile archi
     'utf8'
   );
 
-  assert.match(pageSource, /selectRollingCalendarWeek/);
+  assert.match(pageSource, /selectCalendarWindow/);
+  assert.match(pageSource, /<h1>Calendar<\/h1>/);
+  assert.doesNotMatch(pageSource, />Weekly Calendar</);
   assert.match(pageSource, /CalendarPeoplePicker/);
   assert.match(pageSource, /CalendarSourceIndicator/);
-  assert.match(pageSource, /profileAssignment\.target/);
+  assert.doesNotMatch(pageSource, /CalendarAssignmentAvatars/);
   assert.match(pageSource, /event\.description/);
   assert.match(pageStyles, /data-display-profile='compact'/);
   assert.match(pageStyles, /data-display-profile='elo-touch'/);

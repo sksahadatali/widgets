@@ -44,7 +44,7 @@ type NavigationItem = {
 
 const navigationIcons: Record<AppPage, typeof Home> = {
   Home,
-  'Weekly Calendar': CalendarRange,
+  Calendar: CalendarRange,
   Daily: CalendarDays,
   Rewards: Gift,
   Lists: ListChecks,

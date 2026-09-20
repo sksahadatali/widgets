@@ -1,6 +1,6 @@
 export type AppPage =
   | 'Home'
-  | 'Weekly Calendar'
+  | 'Calendar'
   | 'Daily'
   | 'Rewards'
   | 'Lists'
@@ -17,7 +17,7 @@ export type AppRoute = {
 
 export const APP_ROUTES: readonly AppRoute[] = [
   { page: 'Home', path: '/' },
-  { page: 'Weekly Calendar', path: '/calendar' },
+  { page: 'Calendar', path: '/calendar' },
   { page: 'Daily', path: '/daily' },
   { page: 'Rewards', path: '/rewards' },
   { page: 'Lists', path: '/lists' },

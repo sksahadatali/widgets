@@ -1,12 +1,21 @@
 import { apiGet } from './apiClient';
 import { apiUrl } from './clientApi';
-import type { CalendarAssignmentTarget, CalendarEvent } from '../calendar/calendarModel';
+import {
+  shiftCalendarLocalDate,
+  type CalendarAssignmentTarget,
+  type CalendarEvent,
+} from '../calendar/calendarModel';
 import { getAppMode, getHouseholdConfig } from './householdConfigService';
 export type { CalendarEvent };
 export type CalendarData = { calendarUrl: string; generatedAt: string; timeZone: string; events: CalendarEvent[] };
-export async function getCalendarEvents(): Promise<CalendarData> {
+export function getCalendarEventsPath(startLocalDate?: string): string {
+  if (startLocalDate === undefined) return '/api/calendar';
+  shiftCalendarLocalDate(startLocalDate, 0);
+  return `/api/calendar?startDate=${encodeURIComponent(startLocalDate)}`;
+}
+export async function getCalendarEvents(startLocalDate?: string): Promise<CalendarData> {
   if (getAppMode() === 'demo') return { calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: getHouseholdConfig().location.timezone, events: [] };
-  return apiGet<CalendarData>(apiUrl('/api/calendar'));
+  return apiGet<CalendarData>(apiUrl(getCalendarEventsPath(startLocalDate)));
 }
 export const CALENDAR_REFRESH_MS = getHouseholdConfig().calendar.refreshMinutes * 60 * 1000;
 

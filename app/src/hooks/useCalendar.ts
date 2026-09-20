@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -32,7 +33,9 @@ type UseCalendarResult = {
   refresh: () => Promise<void>;
 };
 
-export function useCalendar(): UseCalendarResult {
+export function useCalendar(
+  startLocalDate?: string
+): UseCalendarResult {
   const [
     calendarData,
     setCalendarData,
@@ -45,16 +48,34 @@ export function useCalendar(): UseCalendarResult {
 
   const [error, setError] =
     useState<string | null>(null);
+  const requestId = useRef(0);
+  const loadedWindow = useRef<
+    string | null | undefined
+  >(undefined);
 
   const refresh = useCallback(async () => {
+    const currentRequestId = requestId.current + 1;
+    const requestedWindow = startLocalDate ?? null;
+    requestId.current = currentRequestId;
+
+    if (loadedWindow.current !== requestedWindow) {
+      setCalendarData(null);
+      setLoading(true);
+    }
+
     try {
       setError(null);
 
       const data =
-        await getCalendarEvents();
+        await getCalendarEvents(startLocalDate);
+
+      if (requestId.current !== currentRequestId) return;
 
       setCalendarData(data);
+      loadedWindow.current = requestedWindow;
     } catch (refreshError) {
+      if (requestId.current !== currentRequestId) return;
+
       console.error(
         'Calendar update failed:',
         refreshError
@@ -64,9 +85,11 @@ export function useCalendar(): UseCalendarResult {
         'Calendar unavailable'
       );
     } finally {
-      setLoading(false);
+      if (requestId.current === currentRequestId) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [startLocalDate]);
 
   useEffect(() => {
     const initialRefreshId =
@@ -86,6 +109,7 @@ export function useCalendar(): UseCalendarResult {
       );
 
     return () => {
+      requestId.current += 1;
       window.clearTimeout(
         initialRefreshId
       );

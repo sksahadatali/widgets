@@ -1,8 +1,9 @@
 import {
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   MapPin,
-  Users,
   X,
 } from 'lucide-react';
 import {
@@ -14,11 +15,16 @@ import {
 
 import {
   formatCalendarLocalDate,
-  type CalendarAssignmentTarget,
   type CalendarEvent,
 } from '../calendar/calendarModel';
 import {
-  selectRollingCalendarWeek,
+  canNavigateCalendarWindowPrevious,
+  createCalendarWindowState,
+  formatCalendarWindowRange,
+  navigateCalendarWindow,
+  refreshCalendarWindowToday,
+  resetCalendarWindowToToday,
+  selectCalendarWindow,
 } from '../calendar/calendarWeek';
 import {
   CalendarPeoplePicker,
@@ -27,12 +33,7 @@ import {
   CalendarSourceIndicator,
 } from '../components/modules/Calendar/CalendarSourceIndicator';
 import { useCalendar } from '../hooks/useCalendar';
-import {
-  getProfileInitials,
-} from '../household/householdProfiles';
-import {
-  useHouseholdProfile,
-} from '../household/useHouseholdProfile';
+import { getHouseholdConfig } from '../services/householdConfigService';
 
 import '../components/modules/Calendar/Calendar.css';
 import './WeeklyCalendar.css';
@@ -54,61 +55,6 @@ function formatEventTime(
   });
 
   return `${formatter.format(new Date(event.start))}–${formatter.format(new Date(event.end))}`;
-}
-
-export function CalendarAssignmentAvatars({
-  target,
-}: {
-  target: CalendarAssignmentTarget;
-}) {
-  const { profiles } = useHouseholdProfile();
-
-  if (target.kind === 'unassigned') {
-    return (
-      <span className="weekly-event__assignment weekly-event__assignment--unassigned">
-        <span className="weekly-event__avatar">—</span>
-        Unassigned
-      </span>
-    );
-  }
-
-  if (target.kind === 'family') {
-    return (
-      <span className="weekly-event__assignment">
-        <span className="weekly-event__avatar">
-          <Users size={15} aria-hidden="true" />
-        </span>
-        Family
-      </span>
-    );
-  }
-
-  const members = target.profileIds.map(profileId =>
-    profiles.find(profile => profile.id === profileId)
-  );
-
-  return (
-    <span
-      className="weekly-event__assignment"
-      aria-label={`Assigned to ${members.map(member => member?.displayName ?? 'Removed profile').join(', ')}`}
-    >
-      <span className="weekly-event__avatar-stack" aria-hidden="true">
-        {members.slice(0, 3).map((member, index) => (
-          <span
-            key={`${member?.id ?? 'removed'}-${index}`}
-            className="weekly-event__avatar"
-          >
-            {member
-              ? getProfileInitials(member.displayName)
-              : '?'}
-          </span>
-        ))}
-      </span>
-      {members.length === 1
-        ? members[0]?.displayName ?? 'Removed profile'
-        : `${members.length} people`}
-    </span>
-  );
 }
 
 function EventDetails({
@@ -158,18 +104,63 @@ function EventDetails({
 }
 
 function WeeklyCalendar() {
+  const householdTimeZone =
+    getHouseholdConfig().location.timezone;
+  const [windowState, setWindowState] = useState(
+    () => createCalendarWindowState(
+      new Date(),
+      householdTimeZone
+    )
+  );
   const {
     events,
     timeZone,
     loading,
     error,
     refresh,
-  } = useCalendar();
+  } = useCalendar(windowState.startLocalDate);
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEvent | null>(null);
+
+  useEffect(() => {
+    const updateToday = () => {
+      setWindowState(current =>
+        refreshCalendarWindowToday(
+          current,
+          new Date(),
+          timeZone
+        )
+      );
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        updateToday();
+      }
+    };
+    const interval = window.setInterval(updateToday, 60_000);
+
+    window.addEventListener('focus', updateToday);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', updateToday);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [timeZone]);
+
   const days = useMemo(
-    () => selectRollingCalendarWeek(events, new Date(), timeZone),
-    [events, timeZone]
+    () => selectCalendarWindow(
+      events,
+      windowState.startLocalDate,
+      windowState.householdToday
+    ),
+    [events, windowState]
+  );
+  const canNavigatePrevious =
+    canNavigateCalendarWindowPrevious(windowState);
+  const rangeLabel = formatCalendarWindowRange(
+    windowState.startLocalDate
   );
 
   return (
@@ -177,10 +168,43 @@ function WeeklyCalendar() {
       <header className="weekly-calendar-page__header">
         <div>
           <p className="weekly-calendar-page__eyebrow">Household calendar</p>
-          <h1>Weekly Calendar</h1>
-          <p>Today and the next six days</p>
+          <h1>Calendar</h1>
+          <p>Rolling seven-day household view</p>
         </div>
       </header>
+
+      <nav className="weekly-calendar-toolbar" aria-label="Calendar date range">
+        <strong>{rangeLabel}</strong>
+        <div className="weekly-calendar-toolbar__actions">
+          <button
+            type="button"
+            disabled={!canNavigatePrevious}
+            onClick={() => setWindowState(current =>
+              navigateCalendarWindow(current, -7)
+            )}
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+            Previous 7 days
+          </button>
+          <button
+            type="button"
+            onClick={() => setWindowState(current =>
+              resetCalendarWindowToToday(current)
+            )}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => setWindowState(current =>
+              navigateCalendarWindow(current, 7)
+            )}
+          >
+            Next 7 days
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </nav>
 
       {error && (
         <div className="weekly-calendar-page__message" role="alert">
@@ -232,8 +256,6 @@ function WeeklyCalendar() {
                       )}
                       <CalendarSourceIndicator source={event.source} />
                     </button>
-
-                    <CalendarAssignmentAvatars target={event.profileAssignment.target} />
 
                     {event.eventKey && ASSIGNABLE_EVENT_KEY.test(event.eventKey) && (
                       <CalendarPeoplePicker
