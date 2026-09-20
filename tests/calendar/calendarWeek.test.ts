@@ -82,11 +82,6 @@ describe('rolling Weekly Family Calendar', () => {
     const days = selectRollingCalendarWeek(
       [
         event('past', '2026-09-18', '2026-09-19'),
-        event('ended-today', '2026-09-19', '2026-09-20', {
-          allDay: false,
-          start: '2026-09-19T07:00:00.000Z',
-          end: '2026-09-19T08:00:00.000Z',
-        }),
         event('today', '2026-09-19', '2026-09-20'),
         event('day-eight', '2026-09-26', '2026-09-27'),
       ],
@@ -97,6 +92,23 @@ describe('rolling Weekly Family Calendar', () => {
     assert.deepEqual(
       days.flatMap(day => day.events.map(item => item.id)),
       ['today']
+    );
+  });
+
+  it('keeps an earlier timed event visible for the whole Household-local Today', () => {
+    const days = selectRollingCalendarWeek(
+      [event('ended-today', '2026-09-19', '2026-09-20', {
+        allDay: false,
+        start: '2026-09-19T07:00:00.000Z',
+        end: '2026-09-19T08:00:00.000Z',
+      })],
+      new Date('2026-09-19T12:00:00.000Z'),
+      TIME_ZONE
+    );
+
+    assert.deepEqual(
+      days[0].events.map(item => item.id),
+      ['ended-today']
     );
   });
 
