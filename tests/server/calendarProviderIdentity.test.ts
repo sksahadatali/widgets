@@ -58,7 +58,7 @@ function response(events: readonly unknown[]) {
 
 async function normalize(events: readonly unknown[]) {
   setHouseholdConfigForTests(config);
-  return getSafeCalendarData(undefined, async () => new Response(JSON.stringify(response(events))));
+  return getSafeCalendarData({}, async () => new Response(JSON.stringify(response(events))));
 }
 
 afterEach(() => setHouseholdConfigForTests(null, 'demo'));
@@ -179,7 +179,7 @@ describe('Calendar API v2 identity foundation', () => {
       timeZone: 'Europe/London',
       events: [{ id: 'legacy-event', title: 'Legacy', start: '2026-09-20', end: '2026-09-21', allDay: true, calendarId: 'private-calendar-a', calendarName: 'Private Family Calendar' }],
     };
-    const result = await getSafeCalendarData(undefined, async () => new Response(JSON.stringify(v1)));
+    const result = await getSafeCalendarData({}, async () => new Response(JSON.stringify(v1)));
     assert.match(result.events[0].eventKey, /^calendar-[a-f0-9]{16}-[a-f0-9]{16}$/);
     assert.equal(result.events[0].id, result.events[0].eventKey);
   });

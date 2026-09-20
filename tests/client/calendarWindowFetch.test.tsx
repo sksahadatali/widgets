@@ -15,13 +15,29 @@ describe('Calendar window client architecture', () => {
   it('keeps Home on the existing default endpoint and requests explicit page windows', () => {
     assert.equal(getCalendarEventsPath(), '/api/calendar');
     assert.equal(
-      getCalendarEventsPath('2026-09-27'),
+      getCalendarEventsPath({ startLocalDate: '2026-09-27' }),
       '/api/calendar?startDate=2026-09-27',
     );
     assert.throws(
-      () => getCalendarEventsPath('2026-02-30'),
+      () => getCalendarEventsPath({ startLocalDate: '2026-02-30' }),
       /YYYY-MM-DD/,
     );
+    assert.equal(
+      getCalendarEventsPath({
+        startLocalDate: '2026-09-27',
+        days: 35,
+      }),
+      '/api/calendar?startDate=2026-09-27&days=35',
+    );
+    for (const days of [0, -1, 1.5, 43]) {
+      assert.throws(
+        () => getCalendarEventsPath({
+          startLocalDate: '2026-09-27',
+          days,
+        }),
+        /between 1 and 42/,
+      );
+    }
   });
 
   it('maps Next, Previous, and Today state to the matching backend window', () => {
@@ -34,19 +50,19 @@ describe('Calendar window client architecture', () => {
     const reset = resetCalendarWindowToToday(next);
 
     assert.equal(
-      getCalendarEventsPath(today.startLocalDate),
+      getCalendarEventsPath({ startLocalDate: today.startLocalDate }),
       '/api/calendar?startDate=2026-09-20',
     );
     assert.equal(
-      getCalendarEventsPath(next.startLocalDate),
+      getCalendarEventsPath({ startLocalDate: next.startLocalDate }),
       '/api/calendar?startDate=2026-09-27',
     );
     assert.equal(
-      getCalendarEventsPath(previous.startLocalDate),
+      getCalendarEventsPath({ startLocalDate: previous.startLocalDate }),
       '/api/calendar?startDate=2026-09-20',
     );
     assert.equal(
-      getCalendarEventsPath(reset.startLocalDate),
+      getCalendarEventsPath({ startLocalDate: reset.startLocalDate }),
       '/api/calendar?startDate=2026-09-20',
     );
   });
@@ -67,6 +83,20 @@ describe('Calendar window client architecture', () => {
 
     assert.match(homeCalendar, /useCalendar\(\)/);
     assert.match(quickStatus, /useCalendar\(\)/);
-    assert.match(calendarPage, /useCalendar\(windowState\.startLocalDate\)/);
+    assert.match(calendarPage, /useCalendar\(calendarRequest\)/);
+    assert.match(calendarPage, /days: monthWindow\.requestDays/);
+    assert.match(calendarPage, /MONTH_VISIBLE_EVENT_LIMIT/);
+    assert.match(calendarPage, /CalendarPeoplePicker/);
+  });
+
+  it('keys stale-response protection by both start date and day count', async () => {
+    const hook = await readFile(
+      new URL('../../app/src/hooks/useCalendar.ts', import.meta.url),
+      'utf8',
+    );
+    assert.match(hook, /startLocalDate \?\? 'default'/);
+    assert.match(hook, /days \?\? 7/);
+    assert.match(hook, /requestId\.current !== currentRequestId/);
+    assert.match(hook, /calendarData\?\.requestKey === requestKey/);
   });
 });

@@ -46,7 +46,7 @@ describe('purpose-specific provider privacy', () => {
 
   it('returns safe Calendar identities and server-derived semantics', async () => {
     setHouseholdConfigForTests(config);
-    const result = await getSafeCalendarData(undefined, async input => {
+    const result = await getSafeCalendarData({}, async input => {
       assert.equal(String(input), config.calendar.endpoint);
       return new Response(JSON.stringify({ success: true, timeZone: 'Europe/London', events: [{ id: 'provider-event-id', title: 'Private matching title', start: '2026-10-26', end: '2026-10-31', allDay: true, description: 'private provider description', calendarId: 'raw-private-calendar-id', calendarName: 'Raw Private Name' }] }));
     });

@@ -9,7 +9,7 @@ import {
 } from '../services/calendarProfileAssignmentStore.js';
 import {
   CalendarWindowRequestError,
-  parseCalendarWindowStart,
+  parseCalendarWindowRequest,
 } from '../services/calendarWindow.js';
 const router = Router();
 
@@ -55,19 +55,24 @@ router.delete('/profile-assignments/:eventKey', async (request, response) => {
 });
 
 router.get('/', async (request, response) => {
-  if (getRuntimeAppMode() === 'demo') {
-    response.json({ calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: 'Europe/London', events: [] });
-    return;
-  }
   try {
+    if (getRuntimeAppMode() === 'demo') {
+      parseCalendarWindowRequest(
+        request.query,
+        new Date(),
+        'Europe/London',
+      );
+      response.json({ calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: 'Europe/London', events: [] });
+      return;
+    }
     const config = getHouseholdConfig();
-    const startDate = parseCalendarWindowStart(
+    const windowRequest = parseCalendarWindowRequest(
       request.query,
       new Date(),
       config.location.timezone,
     );
     const [data, store] = await Promise.all([
-      getSafeCalendarData(startDate),
+      getSafeCalendarData(windowRequest),
       calendarProfileAssignmentStore.read(),
     ]);
     const sources = config.calendar.sources;
