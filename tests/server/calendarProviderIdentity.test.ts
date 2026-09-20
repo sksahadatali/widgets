@@ -12,7 +12,7 @@ const config: HouseholdConfig = {
   calendar: {
     endpoint: 'https://calendar.example.test/private-v2',
     refreshMinutes: 15,
-    sources: [{ sourceId: 'family', label: 'Family', kind: 'family', calendarId: 'private-calendar-a' }],
+    sources: [{ sourceId: 'family', label: 'Family', kind: 'family', calendarId: 'private-calendar-a', writeAccess: 'edit-existing' }],
     semanticRules: [],
   },
 };

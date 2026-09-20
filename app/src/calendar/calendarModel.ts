@@ -39,6 +39,7 @@ export type CalendarEvent = {
   description: string;
   status?: string;
   writable?: boolean;
+  recurring?: boolean;
   calendarUrl: string;
   source: CalendarSource;
   semantic?: import('./calendarSemantics').CalendarEventSemantic;

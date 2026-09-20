@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Clock3,
   MapPin,
+  Pencil,
   X,
 } from 'lucide-react';
 import {
@@ -41,7 +42,9 @@ import {
 import {
   CalendarSourceIndicator,
 } from '../components/modules/Calendar/CalendarSourceIndicator';
+import { CalendarEventEditor } from '../components/modules/Calendar/CalendarEventEditor';
 import { useCalendar } from '../hooks/useCalendar';
+import { getCalendarEditContext, type CalendarEditContext } from '../services/calendarService';
 import { getHouseholdConfig } from '../services/householdConfigService';
 
 import '../components/modules/Calendar/Calendar.css';
@@ -121,12 +124,24 @@ function EventCard({
   );
 }
 
-function EventDetails({ event, timeZone, onClose }: {
+function EventDetails({ event, timeZone, onClose, onUpdated }: {
   event: CalendarEvent;
   timeZone: string;
   onClose: () => void;
+  onUpdated: () => Promise<void>;
 }) {
   const dialogRef = useModalDialog();
+  const [editContext, setEditContext] = useState<CalendarEditContext | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const beginEdit = async () => {
+    if (!event.eventKey) return;
+    setLoadingEdit(true);
+    setEditError(null);
+    try { setEditContext(await getCalendarEditContext(event.eventKey)); }
+    catch (error) { setEditError(error instanceof Error ? error.message : 'Event editor could not be loaded.'); }
+    finally { setLoadingEdit(false); }
+  };
   return (
     <dialog
       ref={dialogRef}
@@ -134,21 +149,37 @@ function EventDetails({ event, timeZone, onClose }: {
       aria-labelledby="weekly-details-title"
       onCancel={dialogEvent => {
         dialogEvent.preventDefault();
-        onClose();
+        if (!editContext) onClose();
       }}
     >
       <div className="weekly-details__header">
         <h2 id="weekly-details-title">{event.title}</h2>
-        <button type="button" onClick={onClose} aria-label="Close event details">
-          <X size={20} aria-hidden="true" />
-        </button>
+        {!editContext && (
+          <button type="button" onClick={onClose} aria-label="Close event details">
+            <X size={20} aria-hidden="true" />
+          </button>
+        )}
       </div>
-      <dl>
-        <div><dt>When</dt><dd>{formatEventTime(event, timeZone)}</dd></div>
-        {event.location && <div><dt>Location</dt><dd>{event.location}</dd></div>}
-        <div><dt>Source</dt><dd>{event.source.label}</dd></div>
-      </dl>
-      {event.description && (
+      {editContext ? (
+        <CalendarEventEditor
+          initialContext={editContext}
+          onCancel={() => setEditContext(null)}
+          onSaved={async () => { await onUpdated(); onClose(); }}
+        />
+      ) : <>
+        <dl>
+          <div><dt>When</dt><dd>{formatEventTime(event, timeZone)}</dd></div>
+          {event.location && <div><dt>Location</dt><dd>{event.location}</dd></div>}
+          <div><dt>Source</dt><dd>{event.source.label}</dd></div>
+        </dl>
+        {editError && <p className="calendar-event-editor__error" role="alert">{editError}</p>}
+        {event.writable === true && event.eventKey && (
+          <button type="button" className="weekly-details__edit" onClick={() => void beginEdit()} disabled={loadingEdit}>
+            <Pencil size={16} aria-hidden="true" />{loadingEdit ? 'Loading editor…' : 'Edit event'}
+          </button>
+        )}
+      </>}
+      {!editContext && event.description && (
         <div className="weekly-details__description">
           <h3>Details</h3>
           <p>{event.description}</p>
@@ -381,7 +412,7 @@ function WeeklyCalendar() {
       {expandedDayData && (
         <DayEventsDialog localDate={expandedDayData.localDate} events={expandedDayData.events} timeZone={timeZone} onClose={() => setExpandedDay(null)} onSelect={showEvent} onAssignmentChanged={refresh} />
       )}
-      {selectedEvent && <EventDetails event={selectedEvent} timeZone={timeZone} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && <EventDetails event={selectedEvent} timeZone={timeZone} onClose={() => setSelectedEvent(null)} onUpdated={refresh} />}
     </main>
   );
 }

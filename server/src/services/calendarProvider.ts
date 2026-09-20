@@ -4,15 +4,9 @@ import {
     isCalendarLocalDate,
     type CalendarWindowRequest,
 } from './calendarWindow.js';
-type Temporal = {
-    kind: 'date';
-    value: string;
-} | {
-    kind: 'dateTime';
-    value: string;
-    timeZone?: string;
-};
-type NormalizedProviderEvent = {
+import { calendarEditRegistry, type ProviderTemporal } from './calendarEditRegistry.js';
+type Temporal = ProviderTemporal;
+export type NormalizedProviderEvent = {
     eventKey: string;
     title: string;
     start: string;
@@ -24,6 +18,11 @@ type NormalizedProviderEvent = {
     writable: boolean;
     calendarId: string;
     calendarName: string;
+    providerEventId: string | null;
+    recurringEventId: string | null;
+    originalStartTime: Temporal | null;
+    etag: string | null;
+    contractVersion: 1 | 2;
 };
 type Semantic = {
     kind: CalendarSemanticRule['kind'];
@@ -42,6 +41,7 @@ export type SafeCalendarEvent = {
     description: string;
     status: string;
     writable: boolean;
+    recurring?: boolean;
     calendarUrl: string;
     source: {
         id: string;
@@ -124,7 +124,7 @@ function legacyHash(value: string): string {
 }
 function opaqueEventKey(identity: readonly string[]): string { return `${EVENT_KEY_PREFIX}${createHash('sha256').update(JSON.stringify(identity), 'utf8').digest('hex')}`; }
 function originalStartIdentity(value: Temporal): string { return value.kind === 'date' ? `date:${value.value}` : `dateTime:${new Date(value.value).toISOString()}`; }
-function parseV2Event(value: unknown): NormalizedProviderEvent {
+export function parseV2ProviderEvent(value: unknown): NormalizedProviderEvent {
     if (!isRecord(value) || value.identityVersion !== 1 || value.provider !== PROVIDER || !nonEmptyString(value.providerEventId) || !nonEmptyString(value.calendarId) || !nullableNonEmptyString(value.recurringEventId) || !nullableString(value.iCalUID) || !nullableString(value.etag) || !nullableString(value.updated) || !['confirmed', 'tentative', 'cancelled'].includes(String(value.status)) || typeof value.writable !== 'boolean' || typeof value.calendarName !== 'string' || typeof value.title !== 'string' || typeof value.allDay !== 'boolean' || typeof value.location !== 'string' || typeof value.description !== 'string')
         throw new Error('Calendar provider v2 event is invalid.');
     if (value.updated !== null && !isValidRfc3339(value.updated))
@@ -143,7 +143,7 @@ function parseV2Event(value: unknown): NormalizedProviderEvent {
     const identity = value.recurringEventId === null
         ? ['event-identity-v1', PROVIDER, value.calendarId, value.providerEventId]
         : ['event-identity-v1', PROVIDER, value.calendarId, value.recurringEventId, originalStartIdentity(originalStart!)];
-    return { eventKey: opaqueEventKey(identity), title: value.title || 'Untitled event', start: start.value, end: end.value, allDay: value.allDay, location: value.location, description: value.description, status: String(value.status), writable: value.writable, calendarId: value.calendarId, calendarName: value.calendarName };
+    return { eventKey: opaqueEventKey(identity), title: value.title || 'Untitled event', start: start.value, end: end.value, allDay: value.allDay, location: value.location, description: value.description, status: String(value.status), writable: value.writable, calendarId: value.calendarId, calendarName: value.calendarName, providerEventId: value.providerEventId, recurringEventId: value.recurringEventId, originalStartTime: originalStart, etag: value.etag, contractVersion: 2 };
 }
 function parseV1Event(value: unknown): NormalizedProviderEvent {
     if (!isRecord(value) || !nonEmptyString(value.id) || typeof value.title !== 'string' || !nonEmptyString(value.start) || !nonEmptyString(value.end) || (value.allDay !== undefined && typeof value.allDay !== 'boolean') || (value.location !== undefined && typeof value.location !== 'string') || (value.description !== undefined && typeof value.description !== 'string') || (value.calendarId !== undefined && typeof value.calendarId !== 'string') || (value.calendarName !== undefined && typeof value.calendarName !== 'string') || (value.status !== undefined && typeof value.status !== 'string') || (value.writable !== undefined && typeof value.writable !== 'boolean'))
@@ -151,7 +151,7 @@ function parseV1Event(value: unknown): NormalizedProviderEvent {
     const calendarId = typeof value.calendarId === 'string' ? value.calendarId : '';
     const calendarName = typeof value.calendarName === 'string' ? value.calendarName : '';
     const source = calendarId || calendarName || 'unknown-calendar';
-    return { eventKey: `calendar-${legacyHash(source)}-${legacyHash(value.id)}`, title: value.title || 'Untitled event', start: value.start, end: value.end, allDay: value.allDay === true, location: typeof value.location === 'string' ? value.location : '', description: typeof value.description === 'string' ? value.description : '', status: typeof value.status === 'string' ? value.status : 'confirmed', writable: value.writable === true, calendarId, calendarName };
+    return { eventKey: `calendar-${legacyHash(source)}-${legacyHash(value.id)}`, title: value.title || 'Untitled event', start: value.start, end: value.end, allDay: value.allDay === true, location: typeof value.location === 'string' ? value.location : '', description: typeof value.description === 'string' ? value.description : '', status: typeof value.status === 'string' ? value.status : 'confirmed', writable: false, calendarId, calendarName, providerEventId: null, recurringEventId: null, originalStartTime: null, etag: null, contractVersion: 1 };
 }
 function timeZone(value: unknown): string {
     if (!nonEmptyString(value))
@@ -180,7 +180,7 @@ function providerResponse(value: unknown, fallbackTimeZone: string, requestedWin
         const requestedDays = requestedWindow.days ?? 7;
         if (endDateExclusive !== shiftDate(startDate, requestedDays) || !timeMin?.atMidnight || timeMin.date !== startDate || !timeMax?.atMidnight || timeMax.date !== endDateExclusive || (requestedWindow.startDate !== undefined && startDate !== requestedWindow.startDate))
             throw new Error('Calendar provider v2 window is invalid.');
-        return { generatedAt: typeof value.generatedAt === 'string' ? value.generatedAt : '', timeZone: providerTimeZone, events: value.events.map(parseV2Event) };
+        return { generatedAt: typeof value.generatedAt === 'string' ? value.generatedAt : '', timeZone: providerTimeZone, events: value.events.map(parseV2ProviderEvent) };
     }
     if (value.contractVersion !== undefined && value.contractVersion !== 1)
         throw new Error('Calendar provider contract version is unsupported.');
@@ -193,6 +193,9 @@ function sourceFor(event: NormalizedProviderEvent, sources: readonly CalendarSou
     const calendarName = event.calendarName.trim();
     const source = sources.find(item => (item.calendarId && item.calendarId === calendarId) || (item.calendarName && item.calendarName === calendarName));
     return source ? { id: source.sourceId, label: source.label, kind: source.kind } : { id: `calendar-${legacyHash(calendarId || calendarName || 'unknown-calendar')}`, label: 'Calendar', kind: 'calendar' };
+}
+function writableSourceFor(event: NormalizedProviderEvent, sources: readonly CalendarSourceConfig[]): CalendarSourceConfig | null {
+    return sources.find(item => item.writeAccess === 'edit-existing' && (item.calendarId ? item.calendarId === event.calendarId.trim() : item.calendarName === event.calendarName.trim())) ?? null;
 }
 function marker(description: string): Semantic | null | 'invalid' {
     const lines = description.split(/\r?\n/).map(line => line.trim()).filter(line => /^eyos\.(kind|label)\b/i.test(line));
@@ -251,7 +254,14 @@ export async function getSafeCalendarData(requestedWindow: CalendarWindowRequest
         if (!range)
             throw new Error('Calendar provider event range is invalid.');
         const source = sourceFor(providerEvent, config.calendar.sources);
-        const event: SafeCalendarEvent = { id: providerEvent.eventKey, eventKey: providerEvent.eventKey, title: providerEvent.title, start: providerEvent.start, end: providerEvent.end, ...range, allDay: providerEvent.allDay, location: providerEvent.location, description: '', status: providerEvent.status, writable: providerEvent.writable, calendarUrl: config.calendar.presentationUrl ?? '', source };
+        const writableSource = providerEvent.contractVersion === 2 && providerEvent.writable && providerEvent.status !== 'cancelled' && providerEvent.etag && providerEvent.providerEventId
+            ? writableSourceFor(providerEvent, config.calendar.sources)
+            : null;
+        const writable = writableSource !== null;
+        if (writableSource && providerEvent.providerEventId) {
+            calendarEditRegistry.register({ provider: PROVIDER, eventKey: providerEvent.eventKey, sourceId: writableSource.sourceId, calendarId: providerEvent.calendarId, providerEventId: providerEvent.providerEventId, recurringEventId: providerEvent.recurringEventId, originalStartTime: providerEvent.originalStartTime, allDay: providerEvent.allDay, providerEtag: providerEvent.etag! });
+        }
+        const event: SafeCalendarEvent = { id: providerEvent.eventKey, eventKey: providerEvent.eventKey, title: providerEvent.title, start: providerEvent.start, end: providerEvent.end, ...range, allDay: providerEvent.allDay, location: providerEvent.location, description: '', status: providerEvent.status, writable, ...(providerEvent.recurringEventId ? { recurring: true } : {}), calendarUrl: config.calendar.presentationUrl ?? '', source };
         const semantic = semanticFor(event, providerEvent.description, config.calendar.semanticRules);
         return { ...event, ...(semantic ? { semantic } : {}) };
     });
