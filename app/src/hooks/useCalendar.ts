@@ -11,6 +11,7 @@ import {
   getCalendarEvents,
   type CalendarData,
   type CalendarEvent,
+  type CalendarWindowRequest,
 } from '../services/calendarService';
 
 import {
@@ -33,13 +34,25 @@ type UseCalendarResult = {
   refresh: () => Promise<void>;
 };
 
+type LoadedCalendarData = {
+  requestKey: string;
+  data: CalendarData;
+};
+
+type CalendarError = {
+  requestKey: string;
+  message: string;
+};
+
 export function useCalendar(
-  startLocalDate?: string
+  request: CalendarWindowRequest = {}
 ): UseCalendarResult {
+  const startLocalDate = request.startLocalDate;
+  const days = request.days;
   const [
     calendarData,
     setCalendarData,
-  ] = useState<CalendarData | null>(
+  ] = useState<LoadedCalendarData | null>(
     null
   );
 
@@ -47,18 +60,18 @@ export function useCalendar(
     useState(true);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<CalendarError | null>(null);
   const requestId = useRef(0);
   const loadedWindow = useRef<
     string | null | undefined
   >(undefined);
+  const requestKey = `${startLocalDate ?? 'default'}:${days ?? 7}`;
 
   const refresh = useCallback(async () => {
     const currentRequestId = requestId.current + 1;
-    const requestedWindow = startLocalDate ?? null;
     requestId.current = currentRequestId;
 
-    if (loadedWindow.current !== requestedWindow) {
+    if (loadedWindow.current !== requestKey) {
       setCalendarData(null);
       setLoading(true);
     }
@@ -67,12 +80,12 @@ export function useCalendar(
       setError(null);
 
       const data =
-        await getCalendarEvents(startLocalDate);
+        await getCalendarEvents({ startLocalDate, days });
 
       if (requestId.current !== currentRequestId) return;
 
-      setCalendarData(data);
-      loadedWindow.current = requestedWindow;
+      setCalendarData({ requestKey, data });
+      loadedWindow.current = requestKey;
     } catch (refreshError) {
       if (requestId.current !== currentRequestId) return;
 
@@ -81,15 +94,13 @@ export function useCalendar(
         refreshError
       );
 
-      setError(
-        'Calendar unavailable'
-      );
+      setError({ requestKey, message: 'Calendar unavailable' });
     } finally {
       if (requestId.current === currentRequestId) {
         setLoading(false);
       }
     }
-  }, [startLocalDate]);
+  }, [days, requestKey, startLocalDate]);
 
   useEffect(() => {
     const initialRefreshId =
@@ -120,19 +131,25 @@ export function useCalendar(
     };
   }, [refresh]);
 
+  const activeData = calendarData?.requestKey === requestKey
+    ? calendarData.data
+    : null;
+  const activeError = error?.requestKey === requestKey
+    ? error.message
+    : null;
   const groupedEvents =
     useMemo(() => {
       return selectCalendarOutlook(
-        calendarData?.events ?? [],
+        activeData?.events ?? [],
         new Date(),
-        calendarData?.timeZone ??
+        activeData?.timeZone ??
           getHouseholdConfig().location.timezone
       );
-    }, [calendarData]);
+    }, [activeData]);
 
   return {
     events:
-      calendarData?.events ?? [],
+      activeData?.events ?? [],
     todayEvents:
       groupedEvents.todayEvents,
     tomorrowEvents:
@@ -140,13 +157,13 @@ export function useCalendar(
     comingUpEvents:
       groupedEvents.comingUpEvents,
     calendarUrl:
-      calendarData?.calendarUrl ||
+      activeData?.calendarUrl ||
       'https://calendar.google.com/calendar/u/0/r',
     timeZone:
-      calendarData?.timeZone ??
+      activeData?.timeZone ??
       getHouseholdConfig().location.timezone,
-    loading,
-    error,
+    loading: loading || (activeData === null && activeError === null),
+    error: activeError,
     refresh,
   };
 }

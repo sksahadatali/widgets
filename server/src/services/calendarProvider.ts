@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
 import { getHouseholdConfig, type CalendarSemanticRule, type CalendarSourceConfig } from '../config/householdConfig.js';
-import { isCalendarLocalDate } from './calendarWindow.js';
+import {
+    isCalendarLocalDate,
+    type CalendarWindowRequest,
+} from './calendarWindow.js';
 type Temporal = {
     kind: 'date';
     value: string;
@@ -161,7 +164,7 @@ function timeZone(value: unknown): string {
     }
     return value;
 }
-function providerResponse(value: unknown, fallbackTimeZone: string, requestedStartDate?: string) {
+function providerResponse(value: unknown, fallbackTimeZone: string, requestedWindow: CalendarWindowRequest) {
     if (!isRecord(value) || value.success !== true || !Array.isArray(value.events))
         throw new Error('Calendar provider returned an invalid response.');
     if (value.generatedAt !== undefined && (!nonEmptyString(value.generatedAt) || !isValidRfc3339(value.generatedAt)))
@@ -174,13 +177,14 @@ function providerResponse(value: unknown, fallbackTimeZone: string, requestedSta
         const endDateExclusive = String(value.window.endDateExclusive);
         const timeMin = zonedParts(String(value.window.timeMin), providerTimeZone);
         const timeMax = zonedParts(String(value.window.timeMax), providerTimeZone);
-        if (endDateExclusive !== shiftDate(startDate, 7) || !timeMin?.atMidnight || timeMin.date !== startDate || !timeMax?.atMidnight || timeMax.date !== endDateExclusive || (requestedStartDate !== undefined && startDate !== requestedStartDate))
+        const requestedDays = requestedWindow.days ?? 7;
+        if (endDateExclusive !== shiftDate(startDate, requestedDays) || !timeMin?.atMidnight || timeMin.date !== startDate || !timeMax?.atMidnight || timeMax.date !== endDateExclusive || (requestedWindow.startDate !== undefined && startDate !== requestedWindow.startDate))
             throw new Error('Calendar provider v2 window is invalid.');
         return { generatedAt: typeof value.generatedAt === 'string' ? value.generatedAt : '', timeZone: providerTimeZone, events: value.events.map(parseV2Event) };
     }
     if (value.contractVersion !== undefined && value.contractVersion !== 1)
         throw new Error('Calendar provider contract version is unsupported.');
-    if (requestedStartDate !== undefined)
+    if (requestedWindow.startDate !== undefined || requestedWindow.days !== undefined)
         throw new Error('Calendar provider does not support requested windows.');
     return { generatedAt: typeof value.generatedAt === 'string' ? value.generatedAt : '', timeZone: value.timeZone === undefined ? fallbackTimeZone : timeZone(value.timeZone), events: value.events.map(parseV1Event) };
 }
@@ -221,21 +225,27 @@ function semanticFor(event: SafeCalendarEvent, description: string, rules: reado
     const distinct = new Map(matches.map(rule => [`${rule.kind}\0${rule.label ?? ''}`, { kind: rule.kind, ...(rule.label ? { label: rule.label } : {}) }]));
     return distinct.size === 1 ? [...distinct.values()][0] : undefined;
 }
-export async function getSafeCalendarData(requestedStartDate?: string, fetcher: typeof fetch = fetch) {
+export async function getSafeCalendarData(requestedWindow: CalendarWindowRequest = {}, fetcher: typeof fetch = fetch) {
     const config = getHouseholdConfig();
+    const requestedStartDate = requestedWindow.startDate;
+    const requestedDays = requestedWindow.days;
     if (requestedStartDate !== undefined && !isCalendarLocalDate(requestedStartDate))
+        throw new Error('Calendar requested window is invalid.');
+    if (requestedDays !== undefined && (!Number.isSafeInteger(requestedDays) || requestedDays < 1 || requestedDays > 42 || requestedStartDate === undefined))
         throw new Error('Calendar requested window is invalid.');
     const endpoint = requestedStartDate === undefined
         ? config.calendar.endpoint
         : (() => {
             const url = new URL(config.calendar.endpoint);
             url.searchParams.set('startDate', requestedStartDate);
+            if (requestedDays !== undefined)
+                url.searchParams.set('days', String(requestedDays));
             return url.toString();
         })();
     const response = await fetcher(endpoint, { headers: { Accept: 'application/json' } });
     if (!response.ok)
         throw new Error('Calendar provider request failed.');
-    const data = providerResponse(await response.json(), config.location.timezone, requestedStartDate);
+    const data = providerResponse(await response.json(), config.location.timezone, requestedWindow);
     const events = data.events.map(providerEvent => {
         const range = civilRange(providerEvent, data.timeZone);
         if (!range)

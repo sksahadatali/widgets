@@ -2,6 +2,11 @@ const LOCAL_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export class CalendarWindowRequestError extends Error {}
 
+export type CalendarWindowRequest = {
+  startDate?: string;
+  days?: number;
+};
+
 export function isCalendarLocalDate(value: string): boolean {
   const match = LOCAL_DATE_PATTERN.exec(value);
   if (!match) return false;
@@ -66,17 +71,25 @@ export function getCalendarHouseholdToday(
   }
 }
 
-export function parseCalendarWindowStart(
+export function parseCalendarWindowRequest(
   query: Record<string, unknown>,
   now: Date,
   timeZone: string,
-): string | undefined {
+): CalendarWindowRequest {
   const keys = Object.keys(query);
-  if (keys.some(key => key !== 'startDate') || keys.length > 1) {
+  if (
+    keys.some(key => key !== 'startDate' && key !== 'days') ||
+    keys.length > 2
+  ) {
     throw new CalendarWindowRequestError('Calendar window is invalid.');
   }
 
-  if (!Object.hasOwn(query, 'startDate')) return undefined;
+  const hasStartDate = Object.hasOwn(query, 'startDate');
+  const hasDays = Object.hasOwn(query, 'days');
+  if (!hasStartDate && !hasDays) return {};
+  if (!hasStartDate) {
+    throw new CalendarWindowRequestError('Calendar window is invalid.');
+  }
 
   const startDate = query.startDate;
   if (typeof startDate !== 'string' || !isCalendarLocalDate(startDate)) {
@@ -89,5 +102,20 @@ export function parseCalendarWindowStart(
     );
   }
 
-  return startDate;
+  if (!hasDays) return { startDate };
+
+  const daysValue = query.days;
+  if (
+    typeof daysValue !== 'string' ||
+    !/^[1-9]\d*$/.test(daysValue)
+  ) {
+    throw new CalendarWindowRequestError('Calendar window is invalid.');
+  }
+
+  const days = Number(daysValue);
+  if (!Number.isSafeInteger(days) || days > 42) {
+    throw new CalendarWindowRequestError('Calendar window is invalid.');
+  }
+
+  return { startDate, days };
 }

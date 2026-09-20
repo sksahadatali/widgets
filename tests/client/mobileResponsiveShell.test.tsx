@@ -58,12 +58,19 @@ test('Calendar uses the shared route and responsive display-profile architecture
   assert.doesNotMatch(pageSource, />Weekly Calendar</);
   assert.match(pageSource, /CalendarPeoplePicker/);
   assert.match(pageSource, /CalendarSourceIndicator/);
+  assert.match(pageSource, /aria-pressed={view === 'month'}/);
+  assert.match(pageSource, /selectCalendarMonthGrid/);
+  assert.match(pageSource, /month-calendar-scroll/);
+  assert.match(pageSource, /\+ {hiddenCount} more/);
   assert.doesNotMatch(pageSource, /CalendarAssignmentAvatars/);
   assert.match(pageSource, /event\.description/);
   assert.match(pageStyles, /data-display-profile='compact'/);
   assert.match(pageStyles, /data-display-profile='elo-touch'/);
   assert.match(pageStyles, /@media \(max-width: 700px\)/);
   assert.match(pageStyles, /overflow-x: auto/);
+  assert.match(pageStyles, /\.month-calendar/);
+  assert.match(pageStyles, /grid-template-columns: repeat\(7/);
+  assert.match(pageStyles, /\.month-day__more/);
 });
 
 test('mobile drawer consumes the shared route model', async () => {

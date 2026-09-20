@@ -8,14 +8,36 @@ import {
 import { getAppMode, getHouseholdConfig } from './householdConfigService';
 export type { CalendarEvent };
 export type CalendarData = { calendarUrl: string; generatedAt: string; timeZone: string; events: CalendarEvent[] };
-export function getCalendarEventsPath(startLocalDate?: string): string {
-  if (startLocalDate === undefined) return '/api/calendar';
+export type CalendarWindowRequest = {
+  startLocalDate?: string;
+  days?: number;
+};
+export function getCalendarEventsPath(
+  request: CalendarWindowRequest = {}
+): string {
+  const { startLocalDate, days } = request;
+  if (startLocalDate === undefined && days === undefined) {
+    return '/api/calendar';
+  }
+  if (startLocalDate === undefined) {
+    throw new Error('Calendar start date is required.');
+  }
   shiftCalendarLocalDate(startLocalDate, 0);
-  return `/api/calendar?startDate=${encodeURIComponent(startLocalDate)}`;
+  if (
+    days !== undefined &&
+    (!Number.isSafeInteger(days) || days < 1 || days > 42)
+  ) {
+    throw new Error('Calendar days must be between 1 and 42.');
+  }
+  const parameters = new URLSearchParams({ startDate: startLocalDate });
+  if (days !== undefined) parameters.set('days', String(days));
+  return `/api/calendar?${parameters.toString()}`;
 }
-export async function getCalendarEvents(startLocalDate?: string): Promise<CalendarData> {
+export async function getCalendarEvents(
+  request: CalendarWindowRequest = {}
+): Promise<CalendarData> {
   if (getAppMode() === 'demo') return { calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: getHouseholdConfig().location.timezone, events: [] };
-  return apiGet<CalendarData>(apiUrl(getCalendarEventsPath(startLocalDate)));
+  return apiGet<CalendarData>(apiUrl(getCalendarEventsPath(request)));
 }
 export const CALENDAR_REFRESH_MS = getHouseholdConfig().calendar.refreshMinutes * 60 * 1000;
 
