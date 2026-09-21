@@ -46,7 +46,6 @@ import type {
   RoutineTimeStatus,
 } from '../types/routine';
 import RoutineHistory from '../components/routines/RoutineHistory/RoutineHistory';
-import KumonToday from '../components/kumon/KumonToday';
 import RoutineWeek from '../components/routines/RoutineWeek/RoutineWeek';
 
 import './Daily.css';
@@ -1091,8 +1090,6 @@ function Daily({
           role="tabpanel"
           aria-labelledby="daily-tab-today"
         >
-          <KumonToday />
-
           <div className="daily-workspace__heading">
             <div>
               <h2>

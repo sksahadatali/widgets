@@ -75,6 +75,19 @@ const kumonOccurrence: RoutineOccurrence = {
 };
 
 describe('compact Routine week presentation', () => {
+  it('keeps the legacy Kumon experience out of the Today workspace', async () => {
+    const source = await readFile(
+      new URL(
+        '../../app/src/pages/Daily.tsx',
+        import.meta.url
+      ),
+      'utf8'
+    );
+
+    assert.doesNotMatch(source, /KumonToday/);
+    assert.match(source, /Family routines today/);
+  });
+
   it('renders one seven-day grid with ordinary multi-step and step-less actions', () => {
     const markup = renderToStaticMarkup(
       createElement(RoutineWeek, {
