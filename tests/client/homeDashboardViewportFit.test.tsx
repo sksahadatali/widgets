@@ -50,6 +50,15 @@ describe('Home dashboard viewport fit', () => {
     );
   });
 
+  it('keeps task rows naturally stacked at the top of the flexible card', async () => {
+    const css = await readHomeStyles();
+
+    assert.match(
+      css,
+      /\.home \.tasks__list\s*\{\s*align-content:\s*start;/,
+    );
+  });
+
   it('reclaims non-interactive spacing while preserving profile touch targets', async () => {
     const css = await readHomeStyles();
 

@@ -299,6 +299,13 @@
     min-height: 0;
     padding-bottom: 0;
   }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .tasks__list {
+    align-content: start;
+  }
 }
 
 @media (min-width: 1201px) {
