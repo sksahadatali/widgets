@@ -47,6 +47,267 @@
   height: 100%;
 }
 
+/*
+ * Wide Home displays have three dashboard bands. At production-height
+ * viewports, keep the first two content-sized and give the bottom band the
+ * remaining space. Its cards already own vertical scrolling, so the shell
+ * does not need to grow beyond the viewport for ordinary dashboard content.
+ * Shorter viewports retain the document-flow fallback below this breakpoint.
+ */
+@media (min-width: 1201px) and (min-height: 900px) {
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .app-main:has(> .home) {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    row-gap: 12px;
+    height: 100%;
+    min-height: 0;
+    padding-bottom: 12px;
+    overflow-y: auto;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home :is(
+    .todays-brief,
+    .todays-focus,
+    .quick-status,
+    .due-soon,
+    .tasks,
+    .calendar-card
+  ) {
+    padding-block: 16px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-brief {
+    min-height: 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-brief__content {
+    margin-top: 8px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-brief__content p {
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-brief__list {
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-brief__list li {
+    line-height: 1.4;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-focus {
+    min-height: 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-focus__list {
+    gap: 2px;
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-focus__item {
+    gap: 12px;
+    min-height: var(--ey-touch-target-min);
+    padding: 2px 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .todays-focus__why-button {
+    min-width: var(--ey-touch-target-min);
+    min-height: var(--ey-touch-target-min);
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status__grid {
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card {
+    min-height: 0;
+    padding-block: 14px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__primary {
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status :is(
+    .status-card__left,
+    .status-card__weather-left
+  ) .status-card__primary {
+    margin-top: 2px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__secondary {
+    margin-top: 4px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__content {
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status :is(
+    .status-card__right,
+    .status-card__weather-right
+  ) {
+    gap: 6px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__divider {
+    margin-block: 8px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__sunrise {
+    margin-top: 8px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__weather-divider {
+    margin-block: 6px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__footer {
+    padding-top: 8px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__rates {
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .quick-status .status-card__rate--petrol {
+    margin-top: 8px;
+    padding-top: 7px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) :is(
+    .home__due-soon,
+    .home__tasks,
+    .home__calendar
+  ) {
+    min-height: 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home :is(
+    .due-soon__header,
+    .tasks__header,
+    .calendar-card__header
+  ) {
+    margin-bottom: 12px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home :is(
+    .due-soon__list,
+    .tasks__list,
+    .calendar-card__agenda
+  ) {
+    flex: 1 1 0;
+    max-height: none;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .home .tasks__list {
+    align-content: start;
+  }
+}
+
 @media (min-width: 1201px) {
   :where(:root[data-display-profile='elo-touch'])
     .home {
