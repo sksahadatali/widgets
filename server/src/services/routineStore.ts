@@ -166,7 +166,6 @@ function isRoutineSteps(
 ): value is RoutineStep[] {
   return (
     Array.isArray(value) &&
-    value.length > 0 &&
     value.every(
       step =>
         isRecord(step) &&
@@ -463,8 +462,12 @@ export function migrateRoutineStoreV2(
       ...structuredClone(occurrence),
       rewardContract: null,
       completionSequence:
-        occurrence.snapshot.steps.every(step =>
-          Boolean(occurrence.completedSteps[step.id])
+        (
+          occurrence.snapshot.steps.length === 0
+            ? Boolean(occurrence.completedAt)
+            : occurrence.snapshot.steps.every(step =>
+              Boolean(occurrence.completedSteps[step.id])
+            )
         )
           ? 1
           : 0,
@@ -1078,15 +1081,14 @@ export class RoutineFileStore {
           : '',
       stepId:
         typeof update.stepId === 'string'
-          ? update.stepId
-          : '',
+          ? update.stepId.trim()
+          : null,
       completed: update.completed === true,
     };
 
     if (
       !isLocalDate(normalizedUpdate.localDate) ||
       !normalizedUpdate.timeZone.trim() ||
-      !normalizedUpdate.stepId.trim() ||
       typeof update.completed !== 'boolean'
     ) {
       throw new RoutineStoreError(
@@ -1118,6 +1120,62 @@ export class RoutineFileStore {
           now,
           'captured'
         );
+
+      if (snapshot.steps.length === 0) {
+        if (normalizedUpdate.stepId !== null) {
+          throw new RoutineStoreError(
+            'A step-less routine must be completed as one action.'
+          );
+        }
+
+        const wasCompleteBeforeUpdate = Boolean(
+          existing?.completedAt
+        );
+        const occurrence: RoutineOccurrence = {
+          id: occurrenceId,
+          routineId,
+          localDate: normalizedUpdate.localDate,
+          timeZone:
+            existing?.timeZone ??
+            normalizedUpdate.timeZone.trim(),
+          snapshot,
+          rewardContract:
+            existing
+              ? existing.rewardContract
+              : structuredClone(routine.reward),
+          completionSequence:
+            (existing?.completionSequence ?? 0) +
+            (!wasCompleteBeforeUpdate &&
+            normalizedUpdate.completed
+              ? 1
+              : 0),
+          completedSteps: {},
+          completedAt: normalizedUpdate.completed
+            ? existing?.completedAt ?? now
+            : null,
+          updatedAt: now,
+        };
+
+        return {
+          store: {
+            ...store,
+            occurrences: [
+              ...store.occurrences.filter(
+                candidate =>
+                  candidate.id !== occurrenceId
+              ),
+              occurrence,
+            ],
+          },
+          result: occurrence,
+        };
+      }
+
+      if (!normalizedUpdate.stepId) {
+        throw new RoutineStoreError(
+          'Routine completion details are invalid.'
+        );
+      }
 
       if (
         !snapshot.steps.some(

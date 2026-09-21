@@ -17,6 +17,7 @@ import type {
 
 export type RoutineContextValue = {
   routines: RoutineDefinition[];
+  occurrences: RoutineOccurrence[];
   todayRoutines: RoutineDefinition[];
   routineAttentionCandidates:
     RoutineAttentionCandidate[];
@@ -40,7 +41,13 @@ export type RoutineContextValue = {
   setStepCompleted: (
     routine: RoutineDefinition,
     stepId: string,
-    completed: boolean
+    completed: boolean,
+    localDate?: string
+  ) => Promise<void>;
+  setRoutineCompleted: (
+    routine: RoutineDefinition,
+    completed: boolean,
+    localDate?: string
   ) => Promise<void>;
 };
 

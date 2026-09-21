@@ -100,8 +100,12 @@ export function migrateDemoStoreV2(
       ...structuredClone(occurrence),
       rewardContract: null,
       completionSequence:
-        occurrence.snapshot.steps.every(step =>
-          Boolean(occurrence.completedSteps[step.id])
+        (
+          occurrence.snapshot.steps.length === 0
+            ? Boolean(occurrence.completedAt)
+            : occurrence.snapshot.steps.every(step =>
+              Boolean(occurrence.completedSteps[step.id])
+            )
         ) ? 1 : 0,
     })),
   };

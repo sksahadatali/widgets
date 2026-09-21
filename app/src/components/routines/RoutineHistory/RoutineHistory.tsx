@@ -694,8 +694,9 @@ function RoutineHistory({
                                   item
                                 )}
                                 {' · '}
-                                {item.completedStepCount}/
-                                {item.totalStepCount} steps
+                                {item.totalStepCount === 0
+                                  ? 'one-tap routine'
+                                  : `${item.completedStepCount}/${item.totalStepCount} steps`}
                                 {completionTime
                                   ? ` · completed ${completionTime}`
                                   : ''}
@@ -711,35 +712,37 @@ function RoutineHistory({
                               )}
                             </div>
 
-                            <button
-                              type="button"
-                              className="routine-history-item__toggle"
-                              aria-expanded={isExpanded}
-                              aria-controls={checklistId}
-                              onClick={() =>
-                                toggleExpanded(
-                                  item.occurrenceId
-                                )
-                              }
-                            >
-                              {isExpanded
-                                ? 'Hide checklist'
-                                : 'Show checklist'}
-                              {isExpanded ? (
-                                <ChevronUp
-                                  size={18}
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <ChevronDown
-                                  size={18}
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </button>
+                            {item.totalStepCount > 0 && (
+                              <button
+                                type="button"
+                                className="routine-history-item__toggle"
+                                aria-expanded={isExpanded}
+                                aria-controls={checklistId}
+                                onClick={() =>
+                                  toggleExpanded(
+                                    item.occurrenceId
+                                  )
+                                }
+                              >
+                                {isExpanded
+                                  ? 'Hide checklist'
+                                  : 'Show checklist'}
+                                {isExpanded ? (
+                                  <ChevronUp
+                                    size={18}
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <ChevronDown
+                                    size={18}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              </button>
+                            )}
                           </div>
 
-                          {isExpanded && (
+                          {isExpanded && item.totalStepCount > 0 && (
                             <ol
                               id={checklistId}
                               className="routine-history-item__checklist"

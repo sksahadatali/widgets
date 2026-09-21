@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  CalendarDays,
   CalendarClock,
   Check,
   CheckCircle2,
@@ -46,11 +47,13 @@ import type {
 } from '../types/routine';
 import RoutineHistory from '../components/routines/RoutineHistory/RoutineHistory';
 import KumonToday from '../components/kumon/KumonToday';
+import RoutineWeek from '../components/routines/RoutineWeek/RoutineWeek';
 
 import './Daily.css';
 
 type DailyTab =
   | 'today'
+  | 'week'
   | 'manage'
   | 'history';
 
@@ -131,6 +134,7 @@ function RoutineChecklist({
   isTargeted,
   disabled,
   onStepChange,
+  onRoutineChange,
 }: {
   routine: RoutineDefinition;
   occurrence: RoutineOccurrence | undefined;
@@ -140,6 +144,10 @@ function RoutineChecklist({
   onStepChange: (
     routine: RoutineDefinition,
     stepId: string,
+    completed: boolean
+  ) => Promise<void>;
+  onRoutineChange: (
+    routine: RoutineDefinition,
     completed: boolean
   ) => Promise<void>;
 }) {
@@ -154,6 +162,10 @@ function RoutineChecklist({
     status === 'due' && completedCount > 0
       ? 'In progress'
       : STATUS_DETAILS[status].label;
+  const completed = isRoutineComplete(
+    routine,
+    occurrence
+  );
 
   return (
     <article
@@ -193,22 +205,59 @@ function RoutineChecklist({
 
       <div className="routine-card__progress">
         <span>
-          {completedCount} of {routine.steps.length}
-          {' '}steps
+          {routine.steps.length === 0
+            ? 'Single action'
+            : `${completedCount} of ${routine.steps.length} steps`}
         </span>
         <span
-          aria-label={`${completedCount} of ${routine.steps.length} steps completed`}
+          aria-label={
+            routine.steps.length === 0
+              ? completed
+                ? 'Routine completed'
+                : 'Routine not completed'
+              : `${completedCount} of ${routine.steps.length} steps completed`
+          }
         >
-          {Math.round(
-            completedCount /
-              routine.steps.length *
-              100
-          )}%
+          {routine.steps.length === 0
+            ? completed ? '100%' : '0%'
+            : `${Math.round(
+              completedCount /
+                routine.steps.length *
+                100
+            )}%`}
         </span>
       </div>
 
       <ul className="routine-checklist">
-        {routine.steps.map(step => {
+        {routine.steps.length === 0 ? (
+          <li>
+            <label
+              className={`routine-step ${
+                completed
+                  ? 'routine-step--completed'
+                  : ''
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={completed}
+                disabled={disabled}
+                onChange={event => {
+                  void onRoutineChange(
+                    routine,
+                    event.target.checked
+                  ).catch(() => undefined);
+                }}
+              />
+              <span className="routine-step__check">
+                {completed && (
+                  <Check size={18} aria-hidden="true" />
+                )}
+              </span>
+              <span>Complete</span>
+            </label>
+          </li>
+        ) : routine.steps.map(step => {
           const isCompleted = Boolean(
             occurrence?.completedSteps[step.id]
           );
@@ -372,13 +421,6 @@ function RoutineEditor({
     if (daysOfWeek.length === 0) {
       setValidationError(
         'Select at least one day.'
-      );
-      return;
-    }
-
-    if (normalizedSteps.length === 0) {
-      setValidationError(
-        'Add at least one checklist step.'
       );
       return;
     }
@@ -644,7 +686,10 @@ function RoutineEditor({
       </div>
 
       <fieldset className="routine-editor__fieldset">
-        <legend>Checklist steps</legend>
+        <legend>Checklist steps (optional)</legend>
+        <p className="routine-editor__hint">
+          Leave this empty for a one-tap routine.
+        </p>
         <div className="routine-editor__steps">
           {steps.map((step, index) => (
             <div
@@ -699,7 +744,6 @@ function RoutineEditor({
                       )
                     )
                   }
-                  disabled={steps.length === 1}
                   aria-label={`Remove step ${index + 1}`}
                 >
                   <Trash2 size={18} aria-hidden="true" />
@@ -767,6 +811,7 @@ function Daily({
   } = useHouseholdProfile();
   const {
     routines,
+    occurrences,
     todayRoutines,
     occurrenceByRoutineId,
     dateInfo,
@@ -778,6 +823,7 @@ function Daily({
     saveRoutine,
     removeRoutine,
     setStepCompleted,
+    setRoutineCompleted,
   } = useRoutines();
   const [tab, setTab] =
     useState<DailyTab>('today');
@@ -961,6 +1007,26 @@ function Daily({
 
         <button
           type="button"
+          id="daily-tab-week"
+          role="tab"
+          aria-controls="daily-panel-week"
+          aria-selected={tab === 'week'}
+          className={
+            tab === 'week'
+              ? 'daily-tab daily-tab--active'
+              : 'daily-tab'
+          }
+          onClick={() => {
+            setTab('week');
+            setEditorRoutine(undefined);
+          }}
+        >
+          <CalendarDays size={20} aria-hidden="true" />
+          7 Days
+        </button>
+
+        <button
+          type="button"
           id="daily-tab-manage"
           role="tab"
           aria-controls="daily-panel-manage"
@@ -1112,6 +1178,9 @@ function Daily({
                           onStepChange={
                             setStepCompleted
                           }
+                          onRoutineChange={
+                            setRoutineCompleted
+                          }
                         />
                       );
                     })}
@@ -1120,6 +1189,45 @@ function Daily({
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {tab === 'week' && (
+        <section
+          id="daily-panel-week"
+          className="daily-workspace daily-workspace--routine-week"
+          role="tabpanel"
+          aria-labelledby="daily-tab-week"
+        >
+          <RoutineWeek
+            routines={routines}
+            occurrences={occurrences}
+            profiles={profiles}
+            selectedProfileId={selectedProfile.id}
+            householdToday={dateInfo.localDate}
+            loading={loading}
+            saving={saving}
+            onStepChange={(
+              routine,
+              stepId,
+              completed,
+              localDate
+            ) => setStepCompleted(
+              routine,
+              stepId,
+              completed,
+              localDate
+            )}
+            onRoutineChange={(
+              routine,
+              completed,
+              localDate
+            ) => setRoutineCompleted(
+              routine,
+              completed,
+              localDate
+            )}
+          />
         </section>
       )}
 
@@ -1228,7 +1336,9 @@ function Daily({
                             {' · '}
                             {formatSchedule(routine)}
                             {' · '}
-                            {routine.steps.length} steps
+                            {routine.steps.length === 0
+                              ? 'one-tap completion'
+                              : `${routine.steps.length} steps`}
                           </p>
                           {isOrphaned && (
                             <small>

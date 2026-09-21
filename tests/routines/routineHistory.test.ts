@@ -158,6 +158,31 @@ describe('routine History & Progress', () => {
     );
   });
 
+  it('uses the one-action completion timestamp for step-less history', () => {
+    const completed = occurrence(
+      'clean-floor',
+      '2026-08-24',
+      'family',
+      [],
+      { steps: [] }
+    );
+    const missed = {
+      ...completed,
+      id: 'clean-floor@2026-08-25',
+      localDate: '2026-08-25',
+      completedAt: null,
+    };
+
+    assert.equal(
+      getRoutineHistoryOutcome(completed),
+      'completed'
+    );
+    assert.equal(
+      getRoutineHistoryOutcome(missed),
+      'missed'
+    );
+  });
+
   it('excludes today and does not fabricate a missing scheduled day', () => {
     const occurrences = [
       occurrence('monday', '2026-08-24'),

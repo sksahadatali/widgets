@@ -104,7 +104,7 @@ export type RoutineDefinitionInput = {
 export type RoutineOccurrenceUpdate = {
   localDate: string;
   timeZone: string;
-  stepId: string;
+  stepId: string | null;
   completed: boolean;
 };
 

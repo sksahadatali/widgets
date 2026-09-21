@@ -462,9 +462,11 @@ function routineAwardKey(
 function routineIsComplete(
   occurrence: RoutineOccurrence
 ): boolean {
-  return occurrence.snapshot.steps.every(step =>
-    Boolean(occurrence.completedSteps[step.id])
-  );
+  return occurrence.snapshot.steps.length === 0
+    ? Boolean(occurrence.completedAt)
+    : occurrence.snapshot.steps.every(step =>
+      Boolean(occurrence.completedSteps[step.id])
+    );
 }
 
 export function reconcileDemoRoutineRewards(

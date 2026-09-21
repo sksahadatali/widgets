@@ -147,14 +147,13 @@ export function isRoutineComplete(
     occurrence?.snapshot.steps ??
     routine.steps;
 
-  return (
-    steps.length > 0 &&
-    steps.every(step =>
+  return steps.length === 0
+    ? Boolean(occurrence?.completedAt)
+    : steps.every(step =>
       Boolean(
         occurrence?.completedSteps[step.id]
       )
-    )
-  );
+    );
 }
 
 export function getRoutineTimeStatus(
