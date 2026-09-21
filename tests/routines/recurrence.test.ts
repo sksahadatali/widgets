@@ -149,6 +149,31 @@ describe('routine recurrence and time awareness', () => {
     );
   });
 
+  it('uses completedAt for a step-less routine', () => {
+    const stepLess = {
+      ...ROUTINE,
+      steps: [],
+    };
+    const pending = occurrence(
+      {},
+      snapshot({ steps: [] })
+    );
+    const completed = {
+      ...pending,
+      completedAt:
+        '2026-08-31T07:11:00.000Z',
+    };
+
+    assert.equal(
+      isRoutineComplete(stepLess, pending),
+      false
+    );
+    assert.equal(
+      isRoutineComplete(stepLess, completed),
+      true
+    );
+  });
+
   it('derives start-only boundaries without creating an overdue state', () => {
     const startOnly = {
       ...ROUTINE,

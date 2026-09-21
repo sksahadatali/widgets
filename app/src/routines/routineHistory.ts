@@ -177,8 +177,13 @@ export function getRoutineHistoryOutcome(
   const totalStepCount =
     occurrence.snapshot.steps.length;
 
+  if (totalStepCount === 0) {
+    return occurrence.completedAt
+      ? 'completed'
+      : 'missed';
+  }
+
   if (
-    totalStepCount > 0 &&
     completedStepCount === totalStepCount
   ) {
     return 'completed';

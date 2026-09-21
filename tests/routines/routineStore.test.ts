@@ -379,6 +379,57 @@ describe('RoutineFileStore', () => {
     );
   });
 
+  it('completes and reopens a step-less routine as one persisted action', async () => {
+    const { store } = await makeStore();
+    const stepLess = {
+      ...routineInput('Clean the floor'),
+      steps: [],
+    };
+
+    await store.createRoutine(
+      'clean-floor',
+      stepLess,
+      '2026-09-21T07:00:00.000Z'
+    );
+
+    const completed = await store.updateOccurrence(
+      'clean-floor',
+      {
+        localDate: '2026-09-21',
+        timeZone: 'Europe/London',
+        completed: true,
+      },
+      '2026-09-21T08:00:00.000Z'
+    );
+
+    assert.deepEqual(completed.snapshot.steps, []);
+    assert.deepEqual(completed.completedSteps, {});
+    assert.equal(
+      completed.completedAt,
+      '2026-09-21T08:00:00.000Z'
+    );
+    assert.equal(completed.completionSequence, 1);
+
+    const reopened = await store.updateOccurrence(
+      'clean-floor',
+      {
+        localDate: '2026-09-21',
+        timeZone: 'Europe/London',
+        completed: false,
+      },
+      '2026-09-21T08:05:00.000Z'
+    );
+
+    assert.equal(reopened.completedAt, null);
+    assert.equal(reopened.completionSequence, 1);
+    const persisted = await store.read();
+    assert.equal(persisted.routines[0].reward, null);
+    assert.deepEqual(
+      persisted.occurrences,
+      [reopened]
+    );
+  });
+
   it('keeps occurrence history when a routine is deactivated', async () => {
     const { store } = await makeStore();
 

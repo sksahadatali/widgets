@@ -95,7 +95,6 @@ function isRoutineDefinition(
       Number.isInteger(day) && day >= 1 && day <= 7
     ) &&
     Array.isArray(value.steps) &&
-    value.steps.length > 0 &&
     value.steps.every(step =>
       isRecord(step) &&
       typeof step.id === 'string' &&
@@ -143,7 +142,6 @@ function isRoutineOccurrence(
       value.snapshot.schedule.daysOfWeek
     ) &&
     Array.isArray(value.snapshot.steps) &&
-    value.snapshot.steps.length > 0 &&
     value.snapshot.steps.every(step =>
       isRecord(step) &&
       typeof step.id === 'string' &&
@@ -410,24 +408,27 @@ export async function reconcileAutomaticRoutineRewards(): Promise<void> {
 }
 
 export async function loadRoutines(
-  localDate: string
+  localDate?: string
 ): Promise<RoutineData> {
   if (getAppMode() === 'demo') {
     const data = readDemoData();
 
     return {
       routines: data.routines,
-      occurrences: data.occurrences.filter(
-        occurrence =>
-          occurrence.localDate === localDate
-      ),
+      occurrences: localDate
+        ? data.occurrences.filter(
+          occurrence =>
+            occurrence.localDate === localDate
+        )
+        : data.occurrences,
     };
   }
 
-  const response =
-    await requestHousehold(
-      `/api/routines?localDate=${encodeURIComponent(localDate)}`
-    );
+  const response = await requestHousehold(
+    localDate
+      ? `/api/routines?localDate=${encodeURIComponent(localDate)}`
+      : '/api/routines'
+  );
 
   if (
     !('routines' in response) ||
@@ -552,11 +553,11 @@ export async function deleteRoutine(
   );
 }
 
-export async function updateRoutineStep(
+async function updateRoutineOccurrence(
   routine: RoutineDefinition,
   localDate: string,
   timeZone: string,
-  stepId: string,
+  stepId: string | null,
   completed: boolean
 ): Promise<void> {
   if (getAppMode() === 'demo') {
@@ -576,9 +577,19 @@ export async function updateRoutineStep(
         'captured'
       );
 
+    if (snapshot.steps.length === 0 && stepId !== null) {
+      throw new Error(
+        'A step-less routine must be completed as one action.'
+      );
+    }
+
     if (
-      !snapshot.steps.some(
-        step => step.id === stepId
+      snapshot.steps.length > 0 &&
+      (
+        !stepId ||
+        !snapshot.steps.some(
+          step => step.id === stepId
+        )
       )
     ) {
       throw new Error(
@@ -587,25 +598,29 @@ export async function updateRoutineStep(
     }
 
     const wasCompleteBeforeUpdate =
-      snapshot.steps.every(step =>
-        Boolean(
-          existing?.completedSteps[step.id]
-        )
-      );
+      snapshot.steps.length === 0
+        ? Boolean(existing?.completedAt)
+        : snapshot.steps.every(step =>
+          Boolean(
+            existing?.completedSteps[step.id]
+          )
+        );
     const completedSteps = {
       ...(existing?.completedSteps ?? {}),
     };
 
-    if (completed) {
+    if (stepId && completed) {
       completedSteps[stepId] = now;
-    } else {
+    } else if (stepId) {
       delete completedSteps[stepId];
     }
 
     const allSnapshotStepsComplete =
-      snapshot.steps.every(step =>
-        Boolean(completedSteps[step.id])
-      );
+      snapshot.steps.length === 0
+        ? completed
+        : snapshot.steps.every(step =>
+          Boolean(completedSteps[step.id])
+        );
     const occurrence: RoutineOccurrence = {
       id: occurrenceId,
       routineId: routine.id,
@@ -653,10 +668,41 @@ export async function updateRoutineStep(
       body: JSON.stringify({
         localDate,
         timeZone,
-        stepId,
+        ...(stepId ? { stepId } : {}),
         completed,
       }),
     }
   );
   window.dispatchEvent(new Event('ey-rewards-changed'));
+}
+
+export async function updateRoutineStep(
+  routine: RoutineDefinition,
+  localDate: string,
+  timeZone: string,
+  stepId: string,
+  completed: boolean
+): Promise<void> {
+  return updateRoutineOccurrence(
+    routine,
+    localDate,
+    timeZone,
+    stepId,
+    completed
+  );
+}
+
+export async function updateRoutineCompletion(
+  routine: RoutineDefinition,
+  localDate: string,
+  timeZone: string,
+  completed: boolean
+): Promise<void> {
+  return updateRoutineOccurrence(
+    routine,
+    localDate,
+    timeZone,
+    null,
+    completed
+  );
 }

@@ -174,7 +174,7 @@ export function selectRoutineAttentionCandidates({
           : null,
       completedSteps,
       totalSteps:
-        occurrence.snapshot.steps.length,
+        occurrence.snapshot.steps.length || 1,
     }];
   });
 }

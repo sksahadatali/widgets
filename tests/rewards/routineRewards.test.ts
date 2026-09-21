@@ -231,6 +231,53 @@ describe('automatic Routine rewards', () => {
     assert.match(activeAwards[0].source.eventKey, /completion:2$/);
   });
 
+  it('awards and reverses a step-less one-action routine without artificial steps', async () => {
+    const { routines, rewards } = await stores();
+    const definition = await routines.createRoutine(
+      'clean-floor',
+      {
+        ...routineInput(2),
+        title: 'Clean the floor',
+        steps: [],
+      },
+      '2026-09-21T07:00:00.000Z'
+    );
+
+    await routines.updateOccurrence(
+      definition.id,
+      {
+        localDate: '2026-09-21',
+        timeZone: 'Europe/London',
+        completed: true,
+      },
+      '2026-09-21T08:00:00.000Z'
+    );
+    await reconcileRoutineRewards(routines, rewards);
+
+    let ledger = await rewards.read();
+    assert.equal(ledger.transactions.length, 1);
+    assert.equal(ledger.transactions[0].amount, 2);
+    assert.match(
+      ledger.transactions[0].source.eventKey,
+      /completion:1$/
+    );
+
+    await routines.updateOccurrence(
+      definition.id,
+      {
+        localDate: '2026-09-21',
+        timeZone: 'Europe/London',
+        completed: false,
+      },
+      '2026-09-21T08:05:00.000Z'
+    );
+    await reconcileRoutineRewards(routines, rewards);
+
+    ledger = await rewards.read();
+    assert.equal(ledger.transactions.length, 2);
+    assert.equal(ledger.transactions[1].amount, -2);
+  });
+
   it('keeps null and captured contracts fixed while definition rewards change', async () => {
     const { routines, rewards } = await stores();
     const definition = await routines.createRoutine(

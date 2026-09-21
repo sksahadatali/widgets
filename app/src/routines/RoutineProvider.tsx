@@ -19,6 +19,7 @@ import {
   materializeTodayRoutines,
   reconcileAutomaticRoutineRewards,
   updateRoutine,
+  updateRoutineCompletion,
   updateRoutineStep,
 } from '../services/routineService';
 import type {
@@ -77,14 +78,11 @@ export function RoutineProvider({
   const refresh = useCallback(async () => {
     try {
       const now = new Date();
-      const localDate =
-        await materializeTodayRoutines(
-          timeZone,
-          now
-        );
-      const nextData = await loadRoutines(
-        localDate
+      await materializeTodayRoutines(
+        timeZone,
+        now
       );
+      const nextData = await loadRoutines();
 
       setClock(new Date());
       setData(nextData);
@@ -154,12 +152,17 @@ export function RoutineProvider({
 
   const occurrenceByRoutineId = useMemo(
     () => new Map(
-      data.occurrences.map(occurrence => [
-        occurrence.routineId,
-        occurrence,
-      ])
+      data.occurrences
+        .filter(occurrence =>
+          occurrence.localDate ===
+            dateInfo.localDate
+        )
+        .map(occurrence => [
+          occurrence.routineId,
+          occurrence,
+        ])
     ),
-    [data.occurrences]
+    [data.occurrences, dateInfo.localDate]
   );
 
   const todayRoutines = useMemo(
@@ -243,13 +246,34 @@ export function RoutineProvider({
     async (
       routine: RoutineDefinition,
       stepId: string,
-      completed: boolean
+      completed: boolean,
+      localDate = dateInfo.localDate
     ) => runMutation(() =>
       updateRoutineStep(
         routine,
-        dateInfo.localDate,
+        localDate,
         timeZone,
         stepId,
+        completed
+      )
+    ),
+    [
+      dateInfo.localDate,
+      runMutation,
+      timeZone,
+    ]
+  );
+
+  const setRoutineCompleted = useCallback(
+    async (
+      routine: RoutineDefinition,
+      completed: boolean,
+      localDate = dateInfo.localDate
+    ) => runMutation(() =>
+      updateRoutineCompletion(
+        routine,
+        localDate,
+        timeZone,
         completed
       )
     ),
@@ -263,6 +287,7 @@ export function RoutineProvider({
   const value = useMemo<RoutineContextValue>(
     () => ({
       routines: data.routines,
+      occurrences: data.occurrences,
       todayRoutines,
       routineAttentionCandidates,
       occurrenceByRoutineId:
@@ -279,9 +304,11 @@ export function RoutineProvider({
       saveRoutine,
       removeRoutine,
       setStepCompleted,
+      setRoutineCompleted,
     }),
     [
       data.routines,
+      data.occurrences,
       todayRoutines,
       routineAttentionCandidates,
       occurrenceByRoutineId,
@@ -294,6 +321,7 @@ export function RoutineProvider({
       saveRoutine,
       removeRoutine,
       setStepCompleted,
+      setRoutineCompleted,
     ]
   );
 
