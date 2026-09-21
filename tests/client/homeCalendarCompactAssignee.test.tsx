@@ -152,4 +152,16 @@ describe('Home Calendar compact assignee presentation', () => {
     assert.match(styles, /data-display-profile='compact'[\s\S]*\.calendar-card__event-content\s*\{[^}]*gap: 4px;/s);
     assert.match(styles, /data-display-profile='elo-touch'[\s\S]*\.calendar-people__inline-trigger::before\s*\{[^}]*height: 44px;/s);
   });
+
+  it('lets Home event rows follow their natural content height', async () => {
+    const styles = await readFile(
+      new URL('../../app/src/components/modules/Calendar/Calendar.css', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(styles, /\.calendar-card__event\s*\{[^}]*min-height: 0;[^}]*padding: 6px 4px;/s);
+    assert.match(styles, /data-display-profile='compact'[\s\S]*\.calendar-card__event\s*\{[^}]*min-height: 0;[^}]*padding: 3px 2px;/s);
+    assert.match(styles, /\.calendar-people__inline-trigger::before\s*\{[^}]*height: 30px;/s);
+    assert.match(styles, /data-display-profile='elo-touch'[\s\S]*\.calendar-people__inline-trigger::before\s*\{[^}]*height: 44px;/s);
+  });
 });
