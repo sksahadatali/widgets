@@ -128,4 +128,16 @@ describe('Home Calendar compact assignee presentation', () => {
     assert.match(styles, /data-display-profile='compact'[\s\S]*\.calendar-people__inline-trigger/);
     assert.match(styles, /data-display-profile='elo-touch'[\s\S]*\.calendar-people__inline-trigger/);
   });
+
+  it('uses narrow baseline-aligned time, title and assignee columns', async () => {
+    const styles = await readFile(
+      new URL('../../app/src/components/modules/Calendar/Calendar.css', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(styles, /\.calendar-card__event\s*\{[^}]*grid-template-columns:\s*52px minmax\(0, 1fr\);[^}]*align-items: baseline;[^}]*column-gap: 8px;/s);
+    assert.match(styles, /\.calendar-card__event-heading\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto minmax\(24px, 120px\);[^}]*align-items: baseline;/s);
+    assert.match(styles, /\.calendar-people__inline-trigger\s*\{[^}]*align-items: baseline;/s);
+    assert.match(styles, /data-display-profile='compact'[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\);/);
+  });
 });
