@@ -243,7 +243,12 @@
 .calendar-people__trigger { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: 30px; padding: 3px 7px; color: var(--ey-text-muted); background: transparent; border: 1px solid var(--ey-border-subtle); border-radius: 999px; font: inherit; font-size: .7rem; cursor: pointer; }
 .calendar-people__trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .calendar-people__trigger:hover { color: var(--ey-accent-primary); border-color: var(--ey-accent-primary); }
-.calendar-people__trigger:focus-visible, .calendar-people__popover button:focus-visible, .calendar-people__popover label:has(input:focus-visible) { outline: none; box-shadow: var(--ey-focus-ring); }
+.calendar-people--inline { flex: 0 1 120px; max-width: 120px; margin-left: auto; }
+.calendar-people__inline-trigger { display: flex; width: 100%; min-width: 0; min-height: 30px; align-items: center; justify-content: flex-end; overflow: hidden; padding: 0; color: var(--ey-text-secondary); background: transparent; border: 0; border-radius: var(--ey-control-radius); font: inherit; font-size: .72rem; font-weight: 600; cursor: pointer; }
+.calendar-people__inline-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-people__inline-trigger[aria-label='People: Unassigned'] { color: var(--ey-text-muted); font-weight: 500; }
+.calendar-people__inline-trigger:hover { color: var(--ey-accent-primary); }
+.calendar-people__trigger:focus-visible, .calendar-people__inline-trigger:focus-visible, .calendar-people__popover button:focus-visible, .calendar-people__popover label:has(input:focus-visible) { outline: none; box-shadow: var(--ey-focus-ring); }
 .calendar-people__popover { position: absolute; z-index: 20; right: 0; top: calc(100% + 4px); width: min(280px, 80vw); display: grid; gap: 5px; padding: 12px; color: var(--ey-text-primary); background: var(--ey-bg-card); border: 1px solid var(--ey-border-default); border-radius: var(--ey-card-radius); box-shadow: 0 10px 30px rgb(0 0 0 / 25%); }
 .calendar-people__title { font-weight: 700; }
 .calendar-people__popover > button, .calendar-people__popover > label { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 5px 7px; color: inherit; background: transparent; border: 1px solid transparent; border-radius: var(--ey-control-radius); font: inherit; cursor: pointer; }
@@ -255,6 +260,7 @@
 .calendar-people__actions { display: flex; justify-content: flex-end; gap: 6px; padding-top: 4px; }
 .calendar-people__actions button { min-height: 36px; padding: 5px 9px; color: var(--ey-text-primary); background: transparent; border: 1px solid var(--ey-border-default); border-radius: var(--ey-control-radius); cursor: pointer; }
 :where(:root[data-display-profile='elo-touch']) .calendar-people__trigger { min-height: 44px; padding-inline: 10px; }
+:where(:root[data-display-profile='elo-touch']) .calendar-people__inline-trigger { min-height: 44px; font-size: .82rem; }
 
 .calendar-card__state--error {
   flex-direction: column;
@@ -434,7 +440,9 @@
   height: 9px;
 }
 
-:where(:root[data-display-profile='compact']) .home__calendar .calendar-people__trigger { min-height: 28px; max-width: 120px; padding: 2px 5px; font-size: .62rem; }
+:where(:root[data-display-profile='compact']) .home__calendar .calendar-people--inline { flex-basis: 88px; max-width: 88px; }
+
+:where(:root[data-display-profile='compact']) .home__calendar .calendar-people__inline-trigger { min-height: 28px; font-size: .62rem; }
 
 :where(:root[data-display-profile='compact'])
   .home__calendar .calendar-card__state {
