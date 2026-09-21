@@ -95,6 +95,15 @@ export function CalendarEventRow({
           </span>
 
           <CalendarSourceIndicator source={event.source} />
+
+          {event.eventKey?.match(/^calendar-event-v1-[a-f0-9]{64}$/) && (
+            <CalendarPeoplePicker
+              eventKey={event.eventKey}
+              assignment={event.profileAssignment}
+              onChanged={onAssignmentChanged}
+              presentation="inline"
+            />
+          )}
         </div>
 
         {event.location && (
@@ -107,9 +116,6 @@ export function CalendarEventRow({
 
             {event.location}
           </span>
-        )}
-        {event.eventKey?.match(/^calendar-event-v1-[a-f0-9]{64}$/) && (
-          <CalendarPeoplePicker eventKey={event.eventKey} assignment={event.profileAssignment} onChanged={onAssignmentChanged} />
         )}
       </div>
     </article>

@@ -5,7 +5,12 @@ import { useHouseholdProfile } from '../../../household/useHouseholdProfile';
 import type { CalendarAssignmentTarget, ResolvedCalendarProfileAssignment } from '../../../calendar/calendarModel';
 import { clearCalendarProfileAssignment, setCalendarProfileAssignment } from '../../../services/calendarService';
 
-type Props = { eventKey: string; assignment: ResolvedCalendarProfileAssignment; onChanged: () => Promise<void> };
+type Props = {
+  eventKey: string;
+  assignment: ResolvedCalendarProfileAssignment;
+  onChanged: () => Promise<void>;
+  presentation?: 'pill' | 'inline';
+};
 
 function targetLabel(target: CalendarAssignmentTarget, names: ReadonlyMap<string, string>): string {
   if (target.kind === 'family') return 'Family';
@@ -13,7 +18,7 @@ function targetLabel(target: CalendarAssignmentTarget, names: ReadonlyMap<string
   return target.profileIds.map(id => names.get(id) ?? 'Removed profile').join(', ');
 }
 
-export function CalendarPeoplePicker({ eventKey, assignment, onChanged }: Props) {
+export function CalendarPeoplePicker({ eventKey, assignment, onChanged, presentation = 'pill' }: Props) {
   const { profiles } = useHouseholdProfile();
   const members = profiles.filter(profile => profile.kind === 'member');
   const names = useMemo(() => new Map(profiles.map(profile => [profile.id, profile.displayName])), [profiles]);
@@ -21,6 +26,8 @@ export function CalendarPeoplePicker({ eventKey, assignment, onChanged }: Props)
   const [target, setTarget] = useState<CalendarAssignmentTarget>(assignment.target);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const assignmentLabel = targetLabel(assignment.target, names);
+  const inlineLabel = assignment.target.kind === 'unassigned' ? '—' : assignmentLabel;
   const chooseMember = (profileId: string) => {
     const selected = target.kind === 'members' ? target.profileIds : [];
     const profileIds = selected.includes(profileId) ? selected.filter(id => id !== profileId) : [...selected, profileId];
@@ -36,9 +43,9 @@ export function CalendarPeoplePicker({ eventKey, assignment, onChanged }: Props)
       setError(saveError instanceof Error ? saveError.message : 'Assignment could not be saved.');
     } finally { setSaving(false); }
   };
-  return <div className="calendar-people">
-    <button type="button" className="calendar-people__trigger" aria-expanded={open} aria-label={`People: ${targetLabel(assignment.target, names)}`} onClick={() => { setTarget(assignment.target); setError(null); setOpen(value => !value); }}>
-      <Users size={14} aria-hidden="true" /><span>{targetLabel(assignment.target, names)}</span>
+  return <div className={presentation === 'inline' ? 'calendar-people calendar-people--inline' : 'calendar-people'}>
+    <button type="button" className={presentation === 'inline' ? 'calendar-people__inline-trigger' : 'calendar-people__trigger'} aria-expanded={open} aria-label={`People: ${assignmentLabel}`} title={presentation === 'inline' && assignment.target.kind === 'unassigned' ? undefined : assignmentLabel} onClick={() => { setTarget(assignment.target); setError(null); setOpen(value => !value); }}>
+      {presentation === 'pill' && <Users size={14} aria-hidden="true" />}<span>{inlineLabel}</span>
     </button>
     {open && <div className="calendar-people__popover" role="dialog" aria-label="Assign people">
       <div className="calendar-people__title">People</div>
