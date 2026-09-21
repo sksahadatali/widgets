@@ -140,4 +140,16 @@ describe('Home Calendar compact assignee presentation', () => {
     assert.match(styles, /\.calendar-people__inline-trigger\s*\{[^}]*align-items: baseline;/s);
     assert.match(styles, /data-display-profile='compact'[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\);/);
   });
+
+  it('keeps the location close and leaves inline assignee glyphs unclipped', async () => {
+    const styles = await readFile(
+      new URL('../../app/src/components/modules/Calendar/Calendar.css', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(styles, /\.calendar-people__inline-trigger\s*\{[^}]*min-height: 0;[^}]*overflow: visible;[^}]*padding: 0 2px;/s);
+    assert.match(styles, /\.calendar-people__inline-trigger span\s*\{[^}]*max-width: 100%;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;/s);
+    assert.match(styles, /data-display-profile='compact'[\s\S]*\.calendar-card__event-content\s*\{[^}]*gap: 4px;/s);
+    assert.match(styles, /data-display-profile='elo-touch'[\s\S]*\.calendar-people__inline-trigger::before\s*\{[^}]*height: 44px;/s);
+  });
 });
