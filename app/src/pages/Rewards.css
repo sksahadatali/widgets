@@ -433,11 +433,12 @@
 .rewards-stars-workspace {
   display: grid;
   grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.65fr);
+  align-items: start;
   gap: 12px;
 }
 
 .rewards-panel--workspace {
-  height: 100%;
+  height: auto;
   margin-top: 0;
   padding: 16px;
 }
@@ -657,8 +658,27 @@
   :root:is(
     [data-display-profile='desktop'],
     [data-display-profile='elo-touch']
+  ) .rewards-stars-workspace__award,
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-panel--workspace {
+    align-self: start;
+    max-height: 100%;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-panel--workspace {
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
   ) .reward-history {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     overflow-y: auto;
     scrollbar-gutter: stable;
   }

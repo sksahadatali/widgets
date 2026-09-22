@@ -234,6 +234,7 @@
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.4fr);
   grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
   column-gap: 12px;
   row-gap: 0;
   height: 100%;
@@ -442,12 +443,21 @@
   :root:is(
     [data-display-profile='desktop'],
     [data-display-profile='elo-touch']
+  ) .redemption-workspace > .rewards-panel {
+    align-self: start;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
   ) .redemption-catalogue,
   :root:is(
     [data-display-profile='desktop'],
     [data-display-profile='elo-touch']
   ) .redemption-requests {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     overflow-y: auto;
     scrollbar-gutter: stable;
   }

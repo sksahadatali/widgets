@@ -72,7 +72,7 @@ describe('Rewards compact workspace', () => {
     assert.match(page, /Give \$\{amount \|\| '0'\} ★/);
     assert.match(page, /Reverse Award/);
 
-    assert.match(redemptions, /<h2 id="redeem-stars-title">Redeem Stars<\/h2>/);
+    assert.match(redemptions, /<h2 id="rewards-list-title">Rewards List<\/h2>/);
     assert.match(redemptions, /'Redemption Requests'/);
     assert.match(redemptions, />\s*Manage Catalogue\s*</);
     assert.match(redemptions, /Request reward/);
@@ -98,11 +98,27 @@ describe('Rewards compact workspace', () => {
     );
     assert.match(
       pageCss,
-      /\.reward-history\s*\{[^}]*flex:\s*1 1 0;[^}]*overflow-y:\s*auto;/s,
+      /\.rewards-stars-workspace\s*\{[^}]*align-items:\s*start;/s,
     );
     assert.match(
       redemptionCss,
-      /\.redemption-catalogue,[\s\S]*\.redemption-requests\s*\{[^}]*flex:\s*1 1 0;[^}]*overflow-y:\s*auto;/,
+      /\.redemption-workspace\s*\{[^}]*align-items:\s*start;/s,
+    );
+    assert.match(
+      redemptionCss,
+      /\.redemption-workspace > \.rewards-panel\s*\{[^}]*align-self:\s*start;[^}]*max-height:\s*100%;[^}]*overflow:\s*hidden;/s,
+    );
+    assert.match(
+      redemptionCss,
+      /\.redemption-catalogue,[\s\S]*\.redemption-requests\s*\{[^}]*flex:\s*0 1 auto;[^}]*overflow-y:\s*auto;/,
+    );
+    assert.match(
+      pageCss,
+      /\.rewards-panel--workspace\s*\{[^}]*height:\s*auto;/s,
+    );
+    assert.match(
+      pageCss,
+      /\.reward-history\s*\{[^}]*flex:\s*0 1 auto;[^}]*overflow-y:\s*auto;/s,
     );
     assert.match(
       pageCss,

@@ -477,10 +477,10 @@ export default function RedemptionWorkspace() {
         )}
       </div>
 
-      <section className="rewards-panel" aria-labelledby="redeem-stars-title">
+      <section className="rewards-panel" aria-labelledby="rewards-list-title">
         <div className="rewards-section-heading">
           <div>
-            <h2 id="redeem-stars-title">Redeem Stars</h2>
+            <h2 id="rewards-list-title">Rewards List</h2>
             <p>
               Requests do not reserve stars. Stars are deducted only when an adult approves.
             </p>
