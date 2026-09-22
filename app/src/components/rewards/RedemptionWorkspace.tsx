@@ -28,6 +28,9 @@ import {
   selectActiveCatalogue,
   selectVisibleRedemptionRequests,
 } from '../../redemptions/redemptionSelectors';
+import {
+  canAffordReward,
+} from '../../redemptions/redemptionAffordability';
 import { getHouseholdConfig } from '../../services/householdConfigService';
 import type {
   RewardCatalogueItem,
@@ -264,6 +267,17 @@ export default function RedemptionWorkspace() {
     if (!isChild) {
       setFormError(
         'Select a child profile to request a reward.'
+      );
+      return;
+    }
+    const availableBalance =
+      balances[selectedProfile.id] ?? 0;
+    if (!canAffordReward(
+      availableBalance,
+      item.starCost
+    )) {
+      setFormError(
+        'There are not enough stars to request this reward.'
       );
       return;
     }
@@ -510,26 +524,35 @@ export default function RedemptionWorkspace() {
           <p className="rewards-empty">No active rewards are currently available.</p>
         ) : (
           <div className="redemption-catalogue">
-            {activeCatalogue.map(item => (
-              <article className="redemption-card" key={item.id}>
-                <div>
-                  <h3>{item.name}</h3>
-                  {item.description && <p>{item.description}</p>}
-                </div>
-                <strong>{item.starCost} ★</strong>
-                {isChild && (
-                  <button
-                    type="button"
-                    className="rewards-button rewards-button--primary"
-                    onClick={() => void requestItem(item)}
-                    disabled={saving}
-                  >
-                    <Gift size={17} aria-hidden="true" />
-                    Request reward
-                  </button>
-                )}
-              </article>
-            ))}
+            {activeCatalogue.map(item => {
+              const affordable = isChild &&
+                canAffordReward(
+                  balances[selectedProfile.id] ?? 0,
+                  item.starCost
+                );
+              return (
+                <article className="redemption-card" key={item.id}>
+                  <div>
+                    <h3>{item.name}</h3>
+                    {item.description && <p>{item.description}</p>}
+                  </div>
+                  <strong>{item.starCost} ★</strong>
+                  {isChild && (
+                    <button
+                      type="button"
+                      className="rewards-button rewards-button--primary"
+                      onClick={() => void requestItem(item)}
+                      disabled={saving || !affordable}
+                    >
+                      <Gift size={17} aria-hidden="true" />
+                      {affordable
+                        ? 'Request reward'
+                        : 'Not enough stars'}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
 

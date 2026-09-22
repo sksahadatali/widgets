@@ -5,6 +5,9 @@ import { describe, it } from 'node:test';
 import RewardsTabs, {
   type RewardsTab,
 } from '../../app/src/components/rewards/RewardsTabs.tsx';
+import {
+  canAffordReward,
+} from '../../app/src/redemptions/redemptionAffordability.ts';
 
 const appRoot = new URL('../../app/src/', import.meta.url);
 
@@ -83,6 +86,24 @@ describe('Rewards compact workspace', () => {
     assert.doesNotMatch(
       redemptions,
       /canManage && \(\s*<section className="rewards-panel" aria-labelledby="manage-catalogue-title"/,
+    );
+  });
+
+  it('prevents unaffordable reward requests while allowing exact balance', async () => {
+    assert.equal(canAffordReward(10, 11), false);
+    assert.equal(canAffordReward(11, 11), true);
+    assert.equal(canAffordReward(12, 11), true);
+
+    const redemptions = await read(
+      'components/rewards/RedemptionWorkspace.tsx'
+    );
+    assert.match(
+      redemptions,
+      /disabled=\{saving \|\| !affordable\}/
+    );
+    assert.match(
+      redemptions,
+      /\? 'Request reward'\s*: 'Not enough stars'/
     );
   });
 
