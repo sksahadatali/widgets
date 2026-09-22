@@ -44,6 +44,7 @@ import {
 import {
   RedemptionConflictError,
   RedemptionFileStore,
+  RedemptionInsufficientBalanceError,
   RedemptionStoreCorruptError,
 } from '../../server/src/services/redemptionStore.ts';
 import {
@@ -149,6 +150,61 @@ afterEach(async () => {
 });
 
 describe('Redemption approval accounting', () => {
+  it('rejects an unaffordable new request without persisting it', async () => {
+    const { rewards, redemptions } = await makeStores(11);
+    await addBalance(rewards, 10);
+
+    await assert.rejects(
+      makeService(redemptions, rewards).request({
+        id: REQUEST_A,
+        catalogueItemId: ITEM,
+        profileId: 'child-1',
+        requestedByProfileId: 'child-1',
+        timeZone: 'Europe/London',
+      }, NOW),
+      RedemptionInsufficientBalanceError
+    );
+    assert.equal(
+      (await redemptions.read()).requests.length,
+      0
+    );
+    assert.equal(
+      (await rewards.read()).transactions.length,
+      1
+    );
+  });
+
+  it('allows new requests at exact balance and above balance without deducting stars', async () => {
+    for (const balance of [11, 12]) {
+      const { rewards, redemptions } =
+        await makeStores(11);
+      await addBalance(rewards, balance);
+
+      const result = await makeService(
+        redemptions,
+        rewards,
+        `request-${balance}`
+      ).request({
+        id: balance === 11 ? REQUEST_A : REQUEST_B,
+        catalogueItemId: ITEM,
+        profileId: 'child-1',
+        requestedByProfileId: 'child-1',
+        timeZone: 'Europe/London',
+      }, NOW);
+
+      assert.equal(result.created, true);
+      assert.equal(
+        (await redemptions.read()).requests.length,
+        1
+      );
+      assert.equal(
+        (await rewards.read()).transactions
+          .reduce((sum, item) => sum + item.amount, 0),
+        balance
+      );
+    }
+  });
+
   it('approves from the immutable request contract and writes the canonical private-safe debit', async () => {
     const { rewards, redemptions } = await makeStores(40);
     await addBalance(rewards, 100);

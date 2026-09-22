@@ -12,12 +12,16 @@ import {
   RedemptionConflictError,
   RedemptionNotFoundError,
   type RequestMutationResult,
+  getRedemptionRequestProfileId,
   redemptionStore,
 } from './redemptionStore.js';
 import {
   type RewardMutationResult,
   rewardStore,
 } from './rewardStore.js';
+import {
+  getRewardBalance,
+} from '../rewards/rewardSelectors.js';
 
 const REDEMPTION_LABEL = 'Reward redemption';
 const REFUND_REASON = 'Redemption cancelled and refunded';
@@ -38,6 +42,11 @@ export type RedemptionAccountingResult = {
 
 type RedemptionStorePort = {
   read: () => Promise<RedemptionStoreData>;
+  createAffordableRequest: (
+    input: unknown,
+    availableBalance: number,
+    now?: Date
+  ) => Promise<RequestMutationResult>;
   cancelRequest: (
     requestId: string,
     actorProfileId: unknown,
@@ -282,6 +291,27 @@ export class RedemptionAccountingService {
       );
     }
     return request;
+  }
+
+  request(
+    input: unknown,
+    now = new Date()
+  ): Promise<RequestMutationResult> {
+    return this.run(async () => {
+      const profileId =
+        getRedemptionRequestProfileId(input);
+      const ledger = await this.rewards.read();
+      const availableBalance = getRewardBalance(
+        ledger.transactions,
+        profileId
+      );
+
+      return this.redemptions.createAffordableRequest(
+        input,
+        availableBalance,
+        now
+      );
+    });
   }
 
   approve(

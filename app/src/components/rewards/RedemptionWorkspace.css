@@ -227,3 +227,294 @@
     width: 100%;
   }
 }
+
+/* Compact tab workspace and catalogue dialog */
+
+.redemption-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.4fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+  row-gap: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.redemption-workspace__messages {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.redemption-workspace__messages:has(.redemption-message),
+.redemption-workspace__messages:has(
+  .redemption-workspace__status:not(:empty)
+) {
+  margin-bottom: 12px;
+}
+
+.redemption-workspace__status:empty {
+  display: none;
+}
+
+.redemption-workspace__messages .redemption-message {
+  margin-top: 0;
+}
+
+.redemption-workspace > .rewards-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 0;
+  padding: 16px;
+}
+
+.redemption-workspace > .rewards-panel .rewards-section-heading {
+  margin-bottom: 12px;
+}
+
+.redemption-workspace > .rewards-panel .rewards-section-heading h2 {
+  margin-bottom: 2px;
+  font-size: 1.15rem;
+}
+
+.redemption-workspace > .rewards-panel .rewards-section-heading p {
+  font-size: var(--ey-font-sm);
+}
+
+.redemption-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.redemption-catalogue {
+  grid-template-columns: 1fr;
+  gap: 0;
+  min-height: 0;
+}
+
+.redemption-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--ey-border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+
+.redemption-card h3 {
+  font-size: 1rem;
+}
+
+.redemption-card p {
+  margin-top: 2px;
+  font-size: var(--ey-font-sm);
+}
+
+.redemption-card strong {
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.redemption-card .rewards-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.redemption-requests {
+  gap: 0;
+  min-height: 0;
+}
+
+.redemption-request {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px 12px;
+  min-height: 58px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--ey-border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+
+.redemption-request__main {
+  gap: 2px;
+}
+
+.redemption-request__main > span,
+.redemption-request__main > p {
+  font-size: var(--ey-font-sm);
+}
+
+.redemption-status {
+  padding: 4px 9px;
+  white-space: nowrap;
+  font-size: var(--ey-font-sm);
+}
+
+.redemption-request__actions {
+  flex-wrap: nowrap;
+}
+
+.redemption-request__integrity {
+  grid-column: 2 / -1;
+}
+
+.redemption-dialog-backdrop {
+  position: fixed;
+  z-index: var(--ey-z-modal);
+  inset: 0;
+  display: grid;
+  padding: var(--ey-page-padding);
+  place-items: center;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.redemption-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1040px);
+  max-height: calc(100dvh - (2 * var(--ey-page-padding)));
+  padding: var(--ey-card-padding);
+  overflow: hidden;
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-card-radius);
+  background: var(--ey-bg-elevated);
+  box-shadow: var(--ey-shadow-elevated);
+}
+
+.redemption-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ey-card-gap);
+  flex: 0 0 auto;
+}
+
+.redemption-dialog__header h2 {
+  margin: 0 0 4px;
+}
+
+.redemption-dialog__header p {
+  margin: 0;
+  color: var(--ey-text-secondary);
+}
+
+.redemption-dialog__close {
+  width: var(--ey-touch-target-min);
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.redemption-dialog__success {
+  margin: 10px 0 0;
+  color: var(--ey-success);
+}
+
+.redemption-dialog .redemption-editor {
+  flex: 0 0 auto;
+  margin-top: 16px;
+}
+
+.redemption-dialog .redemption-catalogue-manager {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.redemption-dialog .redemption-catalogue-manager > li {
+  padding: 9px 10px;
+}
+
+@media (min-width: 1201px) and (min-height: 900px) {
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .redemption-workspace {
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .redemption-workspace > .rewards-panel {
+    align-self: start;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .redemption-catalogue,
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .redemption-requests {
+    flex: 0 1 auto;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 1200px) {
+  .redemption-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
+    row-gap: 12px;
+  }
+}
+
+:root[data-display-profile='compact'] .redemption-workspace {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  height: auto;
+  gap: var(--ey-space-2);
+}
+
+:root[data-display-profile='compact']
+  .redemption-workspace > .rewards-panel {
+  padding: var(--ey-space-3);
+}
+
+@media (max-width: 700px) {
+  .redemption-section-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .redemption-request {
+    grid-template-columns: 1fr auto;
+  }
+
+  .redemption-request > .rewards-button,
+  .redemption-request__actions,
+  .redemption-request__integrity {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .redemption-dialog-backdrop {
+    padding: var(--ey-space-2);
+  }
+
+  .redemption-dialog {
+    max-height: calc(100dvh - (2 * var(--ey-space-2)));
+    padding: var(--ey-space-3);
+  }
+
+  .redemption-dialog .redemption-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .redemption-dialog .redemption-editor__actions {
+    grid-column: auto;
+  }
+}

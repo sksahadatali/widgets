@@ -83,6 +83,14 @@ export class RedemptionConflictError extends RedemptionStoreError {
   }
 }
 
+export class RedemptionInsufficientBalanceError extends
+  RedemptionConflictError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RedemptionInsufficientBalanceError';
+  }
+}
+
 function isRecord(
   value: unknown
 ): value is Record<string, unknown> {
@@ -500,6 +508,12 @@ function normalizeRequestInput(
   };
 }
 
+export function getRedemptionRequestProfileId(
+  input: unknown
+): string {
+  return normalizeRequestInput(input).profileId;
+}
+
 function equivalentCatalogueItem(
   item: RewardCatalogueItem,
   input: CreateCatalogueItemInput
@@ -865,9 +879,10 @@ export class RedemptionFileStore {
     });
   }
 
-  async createRequest(
+  private async createRequestWithBalance(
     input: unknown,
-    now = new Date()
+    now: Date,
+    availableBalance: number | null
   ): Promise<RequestMutationResult> {
     const normalized = normalizeRequestInput(input);
     return this.mutate<RequestMutationResult>(store => {
@@ -903,6 +918,14 @@ export class RedemptionFileStore {
           'This catalogue item is not currently active.'
         );
       }
+      if (
+        availableBalance !== null &&
+        availableBalance < item.starCost
+      ) {
+        throw new RedemptionInsufficientBalanceError(
+          'There are not enough stars to request this reward.'
+        );
+      }
       const requestedAt = now.toISOString();
       const request: RedemptionRequest = {
         id: normalized.id,
@@ -932,6 +955,34 @@ export class RedemptionFileStore {
         result: { request, created: true },
       };
     });
+  }
+
+  async createRequest(
+    input: unknown,
+    now = new Date()
+  ): Promise<RequestMutationResult> {
+    return this.createRequestWithBalance(
+      input,
+      now,
+      null
+    );
+  }
+
+  async createAffordableRequest(
+    input: unknown,
+    availableBalance: number,
+    now = new Date()
+  ): Promise<RequestMutationResult> {
+    if (!Number.isSafeInteger(availableBalance)) {
+      throw new RedemptionStoreError(
+        'Redemption balance is invalid.'
+      );
+    }
+    return this.createRequestWithBalance(
+      input,
+      now,
+      availableBalance
+    );
   }
 
   private async closeRequest(

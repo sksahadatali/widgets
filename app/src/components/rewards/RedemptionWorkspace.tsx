@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -27,6 +28,9 @@ import {
   selectActiveCatalogue,
   selectVisibleRedemptionRequests,
 } from '../../redemptions/redemptionSelectors';
+import {
+  canAffordReward,
+} from '../../redemptions/redemptionAffordability';
 import { getHouseholdConfig } from '../../services/householdConfigService';
 import type {
   RewardCatalogueItem,
@@ -163,6 +167,12 @@ export default function RedemptionWorkspace() {
     useState('');
   const [starCost, setStarCost] =
     useState('20');
+  const [catalogueOpen, setCatalogueOpen] =
+    useState(false);
+  const catalogueDialogRef =
+    useRef<HTMLElement>(null);
+  const catalogueTriggerRef =
+    useRef<HTMLButtonElement>(null);
   const createItemId = useRef<string | null>(null);
   const requestIds = useRef(new Map<string, string>());
   const timeZone =
@@ -180,6 +190,30 @@ export default function RedemptionWorkspace() {
     setStarCost('20');
     createItemId.current = null;
   };
+
+  useEffect(() => {
+    if (!catalogueOpen) return;
+
+    const trigger = catalogueTriggerRef.current;
+    const focusFrame = window.requestAnimationFrame(() => {
+      catalogueDialogRef.current
+        ?.querySelector<HTMLElement>('input, button')
+        ?.focus();
+    });
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !saving) {
+        setCatalogueOpen(false);
+        resetEditor();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', handleEscape);
+      trigger?.focus();
+    };
+  }, [catalogueOpen, saving]);
 
   const edit = (item: RewardCatalogueItem) => {
     clearMessages();
@@ -233,6 +267,17 @@ export default function RedemptionWorkspace() {
     if (!isChild) {
       setFormError(
         'Select a child profile to request a reward.'
+      );
+      return;
+    }
+    const availableBalance =
+      balances[selectedProfile.id] ?? 0;
+    if (!canAffordReward(
+      availableBalance,
+      item.starCost
+    )) {
+      setFormError(
+        'There are not enough stars to request this reward.'
       );
       return;
     }
@@ -417,42 +462,60 @@ export default function RedemptionWorkspace() {
 
   return (
     <div className="redemption-workspace">
-      <p className="redemption-workspace__status" aria-live="polite">
-        {successMessage}
-      </p>
+      <div className="redemption-workspace__messages">
+        <p className="redemption-workspace__status" aria-live="polite">
+          {successMessage}
+        </p>
 
-      {error && (
-        <div className="redemption-message redemption-message--error" role="alert">
-          <AlertTriangle size={20} aria-hidden="true" />
-          <span>{error}</span>
-          <button
-            type="button"
-            className="rewards-button rewards-button--secondary"
-            onClick={() => void refresh()}
-            disabled={loading}
-          >
-            <RefreshCw size={17} aria-hidden="true" />
-            Retry Redemptions
-          </button>
-        </div>
-      )}
+        {error && (
+          <div className="redemption-message redemption-message--error" role="alert">
+            <AlertTriangle size={20} aria-hidden="true" />
+            <span>{error}</span>
+            <button
+              type="button"
+              className="rewards-button rewards-button--secondary"
+              onClick={() => void refresh()}
+              disabled={loading}
+            >
+              <RefreshCw size={17} aria-hidden="true" />
+              Retry Redemptions
+            </button>
+          </div>
+        )}
 
-      {formError && (
-        <div className="redemption-message redemption-message--error" role="alert">
-          <AlertTriangle size={20} aria-hidden="true" />
-          {formError}
-        </div>
-      )}
+        {formError && !catalogueOpen && (
+          <div className="redemption-message redemption-message--error" role="alert">
+            <AlertTriangle size={20} aria-hidden="true" />
+            {formError}
+          </div>
+        )}
+      </div>
 
-      <section className="rewards-panel" aria-labelledby="redeem-stars-title">
+      <section className="rewards-panel" aria-labelledby="rewards-list-title">
         <div className="rewards-section-heading">
           <div>
-            <h2 id="redeem-stars-title">Redeem Stars</h2>
+            <h2 id="rewards-list-title">Rewards List</h2>
             <p>
               Requests do not reserve stars. Stars are deducted only when an adult approves.
             </p>
           </div>
-          <Gift size={24} aria-hidden="true" />
+          <div className="redemption-section-actions">
+            <Gift size={24} aria-hidden="true" />
+            {canManage && (
+              <button
+                ref={catalogueTriggerRef}
+                type="button"
+                className="rewards-button rewards-button--secondary"
+                onClick={() => {
+                  clearMessages();
+                  setCatalogueOpen(true);
+                }}
+              >
+                <Pencil size={17} aria-hidden="true" />
+                Manage Catalogue
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -461,26 +524,35 @@ export default function RedemptionWorkspace() {
           <p className="rewards-empty">No active rewards are currently available.</p>
         ) : (
           <div className="redemption-catalogue">
-            {activeCatalogue.map(item => (
-              <article className="redemption-card" key={item.id}>
-                <div>
-                  <h3>{item.name}</h3>
-                  {item.description && <p>{item.description}</p>}
-                </div>
-                <strong>{item.starCost} ★</strong>
-                {isChild && (
-                  <button
-                    type="button"
-                    className="rewards-button rewards-button--primary"
-                    onClick={() => void requestItem(item)}
-                    disabled={saving}
-                  >
-                    <Gift size={17} aria-hidden="true" />
-                    Request reward
-                  </button>
-                )}
-              </article>
-            ))}
+            {activeCatalogue.map(item => {
+              const affordable = isChild &&
+                canAffordReward(
+                  balances[selectedProfile.id] ?? 0,
+                  item.starCost
+                );
+              return (
+                <article className="redemption-card" key={item.id}>
+                  <div>
+                    <h3>{item.name}</h3>
+                    {item.description && <p>{item.description}</p>}
+                  </div>
+                  <strong>{item.starCost} ★</strong>
+                  {isChild && (
+                    <button
+                      type="button"
+                      className="rewards-button rewards-button--primary"
+                      onClick={() => void requestItem(item)}
+                      disabled={saving || !affordable}
+                    >
+                      <Gift size={17} aria-hidden="true" />
+                      {affordable
+                        ? 'Request reward'
+                        : 'Not enough stars'}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
 
@@ -615,131 +687,172 @@ export default function RedemptionWorkspace() {
         )}
       </section>
 
-      {canManage && (
-        <section className="rewards-panel" aria-labelledby="manage-catalogue-title">
-          <div className="rewards-section-heading">
-            <div>
-              <h2 id="manage-catalogue-title">Manage Catalogue</h2>
-              <p>
-                Deactivation stops new requests. Existing requests keep their captured details.
-              </p>
-            </div>
-            <Pencil size={24} aria-hidden="true" />
-          </div>
-
-          <form className="redemption-editor" onSubmit={submitCatalogue} noValidate>
-            <label>
-              <span>Name</span>
-              <input
-                value={name}
-                onChange={event => setName(event.target.value)}
-                maxLength={80}
-                required
-                disabled={saving}
-              />
-            </label>
-            <label>
-              <span>Description (optional)</span>
-              <input
-                value={description}
-                onChange={event => setDescription(event.target.value)}
-                maxLength={240}
-                disabled={saving}
-              />
-            </label>
-            <label>
-              <span>Cost</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="1"
-                max="500"
-                step="1"
-                value={starCost}
-                onChange={event => setStarCost(event.target.value)}
-                required
-                disabled={saving}
-              />
-            </label>
-            <div className="redemption-editor__actions">
+      {canManage && catalogueOpen && (
+        <div
+          className="redemption-dialog-backdrop"
+          role="presentation"
+          onMouseDown={event => {
+            if (event.target === event.currentTarget && !saving) {
+              setCatalogueOpen(false);
+              resetEditor();
+            }
+          }}
+        >
+          <section
+            ref={catalogueDialogRef}
+            className="redemption-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manage-catalogue-title"
+            aria-describedby="manage-catalogue-description"
+          >
+            <header className="redemption-dialog__header">
+              <div>
+                <h2 id="manage-catalogue-title">Manage Catalogue</h2>
+                <p id="manage-catalogue-description">
+                  Deactivation stops new requests. Existing requests keep their captured details.
+                </p>
+              </div>
               <button
-                type="submit"
-                className="rewards-button rewards-button--primary"
+                type="button"
+                className="rewards-button rewards-button--secondary redemption-dialog__close"
+                onClick={() => {
+                  setCatalogueOpen(false);
+                  resetEditor();
+                }}
                 disabled={saving}
+                aria-label="Close Manage Catalogue"
               >
-                {editingId
-                  ? <Check size={17} aria-hidden="true" />
-                  : <Plus size={17} aria-hidden="true" />}
-                {editingId ? 'Save item' : 'Add reward'}
+                <X size={19} aria-hidden="true" />
               </button>
-              {editingId && (
+            </header>
+
+            {formError && (
+              <div className="redemption-message redemption-message--error" role="alert">
+                <AlertTriangle size={20} aria-hidden="true" />
+                {formError}
+              </div>
+            )}
+            {successMessage && (
+              <p className="redemption-dialog__success" role="status">
+                {successMessage}
+              </p>
+            )}
+
+            <form className="redemption-editor" onSubmit={submitCatalogue} noValidate>
+              <label>
+                <span>Name</span>
+                <input
+                  value={name}
+                  onChange={event => setName(event.target.value)}
+                  maxLength={80}
+                  required
+                  disabled={saving}
+                />
+              </label>
+              <label>
+                <span>Description (optional)</span>
+                <input
+                  value={description}
+                  onChange={event => setDescription(event.target.value)}
+                  maxLength={240}
+                  disabled={saving}
+                />
+              </label>
+              <label>
+                <span>Cost</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max="500"
+                  step="1"
+                  value={starCost}
+                  onChange={event => setStarCost(event.target.value)}
+                  required
+                  disabled={saving}
+                />
+              </label>
+              <div className="redemption-editor__actions">
                 <button
-                  type="button"
-                  className="rewards-button rewards-button--secondary"
-                  onClick={resetEditor}
+                  type="submit"
+                  className="rewards-button rewards-button--primary"
                   disabled={saving}
                 >
-                  <RotateCcw size={17} aria-hidden="true" />
-                  Cancel edit
+                  {editingId
+                    ? <Check size={17} aria-hidden="true" />
+                    : <Plus size={17} aria-hidden="true" />}
+                  {editingId ? 'Save item' : 'Add reward'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editingId && (
+                  <button
+                    type="button"
+                    className="rewards-button rewards-button--secondary"
+                    onClick={resetEditor}
+                    disabled={saving}
+                  >
+                    <RotateCcw size={17} aria-hidden="true" />
+                    Cancel edit
+                  </button>
+                )}
+              </div>
+            </form>
 
-          {catalogue.length > 0 && (
-            <ul className="redemption-catalogue-manager">
-              {catalogue.map((item, index) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>
-                      {item.starCost} ★ · {item.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <div className="redemption-catalogue-manager__actions">
-                    <button
-                      type="button"
-                      className="rewards-button rewards-button--secondary"
-                      onClick={() => edit(item)}
-                      disabled={saving}
-                    >
-                      <Pencil size={16} aria-hidden="true" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="rewards-button rewards-button--secondary"
-                      onClick={() => void toggleActive(item)}
-                      disabled={saving}
-                    >
-                      {item.active ? 'Deactivate' : 'Reactivate'}
-                    </button>
-                    <button
-                      type="button"
-                      className="rewards-button rewards-button--secondary"
-                      onClick={() => void move(index, -1)}
-                      disabled={saving || index === 0}
-                      aria-label={`Move ${item.name} up`}
-                    >
-                      <ArrowUp size={16} aria-hidden="true" />
-                      Up
-                    </button>
-                    <button
-                      type="button"
-                      className="rewards-button rewards-button--secondary"
-                      onClick={() => void move(index, 1)}
-                      disabled={saving || index === catalogue.length - 1}
-                      aria-label={`Move ${item.name} down`}
-                    >
-                      <ArrowDown size={16} aria-hidden="true" />
-                      Down
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+            {catalogue.length > 0 && (
+              <ul className="redemption-catalogue-manager">
+                {catalogue.map((item, index) => (
+                  <li key={item.id}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.starCost} ★ · {item.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="redemption-catalogue-manager__actions">
+                      <button
+                        type="button"
+                        className="rewards-button rewards-button--secondary"
+                        onClick={() => edit(item)}
+                        disabled={saving}
+                      >
+                        <Pencil size={16} aria-hidden="true" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="rewards-button rewards-button--secondary"
+                        onClick={() => void toggleActive(item)}
+                        disabled={saving}
+                      >
+                        {item.active ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                      <button
+                        type="button"
+                        className="rewards-button rewards-button--secondary"
+                        onClick={() => void move(index, -1)}
+                        disabled={saving || index === 0}
+                        aria-label={`Move ${item.name} up`}
+                      >
+                        <ArrowUp size={16} aria-hidden="true" />
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        className="rewards-button rewards-button--secondary"
+                        onClick={() => void move(index, 1)}
+                        disabled={saving || index === catalogue.length - 1}
+                        aria-label={`Move ${item.name} down`}
+                      >
+                        <ArrowDown size={16} aria-hidden="true" />
+                        Down
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       )}
     </div>
   );

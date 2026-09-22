@@ -158,7 +158,7 @@ router.patch(
 
 router.post('/requests', async (request, response) => {
   try {
-    const result = await redemptionStore.createRequest(
+    const result = await redemptionAccountingService.request(
       request.body as unknown
     );
     response.status(result.created ? 201 : 200).json({
