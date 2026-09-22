@@ -39,6 +39,9 @@ import type {
   RewardTransaction,
 } from '../types/reward';
 import RedemptionWorkspace from '../components/rewards/RedemptionWorkspace';
+import RewardsTabs, {
+  type RewardsTab,
+} from '../components/rewards/RewardsTabs';
 
 import './Rewards.css';
 
@@ -164,6 +167,8 @@ export default function Rewards() {
     useState<string | null>(null);
   const [visibleCount, setVisibleCount] =
     useState(INITIAL_HISTORY_LIMIT);
+  const [activeTab, setActiveTab] =
+    useState<RewardsTab>('rewards');
   const awardRequestId = useRef<string | null>(null);
   const reversalRequestIds = useRef(
     new Map<string, string>()
@@ -315,14 +320,17 @@ export default function Rewards() {
           <p>Loading Rewards…</p>
         </section>
       ) : (
-        <>
-          <section aria-labelledby="reward-balances-title">
-            <div className="rewards-section-heading">
+        <div className="rewards-page__workspace">
+          <section
+            className="reward-balances-strip"
+            aria-labelledby="reward-balances-title"
+          >
+            <div className="reward-balances-strip__heading">
+              <Users size={20} aria-hidden="true" />
               <div>
                 <h2 id="reward-balances-title">Star balances</h2>
-                <p>Calculated from the append-only Rewards ledger.</p>
+                <span>Append-only ledger</span>
               </div>
-              <Users size={24} aria-hidden="true" />
             </div>
 
             <div className="reward-balances">
@@ -334,7 +342,7 @@ export default function Rewards() {
                 <article className="reward-balance-card" key={profile.id}>
                   <span>{profile.displayName}</span>
                   <strong>
-                    <Star size={22} fill="currentColor" aria-hidden="true" />
+                    <Star size={18} fill="currentColor" aria-hidden="true" />
                     {balances[profile.id] ?? 0}
                   </strong>
                 </article>
@@ -342,195 +350,217 @@ export default function Rewards() {
             </div>
           </section>
 
-          <RedemptionWorkspace />
+          <RewardsTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
-          {canManage && (
-            <section className="rewards-panel" aria-labelledby="give-stars-title">
-              <div className="rewards-section-heading">
-                <div>
-                  <h2 id="give-stars-title">Give Stars</h2>
-                  <p>
-                    The selected adult profile is recorded as context, not authentication.
-                  </p>
-                </div>
-                <Star size={24} aria-hidden="true" />
-              </div>
-
-              <form className="give-stars-form" onSubmit={submitAward} noValidate>
-                <label>
-                  <span>To</span>
-                  <select
-                    value={effectiveRecipientId}
-                    onChange={event => setRecipientId(event.target.value)}
-                    required
-                    disabled={saving || recipients.length === 0}
-                  >
-                    {recipients.map(recipient => (
-                      <option key={recipient.id} value={recipient.id}>
-                        {recipient.displayName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Stars</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="1"
-                    max="100"
-                    step="1"
-                    value={amount}
-                    onChange={event => setAmount(event.target.value)}
-                    required
-                    disabled={saving}
-                  />
-                </label>
-
-                <label>
-                  <span>Category</span>
-                  <select
-                    value={category}
-                    onChange={event => setCategory(
-                      event.target.value as ManualRewardCategory
-                    )}
-                    required
-                    disabled={saving}
-                  >
-                    {MANUAL_REWARD_CATEGORIES.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="give-stars-form__reason">
-                  <span>Reason</span>
-                  <input
-                    type="text"
-                    value={reason}
-                    onChange={event => setReason(event.target.value)}
-                    maxLength={160}
-                    autoComplete="off"
-                    placeholder="What are you celebrating?"
-                    required
-                    disabled={saving}
-                    aria-describedby="reward-reason-help"
-                  />
-                  <small id="reward-reason-help">
-                    Required · {reason.length}/160 characters
-                  </small>
-                </label>
-
-                <button
-                  type="submit"
-                  className="rewards-button rewards-button--primary"
-                  disabled={saving || recipients.length === 0}
-                >
-                  <Star size={18} fill="currentColor" aria-hidden="true" />
-                  {saving ? 'Giving…' : `Give ${amount || '0'} ★`}
-                </button>
-              </form>
-            </section>
-          )}
-
-          {formError && (
-            <div className="rewards-message rewards-message--error" role="alert">
-              <AlertTriangle size={20} aria-hidden="true" />
-              {formError}
-            </div>
-          )}
-
-          <section className="rewards-panel" aria-labelledby="reward-history-title">
-            <div className="rewards-section-heading">
-              <div>
-                <h2 id="reward-history-title">Recent Activity</h2>
-                <p>
-                  {canManage
-                    ? 'Includes retained records for removed profiles.'
-                    : 'Activity visible in the selected household context.'}
-                </p>
-              </div>
-              <History size={24} aria-hidden="true" />
-            </div>
-
-            {visibleHistory.length === 0 ? (
-              <p className="rewards-empty">No Reward activity yet.</p>
+          <section
+            id={`rewards-panel-${activeTab}`}
+            className="rewards-page__tab-panel"
+            role="tabpanel"
+            aria-labelledby={`rewards-tab-${activeTab}`}
+          >
+            {activeTab === 'rewards' ? (
+              <RedemptionWorkspace />
             ) : (
-              <div className="reward-history">
-                {[...groupedHistory].map(([localDate, items]) => (
-                  <section key={localDate} className="reward-history-group">
-                    <h3>{formatLocalDate(localDate)}</h3>
-                    <ul>
-                      {items.map(transaction => {
-                        const recipientName =
-                          namesById.get(transaction.profileId) ??
-                          'Removed profile';
-                        const canReverse =
-                          canManage &&
-                          transaction.entryType === 'award' &&
-                          transaction.source.kind ===
-                            'manual-parent-award' &&
-                          !reversedIds.has(transaction.id);
+              <div className="rewards-stars-workspace">
+                <div className="rewards-stars-workspace__award">
+                  {canManage ? (
+                    <section className="rewards-panel rewards-panel--workspace" aria-labelledby="give-stars-title">
+                      <div className="rewards-section-heading">
+                        <div>
+                          <h2 id="give-stars-title">Give Stars</h2>
+                          <p>Celebrate a helpful choice or achievement.</p>
+                        </div>
+                        <Star size={22} aria-hidden="true" />
+                      </div>
 
-                        return (
-                          <li key={transaction.id} className="reward-history-item">
-                            <div className="reward-history-item__amount">
-                              <strong className={transaction.amount < 0 ? 'is-negative' : ''}>
-                                {transaction.amount > 0 ? '+' : ''}{transaction.amount} ★
-                              </strong>
-                              <span>{formatTransactionTime(transaction)}</span>
-                            </div>
-                            <div className="reward-history-item__details">
-                              <div>
-                                <strong>{formatCategory(transaction.category)}</strong>
-                                <span>{recipientName} · {sourceLabel(transaction)}</span>
-                              </div>
-                              {transaction.reason && <p>{transaction.reason}</p>}
-                              {transaction.relation?.kind === 'reversal-of' && (
-                                <small>
-                                  {transactionsById.get(
-                                    transaction.relation.transactionId
-                                  )?.entryType === 'redemption'
-                                    ? 'Refunds an earlier redemption.'
-                                    : 'Reverses an earlier award.'}
-                                </small>
-                              )}
-                            </div>
-                            {canReverse && (
-                              <button
-                                type="button"
-                                className="rewards-button rewards-button--danger"
-                                onClick={() => void reverse(transaction)}
-                                disabled={saving}
-                                aria-label={`Reverse ${transaction.amount}-star ${formatCategory(transaction.category)} award for ${recipientName}`}
-                              >
-                                <RotateCcw size={17} aria-hidden="true" />
-                                Reverse award
-                              </button>
+                      <form className="give-stars-form" onSubmit={submitAward} noValidate>
+                        <label>
+                          <span>To</span>
+                          <select
+                            value={effectiveRecipientId}
+                            onChange={event => setRecipientId(event.target.value)}
+                            required
+                            disabled={saving || recipients.length === 0}
+                          >
+                            {recipients.map(recipient => (
+                              <option key={recipient.id} value={recipient.id}>
+                                {recipient.displayName}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Stars</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            max="100"
+                            step="1"
+                            value={amount}
+                            onChange={event => setAmount(event.target.value)}
+                            required
+                            disabled={saving}
+                          />
+                        </label>
+
+                        <label className="give-stars-form__category">
+                          <span>Category</span>
+                          <select
+                            value={category}
+                            onChange={event => setCategory(
+                              event.target.value as ManualRewardCategory
                             )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </section>
-                ))}
-              </div>
-            )}
+                            required
+                            disabled={saving}
+                          >
+                            {MANUAL_REWARD_CATEGORIES.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-            {visibleHistory.length > visibleCount && (
-              <button
-                type="button"
-                className="rewards-button rewards-button--secondary rewards-show-more"
-                onClick={() => setVisibleCount(count => count + INITIAL_HISTORY_LIMIT)}
-              >
-                Show more activity
-              </button>
+                        <label className="give-stars-form__reason">
+                          <span>Reason</span>
+                          <input
+                            type="text"
+                            value={reason}
+                            onChange={event => setReason(event.target.value)}
+                            maxLength={160}
+                            autoComplete="off"
+                            placeholder="What are you celebrating?"
+                            required
+                            disabled={saving}
+                            aria-describedby="reward-reason-help"
+                          />
+                          <small id="reward-reason-help">
+                            Required · {reason.length}/160 characters
+                          </small>
+                        </label>
+
+                        <button
+                          type="submit"
+                          className="rewards-button rewards-button--primary give-stars-form__submit"
+                          disabled={saving || recipients.length === 0}
+                        >
+                          <Star size={18} fill="currentColor" aria-hidden="true" />
+                          {saving ? 'Giving…' : `Give ${amount || '0'} ★`}
+                        </button>
+                      </form>
+
+                      {formError && (
+                        <div className="rewards-message rewards-message--error" role="alert">
+                          <AlertTriangle size={20} aria-hidden="true" />
+                          {formError}
+                        </div>
+                      )}
+                    </section>
+                  ) : (
+                    <section className="rewards-panel rewards-panel--workspace rewards-stars-readonly">
+                      <Star size={26} aria-hidden="true" />
+                      <h2>Give Stars</h2>
+                      <p>Select an adult profile to give stars.</p>
+                    </section>
+                  )}
+                </div>
+
+                <section className="rewards-panel rewards-panel--workspace rewards-activity-panel" aria-labelledby="reward-history-title">
+                  <div className="rewards-section-heading">
+                    <div>
+                      <h2 id="reward-history-title">Recent Activity</h2>
+                      <p>
+                        {canManage
+                          ? 'Includes retained records for removed profiles.'
+                          : 'Activity visible in the selected household context.'}
+                      </p>
+                    </div>
+                    <History size={22} aria-hidden="true" />
+                  </div>
+
+                  {visibleHistory.length === 0 ? (
+                    <p className="rewards-empty">No Reward activity yet.</p>
+                  ) : (
+                    <div className="reward-history">
+                      {[...groupedHistory].map(([localDate, items]) => (
+                        <section key={localDate} className="reward-history-group">
+                          <h3>{formatLocalDate(localDate)}</h3>
+                          <ul>
+                            {items.map(transaction => {
+                              const recipientName =
+                                namesById.get(transaction.profileId) ??
+                                'Removed profile';
+                              const canReverse =
+                                canManage &&
+                                transaction.entryType === 'award' &&
+                                transaction.source.kind ===
+                                  'manual-parent-award' &&
+                                !reversedIds.has(transaction.id);
+
+                              return (
+                                <li key={transaction.id} className="reward-history-item">
+                                  <div className="reward-history-item__amount">
+                                    <strong className={transaction.amount < 0 ? 'is-negative' : ''}>
+                                      {transaction.amount > 0 ? '+' : ''}{transaction.amount} ★
+                                    </strong>
+                                    <span>{formatTransactionTime(transaction)}</span>
+                                  </div>
+                                  <div className="reward-history-item__details">
+                                    <div>
+                                      <strong>{formatCategory(transaction.category)}</strong>
+                                      <span>{recipientName} · {sourceLabel(transaction)}</span>
+                                    </div>
+                                    {transaction.reason && <p>{transaction.reason}</p>}
+                                    {transaction.relation?.kind === 'reversal-of' && (
+                                      <small>
+                                        {transactionsById.get(
+                                          transaction.relation.transactionId
+                                        )?.entryType === 'redemption'
+                                          ? 'Refunds an earlier redemption.'
+                                          : 'Reverses an earlier award.'}
+                                      </small>
+                                    )}
+                                  </div>
+                                  {canReverse && (
+                                    <button
+                                      type="button"
+                                      className="rewards-button rewards-button--danger"
+                                      onClick={() => void reverse(transaction)}
+                                      disabled={saving}
+                                      aria-label={`Reverse ${transaction.amount}-star ${formatCategory(transaction.category)} award for ${recipientName}`}
+                                    >
+                                      <RotateCcw size={17} aria-hidden="true" />
+                                      Reverse Award
+                                    </button>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </section>
+                      ))}
+                    </div>
+                  )}
+
+                  {visibleHistory.length > visibleCount && (
+                    <button
+                      type="button"
+                      className="rewards-button rewards-button--secondary rewards-show-more"
+                      onClick={() => setVisibleCount(count => count + INITIAL_HISTORY_LIMIT)}
+                    >
+                      Show more activity
+                    </button>
+                  )}
+                </section>
+              </div>
             )}
           </section>
-        </>
+        </div>
       )}
     </main>
   );

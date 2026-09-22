@@ -328,3 +328,401 @@
     width: 100%;
   }
 }
+
+/* Compact Rewards workspace */
+
+.rewards-page__workspace {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.reward-balances-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--ey-card-gap);
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-card-radius);
+  background: var(--ey-bg-card);
+  box-shadow: var(--ey-shadow-card);
+}
+
+.reward-balances-strip__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  color: var(--ey-accent-primary);
+}
+
+.reward-balances-strip__heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.reward-balances-strip__heading span {
+  color: var(--ey-text-muted);
+  font-size: var(--ey-font-sm);
+}
+
+.reward-balances-strip .reward-balances {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reward-balances-strip .reward-balance-card {
+  flex: 0 1 220px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--ey-accent-primary);
+}
+
+.reward-balances-strip .reward-balance-card:nth-child(even) {
+  border-left-color: var(--ey-info);
+}
+
+.reward-balances-strip .reward-balance-card strong {
+  gap: 5px;
+  font-size: var(--ey-font-lg);
+}
+
+.rewards-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ey-border-default);
+}
+
+.rewards-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 130px;
+  min-height: var(--ey-touch-target-min);
+  padding: 0 18px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--ey-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.rewards-tab:hover {
+  background: var(--ey-bg-hover);
+  color: var(--ey-text-primary);
+}
+
+.rewards-tab--active {
+  border-bottom-color: var(--ey-accent-primary);
+  color: var(--ey-accent-primary);
+}
+
+.rewards-page__tab-panel,
+.rewards-stars-workspace,
+.rewards-stars-workspace__award,
+.rewards-activity-panel {
+  min-height: 0;
+}
+
+.rewards-stars-workspace {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.65fr);
+  gap: 12px;
+}
+
+.rewards-panel--workspace {
+  height: 100%;
+  margin-top: 0;
+  padding: 16px;
+}
+
+.rewards-panel--workspace .rewards-section-heading {
+  margin-bottom: 12px;
+}
+
+.rewards-panel--workspace .rewards-section-heading h2 {
+  margin-bottom: 2px;
+  font-size: 1.15rem;
+}
+
+.rewards-panel--workspace .rewards-section-heading p {
+  font-size: var(--ey-font-sm);
+}
+
+.give-stars-form {
+  grid-template-columns: minmax(140px, 1fr) minmax(96px, 0.55fr);
+  gap: 12px;
+}
+
+.give-stars-form__category,
+.give-stars-form__reason {
+  grid-column: 1 / -1;
+}
+
+.give-stars-form label {
+  gap: 5px;
+}
+
+.give-stars-form__submit {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.give-stars-form small {
+  margin-top: -2px;
+}
+
+.rewards-panel--workspace .rewards-message {
+  margin: 12px 0 0;
+}
+
+.rewards-stars-readonly {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.rewards-stars-readonly h2,
+.rewards-stars-readonly p {
+  margin-bottom: 0;
+}
+
+.rewards-activity-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.reward-history {
+  min-height: 0;
+}
+
+.reward-history,
+.reward-history-group ul {
+  gap: 0;
+}
+
+.reward-history-group + .reward-history-group {
+  margin-top: 12px;
+}
+
+.reward-history-group h3 {
+  margin: 0;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--ey-border-default);
+  background: var(--ey-bg-card-secondary);
+  font-size: var(--ey-font-sm);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.reward-history-item {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--ey-border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+
+.reward-history-item__amount {
+  flex-basis: auto;
+  gap: 1px;
+}
+
+.reward-history-item__amount strong {
+  font-size: 1rem;
+}
+
+.reward-history-item__details > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.reward-history-item__details p {
+  margin-top: 2px;
+  font-size: var(--ey-font-sm);
+}
+
+.reward-history-item .rewards-button {
+  flex-shrink: 0;
+}
+
+.rewards-show-more {
+  flex: 0 0 auto;
+  margin-top: 10px;
+}
+
+@media (min-width: 1201px) and (min-height: 900px) {
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .app-main:has(> .rewards-page) {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 0 var(--ey-page-padding) 12px;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__header {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__header h1 {
+    margin-bottom: 2px;
+    font-size: 1.8rem;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__header p {
+    margin-bottom: 0;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__eyebrow {
+    margin-bottom: 1px;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__workspace {
+    flex: 1 1 auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-page__tab-panel,
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .rewards-stars-workspace {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  ) .reward-history {
+    flex: 1 1 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 1200px) {
+  .rewards-stars-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-balances-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reward-balances-strip .reward-balances {
+    justify-content: stretch;
+  }
+
+  .reward-balances-strip .reward-balance-card {
+    flex: 1 1 0;
+  }
+}
+
+:root[data-display-profile='compact'] .rewards-page__workspace {
+  gap: var(--ey-space-2);
+}
+
+:root[data-display-profile='compact'] .reward-balances-strip {
+  padding: var(--ey-space-2);
+}
+
+:root[data-display-profile='compact'] .rewards-stars-workspace {
+  grid-template-columns: 1fr;
+  gap: var(--ey-space-2);
+}
+
+:root[data-display-profile='compact'] .rewards-panel--workspace {
+  height: auto;
+  padding: var(--ey-space-3);
+}
+
+@media (max-width: 700px) {
+  .rewards-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rewards-tab {
+    min-width: 0;
+    padding-inline: var(--ey-space-2);
+  }
+
+  .reward-balances-strip .reward-balances {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reward-history-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .reward-history-item .rewards-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
