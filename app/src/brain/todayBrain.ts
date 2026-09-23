@@ -3,10 +3,6 @@ import type {
 } from '../services/calendarService';
 
 import type {
-  PrayerData,
-} from '../services/prayerService';
-
-import type {
   FocusItem,
 } from '../types/focus';
 
@@ -465,49 +461,6 @@ function scoreCalendarEvent(
   };
 }
 
-function scorePrayer(
-  prayer: PrayerData
-): BrainCandidate {
-  const item: FocusItem = {
-    id: `prayer-${prayer.name.toLowerCase()}`,
-    title: `${prayer.name} Prayer`,
-    category: 'faith',
-    priority: 'high',
-    status: 'pending',
-    dueDate: prayer.dateTime.slice(0, 10),
-    dueTime: prayer.time,
-    estimatedMinutes: 15,
-    assignedTo: 'Faith',
-  };
-
-  let score = 85;
-
-  const reasons = [
-    'Prayer reminder',
-  ];
-
-  if (prayer.isCurrentPrayer) {
-    score = 150;
-    reasons.push(
-      'Prayer time now'
-    );
-  } else if (prayer.isDueSoon) {
-    score = 130;
-    reasons.push(
-      'Prayer due soon'
-    );
-  }
-
-  return {
-    item,
-    source: 'prayer',
-    score,
-    reasons,
-    deduplicationKey:
-      `prayer-${prayer.name.toLowerCase()}`,
-  };
-}
-
 function scoreWeatherInsight(
   insight: WeatherInsight
 ): BrainCandidate {
@@ -915,15 +868,7 @@ export function generateTodayFocus(
         )
       );
   
-  const prayerCandidates =
-    input.prayer
-      ? [
-          scorePrayer(
-            input.prayer
-          ),
-        ]
-      : [];    
-      const contextInsights =
+  const contextInsights =
       generateContextInsights(
         input.calendarEvents,
         input.weatherInsights,
@@ -975,7 +920,6 @@ export function generateTodayFocus(
     removeDuplicates([
       ...focusCandidates,
       ...calendarCandidates,
-      ...prayerCandidates,
       ...contextCandidates,
       ...weatherCandidates,
       ...routineCandidates,

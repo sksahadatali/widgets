@@ -456,6 +456,7 @@ describe('routine candidates in Today Brain', () => {
   it('admits at most three routines and keeps the overall four-item limit in mixed ranking', () => {
     const result = generateTodayFocus(
       brainInput({
+        focusItems: [task('Existing focus item')],
         prayer: prayer(),
         routineCandidates: [
           attention('overdue', 'overdue'),
@@ -478,18 +479,27 @@ describe('routine candidates in Today Brain', () => {
       ).length,
       3
     );
-    assert.deepEqual(
-      result.decisions.map(decision => [
-        decision.source,
-        decision.score,
-      ]),
-      [
-        ['routine', 145],
-        ['routine', 135],
-        ['prayer', 130],
-        ['routine', 125],
-      ]
+    assert.equal(
+      result.decisions.some(
+        decision => decision.source === 'prayer'
+      ),
+      false
     );
+  });
+
+  it("excludes daily prayer data from Today's Focus candidate selection", () => {
+    const result = generateTodayFocus(
+      brainInput({
+        prayer: prayer({
+          isCurrentPrayer: true,
+          isDueSoon: false,
+        }),
+      }),
+      now
+    );
+
+    assert.deepEqual(result.decisions, []);
+    assert.deepEqual(result.sources, []);
   });
 
   it('ranks routine signals against existing Task and Calendar sources', () => {

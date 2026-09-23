@@ -75,7 +75,13 @@ export function CalendarEventRow({
   onAssignmentChanged: () => Promise<void>;
 }) {
   return (
-    <article className="calendar-card__event">
+    <article
+      className={`calendar-card__event${
+        showDate
+          ? ' calendar-card__event--dated'
+          : ''
+      }`}
+    >
       <div className="calendar-card__time">
         {showDate && (
           <span className="calendar-card__date">

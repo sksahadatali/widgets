@@ -658,6 +658,10 @@ function RoutineEditor({
             </button>
           ))}
         </div>
+        <p className="routine-editor__hint">
+          Selected days repeat every week. Choosing one
+          day creates a weekly routine, not a one-off task.
+        </p>
       </fieldset>
 
       <div className="routine-editor__times">
@@ -961,12 +965,12 @@ function Daily({
       <header className="daily-page__header">
         <div>
           <span className="daily-page__eyebrow">
-            Daily household activities
+            Household routines
           </span>
-          <h1>Daily</h1>
+          <h1>Routines</h1>
           <p>
-            Today’s homework and repeatable checklists for
-            Family and household members.
+            Recurring family and household activities
+            scheduled on their selected weekdays.
           </p>
         </div>
 

@@ -137,6 +137,25 @@
     background-color var(--ey-transition-fast);
 }
 
+.calendar-card__event--dated {
+  grid-template-columns:
+    72px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 10px;
+
+  padding-block: 8px;
+}
+
+.calendar-card__event--dated
+  .calendar-card__time {
+  line-height: 1.35;
+}
+
+.calendar-card__event--dated
+  .calendar-card__event-heading {
+  padding-top: 1px;
+}
+
 .calendar-card__event:hover {
   background: var(--ey-bg-hover);
 }
@@ -396,6 +415,15 @@
 
   min-height: 0;
   padding: 3px 2px;
+}
+
+:where(:root[data-display-profile='compact'])
+  .home__calendar .calendar-card__event--dated {
+  grid-template-columns:
+    62px minmax(0, 1fr);
+  column-gap: 6px;
+
+  padding-block: 5px;
 }
 
 :where(:root[data-display-profile='compact'])

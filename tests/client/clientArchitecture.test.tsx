@@ -20,6 +20,7 @@ import {
 } from '../../app/src/navigation/AppPageRoutes';
 import {
   APP_ROUTES,
+  getAppPageLabel,
   getNavigationItemClassName,
   type AppPage,
 } from '../../app/src/navigation/appRoutes';
@@ -202,5 +203,13 @@ test('primary destination routing', async t => {
         'sidebar__nav-item '
       );
     }
+  );
+});
+
+test('Routines is the presentation label for the unchanged Daily route', () => {
+  assert.equal(getAppPageLabel('Daily'), 'Routines');
+  assert.equal(
+    APP_ROUTES.find(route => route.page === 'Daily')?.path,
+    '/daily'
   );
 });
