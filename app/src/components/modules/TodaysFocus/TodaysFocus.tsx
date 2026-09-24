@@ -199,7 +199,7 @@ function TodaysFocus({
                     <button
                       type="button"
                       className="todays-focus__item-main todays-focus__item-link"
-                      aria-label={`Open ${item.title} in Daily`}
+                      aria-label={`Open ${item.title} in Routines`}
                       onClick={() =>
                         onOpenRoutine(
                           action.routineId,

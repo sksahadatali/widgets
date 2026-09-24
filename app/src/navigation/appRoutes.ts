@@ -40,6 +40,14 @@ export function getAppRoute(page: AppPage): AppRoute {
   return route;
 }
 
+export function getAppPageLabel(
+  page: AppPage
+): string {
+  return page === 'Daily'
+    ? 'Routines'
+    : page;
+}
+
 export function getNavigationItemClassName(
   isActive: boolean
 ): string {

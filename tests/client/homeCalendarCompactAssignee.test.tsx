@@ -35,7 +35,11 @@ function event(target: CalendarEvent['profileAssignment']['target'], location = 
   };
 }
 
-function renderEvent(target: CalendarEvent['profileAssignment']['target'], location = ''): string {
+function renderEvent(
+  target: CalendarEvent['profileAssignment']['target'],
+  location = '',
+  showDate = false
+): string {
   return renderToStaticMarkup(
     createElement(context.HouseholdProfileContext.Provider, {
       value: {
@@ -49,6 +53,7 @@ function renderEvent(target: CalendarEvent['profileAssignment']['target'], locat
     }, createElement(calendar.CalendarEventRow, {
       event: event(target, location),
       timeZone: 'Europe/London',
+      showDate,
       onAssignmentChanged: async () => undefined,
     }))
   );
@@ -163,5 +168,28 @@ describe('Home Calendar compact assignee presentation', () => {
     assert.match(styles, /data-display-profile='compact'[\s\S]*\.calendar-card__event\s*\{[^}]*min-height: 0;[^}]*padding: 3px 2px;/s);
     assert.match(styles, /\.calendar-people__inline-trigger::before\s*\{[^}]*height: 30px;/s);
     assert.match(styles, /data-display-profile='elo-touch'[\s\S]*\.calendar-people__inline-trigger::before\s*\{[^}]*height: 44px;/s);
+  });
+
+  it('gives Coming Up rows a readable date column and modest separation', async () => {
+    const html = renderEvent(
+      { kind: 'members', profileIds: ['rehan'] },
+      '',
+      true
+    );
+    const styles = await readFile(
+      new URL('../../app/src/components/modules/Calendar/Calendar.css', import.meta.url),
+      'utf8'
+    );
+
+    assert.match(html, /calendar-card__event--dated/);
+    assert.match(html, /calendar-card__date/);
+    assert.match(
+      styles,
+      /\.calendar-card__event--dated\s*\{[^}]*grid-template-columns:\s*72px minmax\(0, 1fr\);[^}]*align-items:\s*start;[^}]*column-gap:\s*10px;[^}]*padding-block:\s*8px;/s
+    );
+    assert.match(
+      styles,
+      /data-display-profile='compact'[\s\S]*\.calendar-card__event--dated\s*\{[^}]*grid-template-columns:\s*62px minmax\(0, 1fr\);[^}]*padding-block:\s*5px;/s
+    );
   });
 });

@@ -75,6 +75,36 @@ const kumonOccurrence: RoutineOccurrence = {
 };
 
 describe('compact Routine week presentation', () => {
+  it('presents Daily as recurring Routines while preserving the route architecture', async () => {
+    const [page, sidebar, focus] = await Promise.all([
+      readFile(
+        new URL('../../app/src/pages/Daily.tsx', import.meta.url),
+        'utf8'
+      ),
+      readFile(
+        new URL('../../app/src/components/layout/Sidebar/Sidebar.tsx', import.meta.url),
+        'utf8'
+      ),
+      readFile(
+        new URL('../../app/src/components/modules/TodaysFocus/TodaysFocus.tsx', import.meta.url),
+        'utf8'
+      ),
+    ]);
+
+    assert.match(page, /<h1>Routines<\/h1>/);
+    assert.match(page, />\s*Household routines\s*</);
+    assert.match(
+      page,
+      /Recurring family and household activities\s*scheduled on their selected weekdays\./
+    );
+    assert.match(
+      page,
+      /Choosing one\s*day creates a weekly routine, not a one-off task\./
+    );
+    assert.match(sidebar, /getAppPageLabel\(route\.page\)/);
+    assert.match(focus, /in Routines/);
+  });
+
   it('keeps the legacy Kumon experience out of the Today workspace', async () => {
     const source = await readFile(
       new URL(

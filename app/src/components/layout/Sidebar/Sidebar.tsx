@@ -22,6 +22,7 @@ import {
 
 import {
   APP_ROUTES,
+  getAppPageLabel,
   getAppRoute,
   getNavigationItemClassName,
   type AppPage,
@@ -38,7 +39,8 @@ type SidebarProps = {
 };
 
 type NavigationItem = {
-  label: AppPage;
+  page: AppPage;
+  label: string;
   icon: typeof Home;
 };
 
@@ -57,7 +59,8 @@ const navigationIcons: Record<AppPage, typeof Home> = {
 
 const navigationItems: NavigationItem[] =
   APP_ROUTES.map(route => ({
-    label: route.page,
+    page: route.page,
+    label: getAppPageLabel(route.page),
     icon: navigationIcons[route.page],
   }));
 
@@ -119,9 +122,9 @@ function Sidebar({
 
           return (
             <NavLink
-              key={item.label}
-              to={getAppRoute(item.label).path}
-              end={item.label === 'Home'}
+              key={item.page}
+              to={getAppRoute(item.page).path}
+              end={item.page === 'Home'}
               className={({ isActive }) =>
                 getNavigationItemClassName(isActive)
               }
