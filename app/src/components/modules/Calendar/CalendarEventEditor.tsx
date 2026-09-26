@@ -8,6 +8,7 @@ import {
   type CalendarEditInput,
 } from '../../../services/calendarService';
 import { householdLocalToRfc3339 } from '../../../calendar/calendarEditTime';
+import { invalidateCachedCalendarEvent } from '../../../calendar/calendarQueryStore';
 
 function localDateTime(value: string): string { return value.slice(0, 16); }
 
@@ -59,6 +60,7 @@ export function CalendarEventEditor({ initialContext, onCancel, onSaved }: {
         : { kind: 'dateTime' as const, start: householdLocalToRfc3339(start, context.timing.timeZone, originalOffsets.start), end: householdLocalToRfc3339(end, context.timing.timeZone, originalOffsets.end), timeZone: 'Europe/London' as const };
       const input: CalendarEditInput = { scope: context.scope, revision: context.revision, title, location, timing };
       await updateCalendarEvent(context.eventKey, input);
+      invalidateCachedCalendarEvent(context.eventKey);
       await onSaved();
     } catch (saveError) {
       const isConflict = saveError instanceof CalendarEditApiError && saveError.status === 409;

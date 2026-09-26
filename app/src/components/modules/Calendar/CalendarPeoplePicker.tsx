@@ -3,6 +3,7 @@ import { Users } from 'lucide-react';
 import { getProfileInitials } from '../../../household/householdProfiles';
 import { useHouseholdProfile } from '../../../household/useHouseholdProfile';
 import type { CalendarAssignmentTarget, ResolvedCalendarProfileAssignment } from '../../../calendar/calendarModel';
+import { invalidateCachedCalendarEvent, updateCachedCalendarAssignment } from '../../../calendar/calendarQueryStore';
 import { clearCalendarProfileAssignment, setCalendarProfileAssignment } from '../../../services/calendarService';
 
 type Props = {
@@ -36,8 +37,16 @@ export function CalendarPeoplePicker({ eventKey, assignment, onChanged, presenta
   const commit = async (clear = false) => {
     setSaving(true); setError(null);
     try {
-      if (clear) await clearCalendarProfileAssignment(eventKey);
-      else await setCalendarProfileAssignment(eventKey, target);
+      if (clear) {
+        await clearCalendarProfileAssignment(eventKey);
+        invalidateCachedCalendarEvent(eventKey);
+      } else {
+        await setCalendarProfileAssignment(eventKey, target);
+        updateCachedCalendarAssignment(eventKey, {
+          target,
+          basis: 'explicit',
+        });
+      }
       await onChanged(); setOpen(false);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Assignment could not be saved.');

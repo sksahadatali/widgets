@@ -1,6 +1,6 @@
 import {
-  getCalendarEvents,
-} from './calendarService';
+  getSharedCalendarData,
+} from '../calendar/calendarQueryStore';
 
 import {
   getNextPrayer,
@@ -49,7 +49,7 @@ export async function getTodayFocusSources(): Promise<
   //
   try {
     const calendarData =
-      await getCalendarEvents();
+      await getSharedCalendarData();
 
     calendarEvents =
       calendarData.events;

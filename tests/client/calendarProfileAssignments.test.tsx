@@ -45,6 +45,9 @@ describe('Calendar People picker', () => {
     assert.match(component, /Use default/);
     assert.match(component, /kind: 'unassigned'/);
     assert.match(component, /type="checkbox"/);
+    assert.match(component, /updateCachedCalendarAssignment/);
+    assert.match(component, /invalidateCachedCalendarEvent/);
+    assert.match(component, /await onChanged\(\)/);
     assert.doesNotMatch(component, /selectProfile\(/);
   });
 });

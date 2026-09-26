@@ -2,17 +2,19 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
 import {
-  CALENDAR_REFRESH_MS,
-  getCalendarEvents,
-  type CalendarData,
   type CalendarEvent,
   type CalendarWindowRequest,
 } from '../services/calendarService';
+
+import {
+  canonicalCalendarQuery,
+  getCalendarQueryStore,
+  type CalendarQuerySnapshot,
+} from '../calendar/calendarQueryStore';
 
 import {
   selectCalendarOutlook,
@@ -29,19 +31,17 @@ type UseCalendarResult = {
   comingUpEvents: CalendarEvent[];
   calendarUrl: string;
   timeZone: string;
+  hasData: boolean;
+  refreshing: boolean;
+  fresh: boolean;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
 };
 
-type LoadedCalendarData = {
+type LoadedCalendarSnapshot = {
   requestKey: string;
-  data: CalendarData;
-};
-
-type CalendarError = {
-  requestKey: string;
-  message: string;
+  snapshot: CalendarQuerySnapshot;
 };
 
 export function useCalendar(
@@ -49,94 +49,56 @@ export function useCalendar(
 ): UseCalendarResult {
   const startLocalDate = request.startLocalDate;
   const days = request.days;
-  const [
-    calendarData,
-    setCalendarData,
-  ] = useState<LoadedCalendarData | null>(
-    null
+  const store = getCalendarQueryStore();
+  const sharedRequest = useMemo<CalendarWindowRequest>(
+    () => ({
+      ...(startLocalDate ? { startLocalDate } : {}),
+      ...(days === undefined ? {} : { days }),
+    }),
+    [days, startLocalDate]
   );
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState<CalendarError | null>(null);
-  const requestId = useRef(0);
-  const loadedWindow = useRef<
-    string | null | undefined
-  >(undefined);
-  const requestKey = `${startLocalDate ?? 'default'}:${days ?? 7}`;
+  const requestKey = canonicalCalendarQuery(
+    sharedRequest,
+    new Date(),
+    getHouseholdConfig().location.timezone
+  ).key;
+  const [loadedSnapshot, setLoadedSnapshot] =
+    useState<LoadedCalendarSnapshot>(() => ({
+      requestKey,
+      snapshot: store.getSnapshot(sharedRequest),
+    }));
+  const activeSnapshot = loadedSnapshot.requestKey === requestKey
+    ? loadedSnapshot.snapshot
+    : store.getSnapshot(sharedRequest);
 
   const refresh = useCallback(async () => {
-    const currentRequestId = requestId.current + 1;
-    requestId.current = currentRequestId;
-
-    if (loadedWindow.current !== requestKey) {
-      setCalendarData(null);
-      setLoading(true);
-    }
-
     try {
-      setError(null);
-
-      const data =
-        await getCalendarEvents({ startLocalDate, days });
-
-      if (requestId.current !== currentRequestId) return;
-
-      setCalendarData({ requestKey, data });
-      loadedWindow.current = requestKey;
+      await store.refresh(sharedRequest);
     } catch (refreshError) {
-      if (requestId.current !== currentRequestId) return;
-
       console.error(
         'Calendar update failed:',
         refreshError
       );
-
-      setError({ requestKey, message: 'Calendar unavailable' });
-    } finally {
-      if (requestId.current === currentRequestId) {
-        setLoading(false);
-      }
     }
-  }, [days, requestKey, startLocalDate]);
+  }, [sharedRequest, store]);
 
   useEffect(() => {
-    const initialRefreshId =
-      window.setTimeout(
-        () => {
-          void refresh();
-        },
-        0
-      );
-
-    const intervalId =
-      window.setInterval(
-        () => {
-          void refresh();
-        },
-        CALENDAR_REFRESH_MS
-      );
+    const update = () => {
+      setLoadedSnapshot({
+        requestKey,
+        snapshot: store.getSnapshot(sharedRequest),
+      });
+    };
+    const unsubscribe = store.subscribe(sharedRequest, update);
+    update();
+    void store.ensure(sharedRequest).catch(() => undefined);
 
     return () => {
-      requestId.current += 1;
-      window.clearTimeout(
-        initialRefreshId
-      );
-
-      window.clearInterval(
-        intervalId
-      );
+      unsubscribe();
     };
-  }, [refresh]);
+  }, [requestKey, sharedRequest, store]);
 
-  const activeData = calendarData?.requestKey === requestKey
-    ? calendarData.data
-    : null;
-  const activeError = error?.requestKey === requestKey
-    ? error.message
-    : null;
+  const activeData = activeSnapshot.data;
   const groupedEvents =
     useMemo(() => {
       return selectCalendarOutlook(
@@ -162,8 +124,12 @@ export function useCalendar(
     timeZone:
       activeData?.timeZone ??
       getHouseholdConfig().location.timezone,
-    loading: loading || (activeData === null && activeError === null),
-    error: activeError,
+    hasData: activeData !== null,
+    refreshing: activeSnapshot.refreshing,
+    fresh: activeSnapshot.isFresh && !activeSnapshot.refreshing,
+    loading: activeSnapshot.loading ||
+      (activeData === null && activeSnapshot.error === null),
+    error: activeSnapshot.error,
     refresh,
   };
 }

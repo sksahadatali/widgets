@@ -121,6 +121,7 @@ describe('Home Calendar compact assignee presentation', () => {
 
     assert.ok(today >= 0 && today < tomorrow && tomorrow < comingUp);
     assert.match(source, /events\.map\(event =>/);
+    assert.match(source, /error && !hasData/);
   });
 
   it('constrains long inline text across Compact and Elo Touch profiles', async () => {
