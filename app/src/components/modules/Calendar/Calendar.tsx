@@ -167,6 +167,7 @@ function Calendar() {
     comingUpEvents,
     calendarUrl,
     timeZone,
+    hasData,
     loading,
     error,
     refresh,
@@ -213,7 +214,7 @@ function Calendar() {
         <div className="calendar-card__state">
           Loading calendar...
         </div>
-      ) : error ? (
+      ) : error && !hasData ? (
         <div className="calendar-card__state calendar-card__state--error">
           <span>
             Unable to load calendar

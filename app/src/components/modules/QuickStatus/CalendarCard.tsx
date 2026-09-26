@@ -13,6 +13,7 @@ function CalendarCard() {
   const {
     events,
     timeZone,
+    hasData,
     loading,
     error,
   } = useCalendar();
@@ -113,7 +114,7 @@ function CalendarCard() {
             Loading...
           </span>
         </>
-      ) : error ? (
+      ) : error && !hasData ? (
         <>
           <strong className="status-card__primary">
             Unavailable

@@ -17,12 +17,15 @@ describe('Calendar event editing client', () => {
     const page = await readFile(new URL('../../app/src/pages/WeeklyCalendar.tsx', import.meta.url), 'utf8');
     const editor = await readFile(new URL('../../app/src/components/modules/Calendar/CalendarEventEditor.tsx', import.meta.url), 'utf8');
     const home = await readFile(new URL('../../app/src/components/modules/Calendar/Calendar.tsx', import.meta.url), 'utf8');
+    assert.match(page, /allowEditing && event\.writable === true/);
+    assert.match(page, /allowEditing=\{fresh\}/);
     assert.match(page, /event\.writable === true/);
     assert.match(page, /Edit event/);
     assert.match(editor, /This occurrence can be edited\. Whole-series editing is not available yet\./);
     assert.match(editor, /Saving…/);
     assert.match(editor, /Load latest/);
     assert.match(editor, /await updateCalendarEvent/);
+    assert.match(editor, /invalidateCachedCalendarEvent/);
     assert.match(editor, /await onSaved/);
     assert.doesNotMatch(home, /CalendarEventEditor|Edit event|getCalendarEditContext/);
   });

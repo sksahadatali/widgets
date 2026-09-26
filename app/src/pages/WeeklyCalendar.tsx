@@ -124,9 +124,10 @@ function EventCard({
   );
 }
 
-function EventDetails({ event, timeZone, onClose, onUpdated }: {
+function EventDetails({ event, timeZone, allowEditing, onClose, onUpdated }: {
   event: CalendarEvent;
   timeZone: string;
+  allowEditing: boolean;
   onClose: () => void;
   onUpdated: () => Promise<void>;
 }) {
@@ -173,7 +174,7 @@ function EventDetails({ event, timeZone, onClose, onUpdated }: {
           <div><dt>Source</dt><dd>{event.source.label}</dd></div>
         </dl>
         {editError && <p className="calendar-event-editor__error" role="alert">{editError}</p>}
-        {event.writable === true && event.eventKey && (
+        {allowEditing && event.writable === true && event.eventKey && (
           <button type="button" className="weekly-details__edit" onClick={() => void beginEdit()} disabled={loadingEdit}>
             <Pencil size={16} aria-hidden="true" />{loadingEdit ? 'Loading editor…' : 'Edit event'}
           </button>
@@ -259,7 +260,7 @@ function WeeklyCalendar() {
       : { startLocalDate: monthWindow.requestStart, days: monthWindow.requestDays },
     [monthWindow.requestDays, monthWindow.requestStart, view, windowState.startLocalDate]
   );
-  const { events, timeZone, loading, error, refresh } = useCalendar(calendarRequest);
+  const { events, timeZone, loading, error, fresh, refresh } = useCalendar(calendarRequest);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
@@ -412,7 +413,7 @@ function WeeklyCalendar() {
       {expandedDayData && (
         <DayEventsDialog localDate={expandedDayData.localDate} events={expandedDayData.events} timeZone={timeZone} onClose={() => setExpandedDay(null)} onSelect={showEvent} onAssignmentChanged={refresh} />
       )}
-      {selectedEvent && <EventDetails event={selectedEvent} timeZone={timeZone} onClose={() => setSelectedEvent(null)} onUpdated={refresh} />}
+      {selectedEvent && <EventDetails event={selectedEvent} timeZone={timeZone} allowEditing={fresh} onClose={() => setSelectedEvent(null)} onUpdated={refresh} />}
     </main>
   );
 }

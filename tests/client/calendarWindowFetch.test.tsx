@@ -89,14 +89,26 @@ describe('Calendar window client architecture', () => {
     assert.match(calendarPage, /CalendarPeoplePicker/);
   });
 
-  it('keys stale-response protection by both start date and day count', async () => {
+  it('uses one shared SWR store instead of per-consumer refresh intervals', async () => {
     const hook = await readFile(
       new URL('../../app/src/hooks/useCalendar.ts', import.meta.url),
       'utf8',
     );
-    assert.match(hook, /startLocalDate \?\? 'default'/);
-    assert.match(hook, /days \?\? 7/);
-    assert.match(hook, /requestId\.current !== currentRequestId/);
-    assert.match(hook, /calendarData\?\.requestKey === requestKey/);
+    const store = await readFile(
+      new URL('../../app/src/calendar/calendarQueryStore.ts', import.meta.url),
+      'utf8',
+    );
+    const focus = await readFile(
+      new URL('../../app/src/services/focusService.ts', import.meta.url),
+      'utf8',
+    );
+
+    assert.match(hook, /getCalendarQueryStore\(\)/);
+    assert.match(hook, /store\.subscribe/);
+    assert.match(hook, /store\.ensure/);
+    assert.doesNotMatch(hook, /setInterval/);
+    assert.match(store, /inFlight: Promise<CalendarData> \| null/);
+    assert.match(store, /prefetchCalendarWindow/);
+    assert.match(focus, /getSharedCalendarData/);
   });
 });
