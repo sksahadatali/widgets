@@ -17,6 +17,9 @@ import {
 import type {
   CalendarEvent,
 } from '../../app/src/calendar/calendarModel.ts';
+import type {
+  TravelSnapshot,
+} from '../../app/src/services/travelService.ts';
 
 const originalFetch = globalThis.fetch;
 const originalAppMode = process.env.VITE_EY_MODE;
@@ -106,7 +109,8 @@ function build(
   schoolInsight: {
     text: string;
     consumedEventIds: string[];
-  } | null
+  } | null,
+  travel: TravelSnapshot | null = null,
 ) {
   return buildTodaysBrief({
     weather: null,
@@ -114,6 +118,7 @@ function build(
     todayEvents,
     nest: null,
     schoolInsight,
+    travel,
   });
 }
 
@@ -193,7 +198,7 @@ describe("Today's Brief School candidate integration", () => {
       }));
     };
 
-    await refreshTravelInfoIfNeeded(
+    const route = await refreshTravelInfoIfNeeded(
       'Example destination',
       meetingTime
     );
@@ -215,17 +220,102 @@ describe("Today's Brief School candidate integration", () => {
       {
         text: 'School reopens tomorrow',
         consumedEventIds: ['travel-event'],
-      }
+      },
+      {
+        destination: 'Example destination',
+        route,
+      },
     );
 
     assert.ok(
       result.items.some(item =>
-        item.startsWith('Appointment • ')
+        item.startsWith('Appointment • ') &&
+        item.includes('Drive 20 min')
       )
     );
     assert.ok(
       result.items.includes('School reopens tomorrow')
     );
+  });
+
+  it('falls back to the correct event time when travel is unavailable', () => {
+    const meetingTime = new Date(
+      Date.now() + 90 * 60 * 1000
+    );
+    const result = build([
+      event('travel-event', 'Test travel', {
+        allDay: false,
+        location: 'Example destination',
+        start: meetingTime.toISOString(),
+        end: new Date(
+          meetingTime.getTime() + 60 * 60 * 1000
+        ).toISOString(),
+      }),
+    ], null);
+    const displayTime = meetingTime.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    assert.ok(result.items.includes(
+      `Test travel starts at ${displayTime}.`
+    ));
+    assert.ok(result.items.every(item => !item.includes('Drive ')));
+  });
+
+  it('does not apply a cached route belonging to another destination', () => {
+    const meetingTime = new Date(
+      Date.now() + 90 * 60 * 1000
+    );
+    const result = build([
+      event('travel-event', 'Test travel', {
+        allDay: false,
+        location: 'New destination',
+        start: meetingTime.toISOString(),
+        end: new Date(
+          meetingTime.getTime() + 60 * 60 * 1000
+        ).toISOString(),
+      }),
+    ], null, {
+      destination: 'Old destination',
+      route: { travelMinutes: 20, distanceKm: 5 },
+    });
+
+    assert.ok(result.items.every(item => !item.includes('Drive ')));
+    assert.ok(result.items.some(item => item.startsWith(
+      'Test travel starts at '
+    )));
+  });
+
+  it('keeps prayer and weather candidates when travel is unavailable', () => {
+    const timings = {
+      Fajr: '05:00', Sunrise: '06:30', Dhuhr: '13:00',
+      Asr: '17:00', Maghrib: '19:00', Isha: '20:30',
+    };
+    const result = buildTodaysBrief({
+      weather: {
+        temperature: 12, feelsLike: 10, humidityPercent: 80,
+        high: 14, low: 9, condition: 'Rain', weatherCode: 61,
+        location: 'Test Town', updatedAt: new Date().toISOString(),
+        forecast: [],
+      },
+      prayer: {
+        name: 'Asr', time: '17:00', dateTime: new Date().toISOString(),
+        minutesRemaining: 45, isDueSoon: false, isCurrentPrayer: false,
+        timeRemaining: 'In 45m', timings, hijriDate: '15 Rabi al-Thani',
+      },
+      todayEvents: [],
+      nest: null,
+      schoolInsight: null,
+      travel: null,
+    });
+
+    assert.ok(result.items.includes(
+      'Asr is coming up in 45 minutes at 17:00.'
+    ));
+    assert.ok(result.items.some(item => item.includes(
+      'Take an umbrella before leaving home.'
+    )));
   });
 
   it('keeps the existing maximum of three Brief messages', () => {

@@ -1,5 +1,5 @@
 import { apiUrl } from './clientApi';
-export interface RouteInfo { travelMinutes: number; distanceKm: number }
+export interface RouteInfo { travelMinutes: number; distanceKm?: number }
 type CachedRoute = { destination: string; route: RouteInfo; updatedAt: Date };
 let cachedRoute: CachedRoute | null = null;
 export function getCachedTravelInfo(): RouteInfo | null { return cachedRoute?.route ?? null; }
