@@ -309,6 +309,20 @@
 }
 
 @media (min-width: 1201px) {
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .home__brief {
+    grid-column: span 7;
+  }
+
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .home__focus {
+    grid-column: span 5;
+  }
+
   :where(:root[data-display-profile='elo-touch'])
     .home {
     --ey-list-max-height: 260px;

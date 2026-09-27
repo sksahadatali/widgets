@@ -227,6 +227,33 @@
 }
 
 @media (min-width: 1201px) {
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__text {
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__item-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__item-meta {
+    flex: 0 0 auto;
+    margin-top: 0;
+  }
+
   :where(:root[data-display-profile='elo-touch'])
     .todays-focus {
     min-height: 0;
