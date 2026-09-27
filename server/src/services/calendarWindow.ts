@@ -7,6 +7,11 @@ export type CalendarWindowRequest = {
   days?: number;
 };
 
+export type CanonicalCalendarWindow = {
+  startDate: string;
+  days: number;
+};
+
 export function isCalendarLocalDate(value: string): boolean {
   const match = LOCAL_DATE_PATTERN.exec(value);
   if (!match) return false;
@@ -69,6 +74,26 @@ export function getCalendarHouseholdToday(
   } catch {
     throw new CalendarWindowRequestError('Calendar window is invalid.');
   }
+}
+
+export function getCanonicalCalendarWindow(
+  request: CalendarWindowRequest,
+  now: Date,
+  timeZone: string,
+): CanonicalCalendarWindow {
+  return {
+    startDate: request.startDate ?? getCalendarHouseholdToday(now, timeZone),
+    days: request.days ?? 7,
+  };
+}
+
+export function getCalendarWindowKey(
+  request: CalendarWindowRequest,
+  now: Date,
+  timeZone: string,
+): string {
+  const window = getCanonicalCalendarWindow(request, now, timeZone);
+  return `${window.startDate}:${window.days}`;
 }
 
 export function parseCalendarWindowRequest(
