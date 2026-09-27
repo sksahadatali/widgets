@@ -8,6 +8,7 @@ import type {
 
 import {
   getTravelRecommendation,
+  type TravelSnapshot,
 } from './travelService';
 
 import {
@@ -26,6 +27,7 @@ export type BriefInput = {
   todayEvents: CalendarEvent[];
   nest: NestStatus | null;
   schoolInsight: SchoolBriefInsight | null;
+  travel: TravelSnapshot | null;
 };
 
 type BriefItem = {
@@ -371,12 +373,14 @@ function getHeading(
 }
 
 function getTravelItem(
-  todayEvents: CalendarEvent[]
+  todayEvents: CalendarEvent[],
+  travel: TravelSnapshot | null,
 ): BriefItem | null {
 
   const recommendation =
     getTravelRecommendation(
-      todayEvents
+      todayEvents,
+      travel,
     );
 
   if (!recommendation) {
@@ -461,7 +465,8 @@ export function buildTodaysBrief(
 
   const travelItem =
   getTravelItem(
-    input.todayEvents
+    input.todayEvents,
+    input.travel,
   );
 
 if (travelItem) {

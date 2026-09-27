@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 
 import { useWeather } from './useWeather';
@@ -21,6 +22,10 @@ import {
 import {
   getTravelSettings,
 } from '../services/travelSettingsService';
+
+import type {
+  TravelSnapshot,
+} from '../services/travelService';
 
 import {
   selectSchoolBriefInsight,
@@ -78,6 +83,9 @@ function getTravelRefreshMs(
 
 export function useTodaysBrief(): UseTodaysBriefResult {
 
+  const [travel, setTravel] =
+    useState<TravelSnapshot | null>(null);
+
   const {
     weather,
     loading: weatherLoading,
@@ -124,6 +132,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
         )[0];
 
     if (!nextEvent) {
+      setTravel(null);
       return;
     }
 
@@ -132,10 +141,15 @@ export function useTodaysBrief(): UseTodaysBriefResult {
 
     try {
 
-      await refreshTravelInfoIfNeeded(
+      const route = await refreshTravelInfoIfNeeded(
         nextEvent.location!,
         meetingTime
       );
+
+      setTravel({
+        destination: nextEvent.location!,
+        route,
+      });
 
     } catch (error) {
 
@@ -211,6 +225,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
         todayEvents,
         nest,
         schoolInsight,
+        travel,
       });
     },
     [
@@ -220,6 +235,7 @@ export function useTodaysBrief(): UseTodaysBriefResult {
       todayEvents,
       timeZone,
       nest,
+      travel,
     ]
   );
 

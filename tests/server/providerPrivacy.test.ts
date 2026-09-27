@@ -10,7 +10,16 @@ const config: HouseholdConfig = {
   schemaVersion: 1,
   household: { displayName: 'Provider Household', members: [{ id: 'adult', displayName: 'Adult', memberType: 'adult' }] },
   location: { name: 'Provider Town', latitude: 51.234567, longitude: -0.765432, timezone: 'Europe/London' },
-  travel: { homeAddress: 'Private Origin Address', leaveBufferMinutes: 10, destinations: [] },
+  travel: {
+    homeAddress: 'Private Origin Address',
+    leaveBufferMinutes: 10,
+    destinations: [{
+      id: 'known-venue',
+      name: 'Known Venue',
+      aliases: ['Known destination'],
+      travelMinutes: 17,
+    }],
+  },
   calendar: {
     endpoint: 'https://calendar.example.test/private-provider', refreshMinutes: 15,
     sources: [{ sourceId: 'school', label: 'School', kind: 'school', calendarId: 'raw-private-calendar-id' }],
@@ -71,5 +80,38 @@ describe('purpose-specific provider privacy', () => {
     });
     assert.deepEqual(addresses, ['Private Origin Address', 'Requested Destination']);
     assert.deepEqual(result, { travelMinutes: 20, distanceKm: 5 });
+  });
+
+  it('falls back to a configured destination when the live Travel provider fails', async () => {
+    setHouseholdConfigForTests(config);
+    process.env.GOOGLE_MAPS_API_KEY = 'synthetic-server-key';
+    let providerRequests = 0;
+
+    const result = await getRoute(
+      'Known Venue, Example Road',
+      async () => {
+        providerRequests += 1;
+        return new Response(
+          JSON.stringify({ error: 'synthetic provider failure' }),
+          { status: 503 },
+        );
+      },
+    );
+
+    assert.equal(providerRequests, 2);
+    assert.deepEqual(result, { travelMinutes: 17 });
+  });
+
+  it('does not invent a route when the provider fails for an unknown destination', async () => {
+    setHouseholdConfigForTests(config);
+    process.env.GOOGLE_MAPS_API_KEY = 'synthetic-server-key';
+
+    await assert.rejects(
+      getRoute(
+        'Unknown destination',
+        async () => new Response(null, { status: 503 }),
+      ),
+      /Travel geocoding failed/,
+    );
   });
 });

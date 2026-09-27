@@ -7,8 +7,13 @@ import {
 } from './travelSettingsService';
 
 import {
-  getCachedTravelInfo,
+  type RouteInfo,
 } from './googleMapsService';
+
+export type TravelSnapshot = {
+  destination: string;
+  route: RouteInfo;
+};
 
 export interface TravelRecommendation {
   title: string;
@@ -49,6 +54,7 @@ function findNextTravelEvent(
 
 export function getTravelRecommendation(
   calendarEvents: CalendarEvent[],
+  travel: TravelSnapshot | null,
   now: Date = new Date(),
 ): TravelRecommendation | null {
 
@@ -65,12 +71,14 @@ export function getTravelRecommendation(
     return null;
   }
 
-  const route =
-    getCachedTravelInfo();
-
-  if (!route) {
+  if (
+    !travel ||
+    travel.destination !== nextEvent.location
+  ) {
     return null;
   }
+
+  const route = travel.route;
 
   const travelMinutes =
     route.travelMinutes;
