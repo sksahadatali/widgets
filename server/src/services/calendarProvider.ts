@@ -54,6 +54,38 @@ const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const RFC3339_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const PROVIDER = 'google-calendar';
 const EVENT_KEY_PREFIX = 'calendar-event-v1-';
+export const CALENDAR_PROVIDER_TIMEOUT_MS = 15_000;
+
+export type CalendarProviderTiming = {
+    providerMs: number;
+    processingMs: number;
+};
+
+export type TimedCalendarData = {
+    data: Awaited<ReturnType<typeof buildSafeCalendarData>>;
+    timing: CalendarProviderTiming;
+};
+
+type CalendarProviderReadOptions = {
+    fetcher?: typeof fetch;
+    timeoutMs?: number;
+    clock?: () => number;
+};
+
+export class CalendarProviderTimeoutError extends Error {
+    constructor() {
+        super('Calendar provider request timed out.');
+        this.name = 'CalendarProviderTimeoutError';
+    }
+}
+
+const errorTimings = new WeakMap<object, CalendarProviderTiming>();
+
+export function getCalendarProviderErrorTiming(error: unknown): CalendarProviderTiming | undefined {
+    return error !== null && (typeof error === 'object' || typeof error === 'function')
+        ? errorTimings.get(error as object)
+        : undefined;
+}
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value); }
 function nonEmptyString(value: unknown): value is string { return typeof value === 'string' && value.trim().length > 0; }
 function nullableString(value: unknown): value is string | null { return value === null || typeof value === 'string'; }
@@ -228,27 +260,43 @@ function semanticFor(event: SafeCalendarEvent, description: string, rules: reado
     const distinct = new Map(matches.map(rule => [`${rule.kind}\0${rule.label ?? ''}`, { kind: rule.kind, ...(rule.label ? { label: rule.label } : {}) }]));
     return distinct.size === 1 ? [...distinct.values()][0] : undefined;
 }
-export async function getSafeCalendarData(requestedWindow: CalendarWindowRequest = {}, fetcher: typeof fetch = fetch) {
+async function readProviderPayload(
+    endpoint: string,
+    fetcher: typeof fetch,
+    timeoutMs: number,
+): Promise<unknown> {
+    const controller = new AbortController();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const provider = (async () => {
+        const response = await fetcher(endpoint, {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal,
+        });
+        if (!response.ok)
+            throw new Error('Calendar provider request failed.');
+        return response.json() as Promise<unknown>;
+    })();
+    const deadline = new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+            reject(new CalendarProviderTimeoutError());
+            controller.abort();
+        }, timeoutMs);
+    });
+    try {
+        return await Promise.race([provider, deadline]);
+    }
+    finally {
+        if (timeout)
+            clearTimeout(timeout);
+    }
+}
+
+function buildSafeCalendarData(
+    payload: unknown,
+    requestedWindow: CalendarWindowRequest,
+) {
     const config = getHouseholdConfig();
-    const requestedStartDate = requestedWindow.startDate;
-    const requestedDays = requestedWindow.days;
-    if (requestedStartDate !== undefined && !isCalendarLocalDate(requestedStartDate))
-        throw new Error('Calendar requested window is invalid.');
-    if (requestedDays !== undefined && (!Number.isSafeInteger(requestedDays) || requestedDays < 1 || requestedDays > 42 || requestedStartDate === undefined))
-        throw new Error('Calendar requested window is invalid.');
-    const endpoint = requestedStartDate === undefined
-        ? config.calendar.endpoint
-        : (() => {
-            const url = new URL(config.calendar.endpoint);
-            url.searchParams.set('startDate', requestedStartDate);
-            if (requestedDays !== undefined)
-                url.searchParams.set('days', String(requestedDays));
-            return url.toString();
-        })();
-    const response = await fetcher(endpoint, { headers: { Accept: 'application/json' } });
-    if (!response.ok)
-        throw new Error('Calendar provider request failed.');
-    const data = providerResponse(await response.json(), config.location.timezone, requestedWindow);
+    const data = providerResponse(payload, config.location.timezone, requestedWindow);
     const events = data.events.map(providerEvent => {
         const range = civilRange(providerEvent, data.timeZone);
         if (!range)
@@ -266,4 +314,66 @@ export async function getSafeCalendarData(requestedWindow: CalendarWindowRequest
         return { ...event, ...(semantic ? { semantic } : {}) };
     });
     return { calendarUrl: config.calendar.presentationUrl ?? '', generatedAt: data.generatedAt, timeZone: data.timeZone, events };
+}
+
+export async function getTimedSafeCalendarData(
+    requestedWindow: CalendarWindowRequest = {},
+    options: CalendarProviderReadOptions = {},
+): Promise<TimedCalendarData> {
+    const config = getHouseholdConfig();
+    const requestedStartDate = requestedWindow.startDate;
+    const requestedDays = requestedWindow.days;
+    if (requestedStartDate !== undefined && !isCalendarLocalDate(requestedStartDate))
+        throw new Error('Calendar requested window is invalid.');
+    if (requestedDays !== undefined && (!Number.isSafeInteger(requestedDays) || requestedDays < 1 || requestedDays > 42 || requestedStartDate === undefined))
+        throw new Error('Calendar requested window is invalid.');
+    const endpoint = requestedStartDate === undefined
+        ? config.calendar.endpoint
+        : (() => {
+            const url = new URL(config.calendar.endpoint);
+            url.searchParams.set('startDate', requestedStartDate);
+            if (requestedDays !== undefined)
+                url.searchParams.set('days', String(requestedDays));
+            return url.toString();
+        })();
+    const fetcher = options.fetcher ?? fetch;
+    const timeoutMs = options.timeoutMs ?? CALENDAR_PROVIDER_TIMEOUT_MS;
+    const clock = options.clock ?? (() => performance.now());
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+        throw new Error('Calendar provider timeout is invalid.');
+
+    const providerStarted = clock();
+    let providerMs = 0;
+    let processingStarted: number | undefined;
+    try {
+        const payload = await readProviderPayload(endpoint, fetcher, timeoutMs);
+        providerMs = Math.max(0, clock() - providerStarted);
+        processingStarted = clock();
+        const data = buildSafeCalendarData(payload, requestedWindow);
+        return {
+            data,
+            timing: {
+                providerMs,
+                processingMs: Math.max(0, clock() - processingStarted),
+            },
+        };
+    }
+    catch (error) {
+        const timing = {
+            providerMs: providerMs || Math.max(0, clock() - providerStarted),
+            processingMs: processingStarted === undefined
+                ? 0
+                : Math.max(0, clock() - processingStarted),
+        };
+        if (error !== null && (typeof error === 'object' || typeof error === 'function'))
+            errorTimings.set(error as object, timing);
+        throw error;
+    }
+}
+
+export async function getSafeCalendarData(
+    requestedWindow: CalendarWindowRequest = {},
+    fetcher: typeof fetch = fetch,
+) {
+    return (await getTimedSafeCalendarData(requestedWindow, { fetcher })).data;
 }

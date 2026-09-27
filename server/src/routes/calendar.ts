@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { getSafeCalendarData } from '../services/calendarProvider.js';
+import {
+  getCalendarProviderErrorTiming,
+  type CalendarProviderTiming,
+  type TimedCalendarData,
+} from '../services/calendarProvider.js';
 import { getHouseholdConfig, getRuntimeAppMode } from '../config/householdConfig.js';
 import {
   CalendarProfileAssignmentStoreCorruptError,
@@ -16,7 +20,39 @@ import {
   getCalendarEditContext,
   updateCalendarEvent,
 } from '../services/calendarEventWriter.js';
+import { calendarReadCoordinator } from '../services/calendarReadCoordinator.js';
 const router = Router();
+
+type CalendarReadRouteDependencies = {
+  readCalendar: (request: import('../services/calendarWindow.js').CalendarWindowRequest) => Promise<TimedCalendarData>;
+  readAssignments: typeof calendarProfileAssignmentStore.read;
+  now: () => Date;
+  clock: () => number;
+};
+
+const defaultReadDependencies: CalendarReadRouteDependencies = {
+  readCalendar: request => calendarReadCoordinator.get(request),
+  readAssignments: () => calendarProfileAssignmentStore.read(),
+  now: () => new Date(),
+  clock: () => performance.now(),
+};
+
+function duration(value: number): string {
+  return Math.max(0, value).toFixed(1);
+}
+
+export function formatCalendarServerTiming(
+  totalMs: number,
+  timing?: CalendarProviderTiming,
+): string {
+  return [
+    ...(timing ? [
+      `provider;dur=${duration(timing.providerMs)}`,
+      `processing;dur=${duration(timing.processingMs)}`,
+    ] : []),
+    `total;dur=${duration(totalMs)}`,
+  ].join(', ');
+}
 
 function sendWriteError(error: unknown, response: import('express').Response): void {
   if (error instanceof CalendarWriteError) {
@@ -86,40 +122,58 @@ router.delete('/profile-assignments/:eventKey', async (request, response) => {
   } catch (error) { sendAssignmentError(error, response); }
 });
 
-router.get('/', async (request, response) => {
+export async function readCalendarRoute(
+  request: import('express').Request,
+  response: import('express').Response,
+  dependencies: CalendarReadRouteDependencies = defaultReadDependencies,
+): Promise<void> {
+  const started = dependencies.clock();
   try {
     if (getRuntimeAppMode() === 'demo') {
       parseCalendarWindowRequest(
         request.query,
-        new Date(),
+        dependencies.now(),
         'Europe/London',
       );
+      response.set('Server-Timing', formatCalendarServerTiming(dependencies.clock() - started));
       response.json({ calendarUrl: '', generatedAt: new Date().toISOString(), timeZone: 'Europe/London', events: [] });
       return;
     }
     const config = getHouseholdConfig();
     const windowRequest = parseCalendarWindowRequest(
       request.query,
-      new Date(),
+      dependencies.now(),
       config.location.timezone,
     );
-    const [data, store] = await Promise.all([
-      getSafeCalendarData(windowRequest),
-      calendarProfileAssignmentStore.read(),
+    const [calendar, store] = await Promise.all([
+      dependencies.readCalendar(windowRequest),
+      dependencies.readAssignments(),
     ]);
     const sources = config.calendar.sources;
+    response.set('Server-Timing', formatCalendarServerTiming(
+      dependencies.clock() - started,
+      calendar.timing,
+    ));
     response.json({
-      ...data,
-      events: data.events.map(event => ({
+      ...calendar.data,
+      events: calendar.data.events.map(event => ({
         ...event,
         profileAssignment: resolveCalendarProfileAssignment(event.eventKey, event.source.id, store.assignments, sources),
       })),
     });
   } catch (error) {
+    response.set('Server-Timing', formatCalendarServerTiming(
+      dependencies.clock() - started,
+      getCalendarProviderErrorTiming(error),
+    ));
     if (error instanceof CalendarWindowRequestError) {
       response.status(400).json({ error: error.message });
     } else if (error instanceof CalendarProfileAssignmentStoreError) sendAssignmentError(error, response);
     else response.status(502).json({ error: 'Calendar unavailable' });
   }
+}
+
+router.get('/', (request, response) => {
+  void readCalendarRoute(request, response);
 });
 export default router;
