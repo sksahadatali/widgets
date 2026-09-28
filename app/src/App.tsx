@@ -34,6 +34,14 @@ import {
   getAppRoute,
   type AppPage,
 } from './navigation/appRoutes';
+import {
+  useAmbientRotation,
+} from './ambient/useAmbientRotation';
+
+function AmbientRotationController() {
+  useAmbientRotation();
+  return null;
+}
 
 function App() {
   const navigate = useNavigate();
@@ -141,6 +149,7 @@ function App() {
   return (
     <ThemeProvider>
       <DisplayProfileProvider>
+        <AmbientRotationController />
         <HouseholdProfileProvider>
           <RewardProvider>
             <RoutineProvider>
