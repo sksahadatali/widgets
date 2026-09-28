@@ -148,23 +148,6 @@
   :root:is(
     [data-display-profile='desktop'],
     [data-display-profile='elo-touch']
-  ) .home .todays-focus__item {
-    gap: 12px;
-    min-height: var(--ey-touch-target-min);
-    padding: 2px 0;
-  }
-
-  :root:is(
-    [data-display-profile='desktop'],
-    [data-display-profile='elo-touch']
-  ) .home .todays-focus__why-button {
-    min-width: var(--ey-touch-target-min);
-    min-height: var(--ey-touch-target-min);
-  }
-
-  :root:is(
-    [data-display-profile='desktop'],
-    [data-display-profile='elo-touch']
   ) .home .quick-status__grid {
     gap: 12px;
     margin-top: 10px;

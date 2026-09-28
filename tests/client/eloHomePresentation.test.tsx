@@ -52,14 +52,37 @@ describe('Elo Home presentation', () => {
     );
   });
 
-  it('retains the Elo touch-target token for Focus actions', async () => {
+  it('uses compact wide rows with usable Focus action targets', async () => {
     const focus = await read(
       'components/modules/TodaysFocus/TodaysFocus.css',
     );
 
     assert.match(
       focus,
-      /data-display-profile='elo-touch'[\s\S]*?\.todays-focus__why-button\s*\{[^}]*min-width:\s*var\(--ey-touch-target-min\);[^}]*min-height:\s*var\(--ey-touch-target-min\);/,
+      /@media \(min-width: 1201px\)[\s\S]*?data-display-profile='desktop'[\s\S]*?data-display-profile='elo-touch'[\s\S]*?\.todays-focus__item\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*0;/,
+    );
+    assert.match(
+      focus,
+      /\.todays-focus__item-link,[\s\S]*?\.todays-focus__why-button\s*\{[^}]*min-height:\s*44px;/,
+    );
+    assert.match(
+      focus,
+      /data-display-profile='elo-touch'[\s\S]*?\.todays-focus__why-button\s*\{[^}]*min-width:\s*var\(--ey-touch-target-min\);/,
+    );
+    assert.doesNotMatch(
+      focus,
+      /\.todays-focus__item\s*\{[^}]*min-height:\s*var\(--ey-touch-target-min\);/,
+    );
+  });
+
+  it('leaves Compact Focus row density unchanged', async () => {
+    const focus = await read(
+      'components/modules/TodaysFocus/TodaysFocus.css',
+    );
+
+    assert.match(
+      focus,
+      /data-display-profile='compact'[\s\S]*?\.todays-focus__item\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*4px 0;/,
     );
   });
 

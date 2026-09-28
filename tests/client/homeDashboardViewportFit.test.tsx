@@ -59,21 +59,15 @@ describe('Home dashboard viewport fit', () => {
     );
   });
 
-  it('reclaims non-interactive spacing while preserving profile touch targets', async () => {
+  it('reclaims non-interactive spacing without overriding Focus row density', async () => {
     const css = await readHomeStyles();
 
     assert.match(
       css,
       /data-display-profile='desktop'[\s\S]*data-display-profile='elo-touch'/,
     );
-    assert.match(
-      css,
-      /\.home \.todays-focus__item\s*\{[^}]*min-height:\s*var\(--ey-touch-target-min\);/s,
-    );
-    assert.match(
-      css,
-      /\.home \.todays-focus__why-button\s*\{[^}]*min-width:\s*var\(--ey-touch-target-min\);[^}]*min-height:\s*var\(--ey-touch-target-min\);/s,
-    );
+    assert.doesNotMatch(css, /\.home \.todays-focus__item\s*\{/);
+    assert.doesNotMatch(css, /\.home \.todays-focus__why-button\s*\{/);
     assert.match(
       css,
       /\.home \.quick-status \.status-card\s*\{[^}]*min-height:\s*0;[^}]*padding-block:\s*14px;/s,
