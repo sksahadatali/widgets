@@ -62,7 +62,9 @@ export function useAmbientRotation(): void {
     effectiveProfile,
   } = useDisplayProfile();
   const pathRef = useRef(location.pathname);
+  const navigateRef = useRef(navigate);
   pathRef.current = location.pathname;
+  navigateRef.current = navigate;
 
   useEffect(() => {
     return startAmbientRotation(
@@ -78,12 +80,15 @@ export function useAmbientRotation(): void {
           window.removeEventListener(event, listener),
         currentPath: () => pathRef.current,
         navigate: path =>
-          navigate(path, { replace: true }),
+          navigateRef.current(
+            path,
+            { replace: true }
+          ),
         prefetchCalendar: () =>
           prefetchCalendarWindow(),
         hasBlockingInteraction:
           hasActiveAmbientInteraction,
       }
     );
-  }, [effectiveProfile, navigate]);
+  }, [effectiveProfile]);
 }

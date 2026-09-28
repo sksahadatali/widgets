@@ -173,7 +173,7 @@ describe('Ambient Rotation Phase 1', () => {
     assert.deepEqual(harness.navigations, []);
   });
 
-  it('follows the fixed Home to Meals sequence and repeats', () => {
+  it('continues the full sequence at page intervals without another idle delay', () => {
     const { harness } = start('desktop');
     harness.advanceBy(AMBIENT_IDLE_TIMEOUT_MS);
 
@@ -195,6 +195,14 @@ describe('Ambient Rotation Phase 1', () => {
         '/meals',
         '/',
       ]
+    );
+    assert.deepEqual(
+      harness.navigations.map(entry => entry.at),
+      AMBIENT_PAGE_SEQUENCE.map((_, index) =>
+        AMBIENT_IDLE_TIMEOUT_MS +
+        AMBIENT_PAGE_DURATION_MS *
+          (index + 1)
+      )
     );
   });
 
@@ -327,7 +335,7 @@ describe('Ambient Rotation Phase 1', () => {
     );
     assert.match(
       hook,
-      /navigate\(path, \{ replace: true \}\)/
+      /navigateRef\.current\([\s\S]*?path,[\s\S]*?\{ replace: true \}/
     );
     assert.match(sidebar, /<NavLink/);
     assert.match(
@@ -338,6 +346,33 @@ describe('Ambient Rotation Phase 1', () => {
       app.match(/<AmbientRotationController \/>/g)
         ?.length,
       1
+    );
+  });
+
+  it('does not restart the controller when React Router changes navigate identity', async () => {
+    const hook = await readFile(
+      new URL(
+        '../../app/src/ambient/useAmbientRotation.ts',
+        import.meta.url
+      ),
+      'utf8'
+    );
+
+    assert.match(
+      hook,
+      /const navigateRef = useRef\(navigate\);/
+    );
+    assert.match(
+      hook,
+      /navigateRef\.current = navigate;/
+    );
+    assert.match(
+      hook,
+      /useEffect\(\(\) => \{[\s\S]*?startAmbientRotation[\s\S]*?\}, \[effectiveProfile\]\);/
+    );
+    assert.doesNotMatch(
+      hook,
+      /\[effectiveProfile, navigate\]/
     );
   });
 });
