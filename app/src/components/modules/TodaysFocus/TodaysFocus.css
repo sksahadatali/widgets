@@ -254,6 +254,26 @@
     margin-top: 0;
   }
 
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__item {
+    gap: 12px;
+    min-height: 46px;
+    padding: 0;
+  }
+
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__item-link,
+  :where(:root:is(
+    [data-display-profile='desktop'],
+    [data-display-profile='elo-touch']
+  )) .todays-focus__why-button {
+    min-height: 44px;
+  }
+
   :where(:root[data-display-profile='elo-touch'])
     .todays-focus {
     min-height: 0;
@@ -267,13 +287,6 @@
   }
 
   :where(:root[data-display-profile='elo-touch'])
-    .todays-focus__item {
-    gap: 12px;
-    min-height: var(--ey-touch-target-min);
-    padding: 2px 0;
-  }
-
-  :where(:root[data-display-profile='elo-touch'])
     .todays-focus__actions {
     gap: 6px;
   }
@@ -281,7 +294,6 @@
   :where(:root[data-display-profile='elo-touch'])
     .todays-focus__why-button {
     min-width: var(--ey-touch-target-min);
-    min-height: var(--ey-touch-target-min);
   }
 
   :where(:root[data-display-profile='elo-touch'])
