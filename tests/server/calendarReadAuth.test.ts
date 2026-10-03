@@ -57,7 +57,10 @@ async function harness() {
       base64EncodeWebSafe: (value: number[]) => Buffer.from(value).toString('base64url'),
       newBlob: (value: number[]) => ({ getDataAsString: () => Buffer.from(value).toString('utf8') }),
       computeHmacSha256Signature: (value: string, key: string) => [...createHmac('sha256', key).update(value).digest()],
-      formatDate: () => '2026-10-03',
+      formatDate: (date: unknown) => {
+        if (!(date instanceof Date)) throw new Error('Invalid argument: date. Should be of type: Date');
+        return '2026-10-03';
+      },
     },
     PropertiesService: { getScriptProperties: () => ({
       getProperty: (key: string) => { if (readFailure) throw new Error('private detail'); return properties.get(key) ?? null; },
