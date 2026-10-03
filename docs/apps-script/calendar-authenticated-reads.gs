@@ -103,7 +103,10 @@ function verifiedReadRequest_(e) {
   var parameters = {};
   if (window.startDate !== undefined) parameters.startDate = [window.startDate];
   if (window.days !== undefined) parameters.days = [String(window.days)];
-  requestedWindow_({ parameters: parameters });
+  requestedWindow_(
+    { parameters: parameters },
+    new Date()
+  );
   reserveReadNonce_(request.requestId.toLowerCase(), issuedAt + READ_AUTH.MAX_AGE_MS);
   return request;
 }
