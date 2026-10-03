@@ -1,3 +1,4 @@
+import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import express from 'express';
 import type { Server } from 'node:http';
@@ -17,6 +18,8 @@ import { CalendarReadCoordinator } from '../../server/src/services/calendarReadC
 
 const householdToday = '2026-09-20';
 const now = new Date('2026-09-20T08:00:00.000Z');
+installCalendarReadTestSecret();
+
 const config: HouseholdConfig = {
   schemaVersion: 1,
   household: {

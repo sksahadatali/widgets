@@ -1,8 +1,11 @@
+import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
 import { setHouseholdConfigForTests, type HouseholdConfig } from '../../server/src/config/householdConfig.js';
 import { getSafeCalendarData } from '../../server/src/services/calendarProvider.js';
+
+installCalendarReadTestSecret();
 
 const config: HouseholdConfig = {
   schemaVersion: 1,

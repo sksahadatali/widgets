@@ -1,3 +1,4 @@
+import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
@@ -11,6 +12,8 @@ import {
   getCalendarHouseholdToday,
   parseCalendarWindowRequest,
 } from '../../server/src/services/calendarWindow.js';
+
+installCalendarReadTestSecret();
 
 const config: HouseholdConfig = {
   schemaVersion: 1,
@@ -156,18 +159,23 @@ describe('Calendar requested-window boundary', () => {
   it('forwards one bounded request and accepts its exact DST-spanning interval', async () => {
     setHouseholdConfigForTests(config);
     let requestedUrl = '';
+    let requestedWindow: unknown;
     const result = await getSafeCalendarData(
       { startDate: '2026-10-01', days: 42 },
-      async input => {
+      async (input, init) => {
         requestedUrl = String(input);
+        assert.equal(init?.method, 'POST');
+        const envelope = JSON.parse(String(init?.body));
+        requestedWindow = JSON.parse(Buffer.from(envelope.payload, 'base64url').toString()).window;
         return new Response(JSON.stringify(v2Response(FORTY_TWO_DAY_WINDOW)));
       },
     );
 
     const url = new URL(requestedUrl);
     assert.equal(url.searchParams.get('deployment'), 'one');
-    assert.equal(url.searchParams.get('startDate'), '2026-10-01');
-    assert.equal(url.searchParams.get('days'), '42');
+    assert.equal(url.searchParams.has('startDate'), false);
+    assert.equal(url.searchParams.has('days'), false);
+    assert.deepEqual(requestedWindow, { startDate: '2026-10-01', days: 42 });
     assert.equal(result.events[0].startLocalDate, '2026-10-26');
     assert.equal(result.events[0].endLocalDateExclusive, '2026-10-27');
     assert.match(result.events[0].eventKey, /^calendar-event-v1-[a-f0-9]{64}$/);

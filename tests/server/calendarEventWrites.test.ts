@@ -1,3 +1,4 @@
+import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -9,6 +10,8 @@ import { CalendarEditRegistry, calendarEditRegistry } from '../../server/src/ser
 import { CalendarWriteError, getCalendarEditContext, parseCalendarEditRequest, updateCalendarEvent } from '../../server/src/services/calendarEventWriter.js';
 import { getSafeCalendarData } from '../../server/src/services/calendarProvider.js';
 import { CalendarProfileAssignmentFileStore } from '../../server/src/services/calendarProfileAssignmentStore.js';
+
+installCalendarReadTestSecret();
 
 const config: HouseholdConfig = {
   schemaVersion: 1,

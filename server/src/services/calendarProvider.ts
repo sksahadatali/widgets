@@ -5,6 +5,7 @@ import {
     type CalendarWindowRequest,
 } from './calendarWindow.js';
 import { calendarEditRegistry, type ProviderTemporal } from './calendarEditRegistry.js';
+import { createCalendarReadEnvelope } from './calendarReadAuth.js';
 type Temporal = ProviderTemporal;
 export type NormalizedProviderEvent = {
     eventKey: string;
@@ -262,14 +263,19 @@ function semanticFor(event: SafeCalendarEvent, description: string, rules: reado
 }
 async function readProviderPayload(
     endpoint: string,
+    request: CalendarWindowRequest,
     fetcher: typeof fetch,
     timeoutMs: number,
 ): Promise<unknown> {
     const controller = new AbortController();
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const provider = (async () => {
+        const envelope = createCalendarReadEnvelope(request);
         const response = await fetcher(endpoint, {
-            headers: { Accept: 'application/json' },
+            method: 'POST',
+            redirect: 'follow',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(envelope),
             signal: controller.signal,
         });
         if (!response.ok)
@@ -327,15 +333,7 @@ export async function getTimedSafeCalendarData(
         throw new Error('Calendar requested window is invalid.');
     if (requestedDays !== undefined && (!Number.isSafeInteger(requestedDays) || requestedDays < 1 || requestedDays > 42 || requestedStartDate === undefined))
         throw new Error('Calendar requested window is invalid.');
-    const endpoint = requestedStartDate === undefined
-        ? config.calendar.endpoint
-        : (() => {
-            const url = new URL(config.calendar.endpoint);
-            url.searchParams.set('startDate', requestedStartDate);
-            if (requestedDays !== undefined)
-                url.searchParams.set('days', String(requestedDays));
-            return url.toString();
-        })();
+    const endpoint = config.calendar.endpoint;
     const fetcher = options.fetcher ?? fetch;
     const timeoutMs = options.timeoutMs ?? CALENDAR_PROVIDER_TIMEOUT_MS;
     const clock = options.clock ?? (() => performance.now());
@@ -346,7 +344,7 @@ export async function getTimedSafeCalendarData(
     let providerMs = 0;
     let processingStarted: number | undefined;
     try {
-        const payload = await readProviderPayload(endpoint, fetcher, timeoutMs);
+        const payload = await readProviderPayload(endpoint, requestedWindow, fetcher, timeoutMs);
         providerMs = Math.max(0, clock() - providerStarted);
         processingStarted = clock();
         const data = buildSafeCalendarData(payload, requestedWindow);
