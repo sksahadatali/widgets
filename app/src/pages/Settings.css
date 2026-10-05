@@ -627,3 +627,98 @@
     text-align: left;
   }
 }
+
+.ambient-settings {
+  padding: var(--ey-card-padding);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-card-radius);
+  background: var(--ey-bg-card);
+  color: var(--ey-text-primary);
+}
+
+.ambient-settings__enabled {
+  display: flex;
+  align-items: center;
+  gap: var(--ey-space-3);
+  min-height: var(--ey-touch-target-min);
+  margin-bottom: var(--ey-space-4);
+  cursor: pointer;
+}
+
+.ambient-settings__enabled input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--ey-accent-primary);
+}
+
+.ambient-settings fieldset {
+  min-width: 0;
+  margin: var(--ey-space-5) 0;
+  padding: 0;
+  border: 0;
+}
+
+.ambient-settings legend {
+  font-weight: 700;
+}
+
+.ambient-settings__sequence,
+.ambient-settings__fields label span {
+  color: var(--ey-text-muted);
+  font-size: 0.85rem;
+}
+
+.ambient-settings__fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ey-space-4);
+}
+
+.ambient-settings__fields label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ey-space-2);
+  min-width: 0;
+}
+
+.ambient-settings__fields input,
+.ambient-settings__actions button {
+  box-sizing: border-box;
+  min-height: var(--ey-touch-target-min);
+  padding: var(--ey-space-2) var(--ey-space-3);
+  border: 1px solid var(--ey-border-default);
+  border-radius: var(--ey-control-radius);
+  background: var(--ey-bg-card-secondary);
+  color: var(--ey-text-primary);
+  font: inherit;
+}
+
+.ambient-settings__fields input {
+  width: 100%;
+}
+
+.ambient-settings__fields input[aria-invalid='true'] {
+  border-color: var(--ey-accent-primary);
+}
+
+.ambient-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ey-space-3);
+}
+
+.ambient-settings__actions button {
+  cursor: pointer;
+}
+
+.ambient-settings input:focus-visible,
+.ambient-settings button:focus-visible {
+  outline: 2px solid var(--ey-accent-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .ambient-settings__fields {
+    grid-template-columns: 1fr;
+  }
+}

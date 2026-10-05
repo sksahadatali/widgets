@@ -6,10 +6,12 @@ import type {
   EffectiveDisplayProfile,
 } from '../display/displayProfiles';
 
-export const AMBIENT_IDLE_TIMEOUT_MS =
-  2 * 60 * 1000;
-export const AMBIENT_PAGE_DURATION_MS =
-  25 * 1000;
+import {
+  DEFAULT_AMBIENT_SETTINGS,
+  normalizeAmbientSettings,
+  type AmbientSettings,
+} from './ambientSettings';
+export { AMBIENT_IDLE_TIMEOUT_MS, AMBIENT_PAGE_DURATION_MS } from './ambientSettings';
 
 export const AMBIENT_PAGE_SEQUENCE = [
   'Home',
@@ -64,9 +66,11 @@ export function isAmbientRotationProfile(
 
 export function startAmbientRotation(
   profile: EffectiveDisplayProfile,
-  runtime: AmbientRotationRuntime
+  runtime: AmbientRotationRuntime,
+  configuration: AmbientSettings = DEFAULT_AMBIENT_SETTINGS
 ): () => void {
-  if (!isAmbientRotationProfile(profile)) {
+  const settings = normalizeAmbientSettings(configuration);
+  if (!settings.enabled || !isAmbientRotationProfile(profile)) {
     return () => undefined;
   }
 
@@ -106,7 +110,7 @@ export function startAmbientRotation(
     clearIdleTimer();
     idleTimer = runtime.setTimer(
       activateRotation,
-      AMBIENT_IDLE_TIMEOUT_MS
+      settings.inactivitySeconds * 1000
     );
   };
 
@@ -137,7 +141,7 @@ export function startAmbientRotation(
 
       runtime.navigate(nextRoute.path);
       scheduleNextPage(nextIndex);
-    }, AMBIENT_PAGE_DURATION_MS);
+    }, settings.pageDurationSeconds[AMBIENT_PAGE_SEQUENCE[currentIndex]] * 1000);
   };
 
   function activateRotation() {

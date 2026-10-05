@@ -17,6 +17,8 @@ import {
   startAmbientRotation,
 } from './ambientRotation';
 
+import { useAmbientSettings } from './AmbientSettingsContext';
+
 const BLOCKING_INTERACTION_SELECTOR = [
   'dialog[open]',
   '[role="dialog"][aria-modal="true"]',
@@ -56,6 +58,7 @@ export function hasActiveAmbientInteraction(): boolean {
 }
 
 export function useAmbientRotation(): void {
+  const { settings } = useAmbientSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -88,7 +91,8 @@ export function useAmbientRotation(): void {
           prefetchCalendarWindow(),
         hasBlockingInteraction:
           hasActiveAmbientInteraction,
-      }
+      },
+      settings
     );
-  }, [effectiveProfile]);
+  }, [effectiveProfile, settings]);
 }

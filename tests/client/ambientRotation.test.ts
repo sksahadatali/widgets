@@ -17,6 +17,8 @@ import type {
   EffectiveDisplayProfile,
 } from '../../app/src/display/displayProfiles';
 
+import { DEFAULT_AMBIENT_SETTINGS, type AmbientSettings } from '../../app/src/ambient/ambientSettings';
+
 type TimerEntry = {
   id: number;
   dueAt: number;
@@ -123,18 +125,84 @@ class AmbientHarness {
 
 function start(
   profile: EffectiveDisplayProfile,
-  path = '/'
+  path = '/',
+  settings: AmbientSettings = {
+    ...DEFAULT_AMBIENT_SETTINGS,
+    pageDurationSeconds: { ...DEFAULT_AMBIENT_SETTINGS.pageDurationSeconds, Home: 25 },
+  }
 ) {
   const harness = new AmbientHarness();
   harness.path = path;
   const dispose = startAmbientRotation(
     profile,
-    harness.runtime
+    harness.runtime,
+    settings
   );
   return { harness, dispose };
 }
 
 describe('Ambient Rotation Phase 1', () => {
+
+  it('uses two minutes on Home on every loop with the default configuration', () => {
+    const { harness } = start('desktop', '/', DEFAULT_AMBIENT_SETTINGS);
+    harness.advanceBy(120_000);
+    harness.advanceBy(119_999);
+    assert.equal(harness.path, '/');
+    harness.advanceBy(1);
+    assert.equal(harness.path, '/calendar');
+    for (let index = 0; index < 5; index++) harness.advanceBy(25_000);
+    assert.equal(harness.path, '/');
+    harness.advanceBy(119_999);
+    assert.equal(harness.path, '/');
+    harness.advanceBy(1);
+    assert.equal(harness.path, '/calendar');
+  });
+
+  it('honours a custom idle threshold and each page duration', () => {
+    const settings: AmbientSettings = {
+      version: 1, enabled: true, inactivitySeconds: 60,
+      pageDurationSeconds: { Home: 10, Calendar: 20, Daily: 30, Rewards: 40, Lists: 50, Meals: 60 },
+    };
+    const { harness } = start('elo-touch', '/rewards', settings);
+    harness.advanceBy(59_999);
+    assert.equal(harness.path, '/rewards');
+    harness.advanceBy(1);
+    assert.equal(harness.path, '/');
+    let expectedAt = 60_000;
+    const paths = ['/calendar', '/daily', '/rewards', '/lists', '/meals', '/'];
+    AMBIENT_PAGE_SEQUENCE.forEach((page, index) => {
+      const duration = settings.pageDurationSeconds[page] * 1000;
+      harness.advanceBy(duration - 1);
+      assert.equal(harness.navigations.length, index + 1);
+      harness.advanceBy(1);
+      expectedAt += duration;
+      assert.deepEqual(harness.navigations.at(-1), { path: paths[index], at: expectedAt });
+    });
+  });
+
+  it('attaches no timers or listeners when disabled on Desktop or Elo', () => {
+    for (const profile of ['desktop', 'elo-touch'] as const) {
+      const { harness } = start(profile, '/calendar', { ...DEFAULT_AMBIENT_SETTINGS, enabled: false });
+      harness.advanceBy(1_000_000);
+      assert.equal(harness.timerCount, 0);
+      assert.equal(harness.listenerCount, 0);
+      assert.equal(harness.path, '/calendar');
+    }
+  });
+
+  it('blocks the next configured transition while an editor is active', () => {
+    const { harness } = start('desktop', '/', DEFAULT_AMBIENT_SETTINGS);
+    harness.advanceBy(120_000);
+    harness.blocked = true;
+    harness.advanceBy(120_000);
+    assert.equal(harness.path, '/');
+    harness.blocked = false;
+    harness.advanceBy(120_000);
+    assert.equal(harness.path, '/');
+    harness.advanceBy(120_000);
+    assert.equal(harness.path, '/calendar');
+  });
+
   it('does not activate before the idle threshold', () => {
     const { harness } = start('desktop', '/rewards');
 
@@ -368,7 +436,7 @@ describe('Ambient Rotation Phase 1', () => {
     );
     assert.match(
       hook,
-      /useEffect\(\(\) => \{[\s\S]*?startAmbientRotation[\s\S]*?\}, \[effectiveProfile\]\);/
+      /useEffect\(\(\) => \{[\s\S]*?startAmbientRotation[\s\S]*?\}, \[effectiveProfile, settings\]\);/
     );
     assert.doesNotMatch(
       hook,
