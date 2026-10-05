@@ -32,6 +32,8 @@ import {
   useDisplayProfile,
 } from '../display/useDisplayProfile';
 
+import { AmbientSettingsSection } from '../ambient/AmbientSettingsSection';
+
 import './Settings.css';
 
 const previewColours: Record<
@@ -224,6 +226,8 @@ function Settings() {
           </div>
         </dl>
       </section>
+
+      <AmbientSettingsSection />
 
       <section
         className="settings-section"

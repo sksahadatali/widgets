@@ -38,6 +38,8 @@ import {
   useAmbientRotation,
 } from './ambient/useAmbientRotation';
 
+import { AmbientSettingsProvider } from './ambient/AmbientSettingsContext';
+
 function AmbientRotationController() {
   useAmbientRotation();
   return null;
@@ -149,42 +151,44 @@ function App() {
   return (
     <ThemeProvider>
       <DisplayProfileProvider>
-        <AmbientRotationController />
-        <HouseholdProfileProvider>
-          <RewardProvider>
-            <RoutineProvider>
-            <div className="app-shell">
-              <Sidebar
-                isMobileOpen={isMobileNavigationOpen}
-                onNavigate={handlePrimaryNavigation}
-              />
-
-              {isMobileNavigationOpen && (
-                <button
-                  type="button"
-                  className="mobile-navigation-backdrop"
-                  aria-label="Close navigation menu"
-                  onClick={() => setIsMobileNavigationOpen(false)}
-                />
-              )}
-
-              <div
-                className="app-main"
-                inert={isMobileNavigationOpen ? true : undefined}
-              >
-                <Header
-                  isMenuOpen={isMobileNavigationOpen}
-                  onMenuToggle={() =>
-                    setIsMobileNavigationOpen(current => !current)
-                  }
+        <AmbientSettingsProvider>
+          <AmbientRotationController />
+          <HouseholdProfileProvider>
+            <RewardProvider>
+              <RoutineProvider>
+              <div className="app-shell">
+                <Sidebar
+                  isMobileOpen={isMobileNavigationOpen}
+                  onNavigate={handlePrimaryNavigation}
                 />
 
-              <AppPageRoutes renderPage={renderPage} />
+                {isMobileNavigationOpen && (
+                  <button
+                    type="button"
+                    className="mobile-navigation-backdrop"
+                    aria-label="Close navigation menu"
+                    onClick={() => setIsMobileNavigationOpen(false)}
+                  />
+                )}
+
+                <div
+                  className="app-main"
+                  inert={isMobileNavigationOpen ? true : undefined}
+                >
+                  <Header
+                    isMenuOpen={isMobileNavigationOpen}
+                    onMenuToggle={() =>
+                      setIsMobileNavigationOpen(current => !current)
+                    }
+                  />
+
+                <AppPageRoutes renderPage={renderPage} />
+                </div>
               </div>
-            </div>
-            </RoutineProvider>
-          </RewardProvider>
-        </HouseholdProfileProvider>
+              </RoutineProvider>
+            </RewardProvider>
+          </HouseholdProfileProvider>
+        </AmbientSettingsProvider>
       </DisplayProfileProvider>
     </ThemeProvider>
   );
