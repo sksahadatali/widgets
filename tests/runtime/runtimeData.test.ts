@@ -1,3 +1,4 @@
+import { canonicalConfig, legacyConfig, TEST_ENVELOPE } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -24,6 +25,8 @@ import {
   assertExternalRuntimePath,
   configureRuntimeData,
   EXPECTED_RUNTIME_MANIFEST,
+  LEGACY_RUNTIME_MANIFEST,
+  LEGACY_RUNTIME_STORE_FILES,
   getRuntimeStoreOptions,
   normalizeAbsolutePath,
   RUNTIME_STORE_FILES,
@@ -51,6 +54,7 @@ const timestamp = '2026-09-01T00:00:00.000Z';
 const execFileAsync = promisify(execFile);
 
 const stores: Record<string, unknown> = {
+  'family-knowledge.local.json': TEST_ENVELOPE,
   'routines.local.json': {
     schemaVersion: 3,
     routines: [],
@@ -113,6 +117,8 @@ async function writeStoreSet(dataPath: string): Promise<void> {
 }
 
 async function writeRuntimeRoot(rootPath: string): Promise<void> {
+  await mkdir(join(rootPath, 'config'));
+  await writeFile(join(rootPath, 'config', 'household.json'), JSON.stringify(canonicalConfig(legacyConfig)));
   await writeStoreSet(join(rootPath, 'data'));
   await writeFile(
     join(rootPath, 'runtime.json'),
@@ -281,7 +287,7 @@ describe('strict store access', () => {
     await assert.rejects(() => stat(join(directory, 'never')));
   });
 
-  it('resolves all seven default stores under the configured root', async () => {
+  it('resolves all eight default stores under the configured root', async () => {
     const parent = await temporaryDirectory('ey-root-parent-');
     const root = join(parent, 'runtime');
     await mkdir(root);
@@ -466,7 +472,7 @@ describe('copy-only migration', () => {
     const parent = await temporaryDirectory('ey-target-parent-');
     const target = join(parent, 'household-runtime');
     const sourceHashes = await Promise.all(
-      RUNTIME_STORE_FILES.map(fileName =>
+      LEGACY_RUNTIME_STORE_FILES.map(fileName =>
         sha256(join(source, fileName))
       )
     );
@@ -481,11 +487,11 @@ describe('copy-only migration', () => {
         join(target, 'runtime.json'),
         'utf8'
       )),
-      EXPECTED_RUNTIME_MANIFEST
+      LEGACY_RUNTIME_MANIFEST
     );
     assert.deepEqual(
       await Promise.all(
-        RUNTIME_STORE_FILES.map(fileName =>
+        LEGACY_RUNTIME_STORE_FILES.map(fileName =>
           sha256(join(target, 'data', fileName))
         )
       ),
@@ -493,7 +499,7 @@ describe('copy-only migration', () => {
     );
     assert.deepEqual(
       await Promise.all(
-        RUNTIME_STORE_FILES.map(fileName =>
+        LEGACY_RUNTIME_STORE_FILES.map(fileName =>
           sha256(join(source, fileName))
         )
       ),

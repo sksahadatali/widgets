@@ -20,9 +20,9 @@ function targetLabel(target: CalendarAssignmentTarget, names: ReadonlyMap<string
 }
 
 export function CalendarPeoplePicker({ eventKey, assignment, onChanged, presentation = 'pill' }: Props) {
-  const { profiles } = useHouseholdProfile();
+  const { profiles, canonicalProfiles = profiles } = useHouseholdProfile();
   const members = profiles.filter(profile => profile.kind === 'member');
-  const names = useMemo(() => new Map(profiles.map(profile => [profile.id, profile.displayName])), [profiles]);
+  const names = useMemo(() => new Map(canonicalProfiles.map(profile => [profile.id, profile.displayName])), [canonicalProfiles]);
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<CalendarAssignmentTarget>(assignment.target);
   const [saving, setSaving] = useState(false);

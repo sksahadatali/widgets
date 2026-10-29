@@ -201,10 +201,11 @@ export function resolveCalendarProfileAssignment(
   sourceId: string,
   assignments: readonly CalendarProfileAssignment[],
   sources: readonly CalendarSourceConfig[],
+  activeMemberIds?: readonly string[],
 ) {
   const explicit = assignments.find(item => item.eventKey === eventKey);
   if (explicit) return { target: explicit.target, basis: 'explicit' as const };
   const sourceDefault = sources.find(source => source.sourceId === sourceId)?.defaultProfileAssignment;
-  if (sourceDefault) return { target: sourceDefault, basis: 'source-default' as const };
+  if (sourceDefault && (sourceDefault.kind === 'family' || activeMemberIds === undefined || sourceDefault.profileIds.every(id => activeMemberIds.includes(id)))) return { target: sourceDefault, basis: 'source-default' as const };
   return { target: { kind: 'unassigned' as const }, basis: 'none' as const };
 }

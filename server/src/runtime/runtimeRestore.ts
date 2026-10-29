@@ -1,6 +1,7 @@
-import { copyFile, lstat, mkdir, realpath, rename, rm, statfs } from 'node:fs/promises';
+import { copyFile, readFile, lstat, mkdir, realpath, rename, rm, statfs } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
+import { validateHouseholdConfig, assertCanonicalIdentityPreserved } from '../config/householdConfig.js';
 import { assertExternalPath, assertExternalRuntimePath, getAbsolutePathStyle, isPathWithin } from '../config/runtimeData.js';
 import { acquireRuntimeOperationLock, releaseRuntimeOperationLock } from './runtimeOperationLock.js';
 import {
@@ -155,7 +156,7 @@ export async function restoreRuntime(options: {
   if (options.confirmRestore !== options.snapshotId) throw new Error('RESTORE_CONFIRMATION_REQUIRED');
   const resolved = await assertRestorePaths(options.runtimeRoot, options.backupRoot, options.snapshotId);
   if (await readRuntimeRestoreJournal(resolved.runtimeRoot)) throw new Error('RESTORE_RECOVERY_REQUIRED');
-  await verifyRuntimeSnapshot(resolved.snapshotPath);
+  if ((await verifyRuntimeSnapshot(resolved.snapshotPath)).dataLayoutVersion !== 3) throw new Error('RESTORE_LEGACY_REQUIRES_IDENTITY_MIGRATION');
   const lock = await acquireRuntimeOperationLock({ runtimeRoot: resolved.runtimeRoot, operation: 'restore' });
   let sourceState: CurrentRuntimeState;
   try { sourceState = await classifyCurrentRuntime(resolved.runtimeRoot); }
@@ -167,6 +168,19 @@ export async function restoreRuntime(options: {
   if (sourceState === 'absent' && !options.confirmAbsentRuntime) {
     await releaseRuntimeOperationLock(lock);
     throw new Error('RESTORE_ABSENT_RUNTIME_CONFIRMATION_REQUIRED');
+  }
+  try {
+    // Even when a store is damaged, a readable canonical config still anchors
+    // identity. Confirmation of an invalid runtime must not bypass this check.
+    const currentConfigPath = resolved.style.join(resolved.runtimeRoot, 'config', 'household.json');
+    if (sourceState !== 'absent') {
+      const previous = validateHouseholdConfig(JSON.parse(await readFile(currentConfigPath, 'utf8')));
+      const selected = JSON.parse(await readFile(resolved.style.join(resolved.snapshotPath, 'payload', 'config', 'household.json'), 'utf8'));
+      assertCanonicalIdentityPreserved(previous, validateHouseholdConfig(selected));
+    }
+  } catch (error) {
+    await releaseRuntimeOperationLock(lock);
+    throw new Error('RESTORE_IDENTITY_INCOMPATIBLE', { cause: error });
   }
   const operationId = lock.owner.operationId;
   const restorePaths = paths(resolved.runtimeRoot, operationId, sourceState);

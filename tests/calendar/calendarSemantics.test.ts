@@ -1,3 +1,4 @@
+import { canonicalConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import {
   describe,
@@ -256,7 +257,7 @@ describe('Calendar School semantic classification', () => {
   });
 
   it('validates semantic rules against a configured School source', () => {
-    const config: HouseholdConfig = {
+    const config: HouseholdConfig = canonicalConfig({
       schemaVersion: 1,
       household: {
         displayName: 'Example Household',
@@ -292,7 +293,7 @@ describe('Calendar School semantic classification', () => {
         ],
         semanticRules: [RULES[0]],
       },
-    };
+    });
 
     assert.doesNotThrow(() =>
       validateHouseholdConfig(config)

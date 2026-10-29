@@ -11,6 +11,7 @@ import {
 import {
   FAMILY_PROFILE_ID,
   buildHouseholdProfiles,
+  buildCanonicalHouseholdProfiles,
 } from './householdProfiles';
 import {
   HouseholdProfileContext,
@@ -31,6 +32,8 @@ export function HouseholdProfileProvider({
       ),
     []
   );
+
+  const canonicalProfiles = useMemo(() => buildCanonicalHouseholdProfiles(getHouseholdConfig()), []);
 
   const [selectedProfileId, setSelectedProfileId] =
     useState<string>(FAMILY_PROFILE_ID);
@@ -68,6 +71,7 @@ export function HouseholdProfileProvider({
     useMemo<HouseholdProfileContextValue>(
       () => ({
         profiles,
+        canonicalProfiles,
         selectedProfile,
         selectedProfileId:
           selectedProfile.id,
@@ -79,6 +83,7 @@ export function HouseholdProfileProvider({
       }),
       [
         profiles,
+        canonicalProfiles,
         selectedProfile,
         selectProfile,
         resetToFamily,

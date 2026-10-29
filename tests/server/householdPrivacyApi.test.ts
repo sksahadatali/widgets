@@ -1,15 +1,16 @@
+import { canonicalConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
 import { afterEach, describe, it } from 'node:test';
 import type { HouseholdConfig } from '../../server/src/config/householdConfig.js';
 
-const config: HouseholdConfig = {
+const config: HouseholdConfig = canonicalConfig({
   schemaVersion: 1,
   household: { displayName: 'API Household', members: [{ id: 'adult', displayName: 'API Adult', memberType: 'adult' }] },
   location: { name: 'API Town', latitude: 50, longitude: -1, timezone: 'Europe/London' },
   travel: { homeAddress: '99 Private API Street', leaveBufferMinutes: 12, destinations: [] },
   calendar: { endpoint: 'https://calendar.example.test/private', refreshMinutes: 20, sources: [], semanticRules: [] },
-};
+});
 let server: Server | null = null;
 let resetConfig: (() => void) | null = null;
 
@@ -48,7 +49,7 @@ describe('Household browser privacy APIs', { concurrency: false }, () => {
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.deepEqual(await response.json(), {
-      schemaVersion: 1, appMode: 'household', household: config.household,
+      schemaVersion: 2, appMode: 'household', household: config.household,
       location: { timezone: 'Europe/London' }, travel: { leaveBufferMinutes: 12 }, calendar: { refreshMinutes: 20 },
     });
   });

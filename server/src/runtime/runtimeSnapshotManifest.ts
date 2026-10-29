@@ -1,6 +1,6 @@
-import { EXPECTED_RUNTIME_MANIFEST } from '../config/runtimeData.js';
+import { type RuntimeLayoutVersion } from '../config/runtimeData.js';
 import {
-  RUNTIME_SNAPSHOT_FILES,
+  runtimeSnapshotFiles,
   type RuntimeSnapshotFile,
 } from './runtimeSnapshotInventory.js';
 
@@ -10,8 +10,8 @@ export type RuntimeSnapshotManifest = {
   snapshotId: string;
   createdAt: string;
   source: {
-    runtimeManifest: typeof EXPECTED_RUNTIME_MANIFEST;
-    householdConfigSchemaVersion: 1;
+    runtimeManifest: { schemaVersion: 1; kind: 'eyos-household-runtime'; dataLayoutVersion: RuntimeLayoutVersion };
+    householdConfigSchemaVersion: 1 | 2;
   };
   consistency: {
     mode: 'offline';
@@ -54,18 +54,18 @@ export function validateSnapshotManifest(value: unknown): RuntimeSnapshotManifes
   const consistency = record(root.consistency);
   if (
     !source || !exactKeys(source, ['runtimeManifest', 'householdConfigSchemaVersion']) ||
-    source.householdConfigSchemaVersion !== 1 ||
+    source.householdConfigSchemaVersion !== (runtime?.dataLayoutVersion === 2 ? 1 : 2) ||
     !runtime || !exactKeys(runtime, ['schemaVersion', 'kind', 'dataLayoutVersion']) ||
-    runtime.schemaVersion !== 1 || runtime.kind !== 'eyos-household-runtime' || runtime.dataLayoutVersion !== 2 ||
+    runtime.schemaVersion !== 1 || runtime.kind !== 'eyos-household-runtime' || (runtime.dataLayoutVersion !== 2 && runtime.dataLayoutVersion !== 3) ||
     !consistency || !exactKeys(consistency, ['mode', 'operationLockHeld']) ||
     consistency.mode !== 'offline' || consistency.operationLockHeld !== true ||
-    !Array.isArray(root.files) || root.files.length !== RUNTIME_SNAPSHOT_FILES.length
+    !Array.isArray(root.files) || root.files.length !== runtimeSnapshotFiles(runtime.dataLayoutVersion as RuntimeLayoutVersion).length
   ) throw new Error('SNAPSHOT_MANIFEST_INVALID');
   root.files.forEach((item, index) => {
     const file = record(item);
     if (
       !file || !exactKeys(file, ['path', 'bytes', 'sha256']) ||
-      file.path !== RUNTIME_SNAPSHOT_FILES[index] ||
+      file.path !== runtimeSnapshotFiles(runtime.dataLayoutVersion as RuntimeLayoutVersion)[index] ||
       !Number.isSafeInteger(file.bytes) || Number(file.bytes) < 0 ||
       typeof file.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(file.sha256)
     ) throw new Error('SNAPSHOT_MANIFEST_INVALID');

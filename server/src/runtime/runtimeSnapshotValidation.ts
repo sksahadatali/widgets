@@ -8,17 +8,19 @@ import {
 } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 
-import { validateHouseholdConfig } from '../config/householdConfig.js';
+import { validateHouseholdConfig, validateHouseholdConfigV1 } from '../config/householdConfig.js';
 import {
   assertExternalPath,
   isPathWithin,
+  type RuntimeLayoutVersion,
 } from '../config/runtimeData.js';
 import {
   assertRuntimeManifest,
   validateStoreSet,
+  validateHouseholdScope,
 } from './runtimeValidation.js';
 import {
-  RUNTIME_SNAPSHOT_FILES,
+  runtimeSnapshotFiles,
 } from './runtimeSnapshotInventory.js';
 import {
   SNAPSHOT_ID_PATTERN,
@@ -29,6 +31,7 @@ export type SnapshotVerification = {
   snapshotId: string;
   fileCount: number;
   totalBytes: number;
+  dataLayoutVersion: RuntimeLayoutVersion;
 };
 
 function sorted(values: string[]): string[] {
@@ -83,11 +86,7 @@ export async function verifyRuntimeSnapshot(
   await assertSafeDirectory(join(payload, 'config'), rootRealPath);
   await assertSafeDirectory(join(payload, 'data'), rootRealPath);
   exactEntries(await readdir(join(payload, 'config')), ['household.json'], 'SNAPSHOT_INVENTORY_INVALID');
-  exactEntries(
-    await readdir(join(payload, 'data')),
-    RUNTIME_SNAPSHOT_FILES.filter(path => path.startsWith('data/')).map(path => path.slice(5)),
-    'SNAPSHOT_INVENTORY_INVALID',
-  );
+
 
   const manifestPath = join(snapshotPath, 'snapshot.json');
   await assertSafeRegularFile(manifestPath, rootRealPath);
@@ -100,9 +99,13 @@ export async function verifyRuntimeSnapshot(
   const manifest = validateSnapshotManifest(manifestValue);
   if (manifest.snapshotId !== snapshotId) throw new Error('SNAPSHOT_ID_MISMATCH');
 
+  const version = manifest.source.runtimeManifest.dataLayoutVersion;
+  const files = runtimeSnapshotFiles(version);
+  exactEntries(await readdir(join(payload, 'data')), files.filter(path => path.startsWith('data/')).map(path => path.slice(5)), 'SNAPSHOT_INVENTORY_INVALID');
+
   let totalBytes = 0;
-  for (let index = 0; index < RUNTIME_SNAPSHOT_FILES.length; index += 1) {
-    const relativePath = RUNTIME_SNAPSHOT_FILES[index];
+  for (let index = 0; index < files.length; index += 1) {
+    const relativePath = files[index];
     const filePath = join(payload, ...relativePath.split('/'));
     await assertSafeRegularFile(filePath, rootRealPath);
     const fileStats = await stat(filePath);
@@ -113,11 +116,12 @@ export async function verifyRuntimeSnapshot(
   }
 
   try {
-    assertRuntimeManifest(JSON.parse(await readFile(join(payload, 'runtime.json'), 'utf8')) as unknown);
-    validateHouseholdConfig(JSON.parse(await readFile(join(payload, 'config', 'household.json'), 'utf8')) as unknown);
-    await validateStoreSet(join(payload, 'data'));
+    assertRuntimeManifest(JSON.parse(await readFile(join(payload, 'runtime.json'), 'utf8')) as unknown, version);
+    (version === 2 ? (value: unknown) => validateHouseholdConfigV1(value, { allowUnresolvedReferences: true }) : validateHouseholdConfig)(JSON.parse(await readFile(join(payload, 'config', 'household.json'), 'utf8')) as unknown);
+    await validateStoreSet(join(payload, 'data'), version);
+    if (version === 3) await validateHouseholdScope(payload);
   } catch (error) {
     throw new Error('SNAPSHOT_PAYLOAD_INVALID', { cause: error });
   }
-  return { snapshotId, fileCount: RUNTIME_SNAPSHOT_FILES.length, totalBytes };
+  return { snapshotId, fileCount: files.length, totalBytes, dataLayoutVersion: version };
 }

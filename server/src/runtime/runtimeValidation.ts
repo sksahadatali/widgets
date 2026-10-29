@@ -11,10 +11,14 @@ import {
   EXPECTED_RUNTIME_MANIFEST,
   assertExternalRuntimePath,
   RUNTIME_MANIFEST_NAME,
-  RUNTIME_STORE_FILES,
+  runtimeStoreFiles,
+  type RuntimeLayoutVersion,
   type RuntimeDataConfiguration,
   type RuntimeStoreFile,
 } from '../config/runtimeData.js';
+
+import { validateFamilyKnowledgeEnvelope } from '../identity/familyKnowledgeEnvelope.js';
+import { validateHouseholdConfig } from '../config/householdConfig.js';
 
 type Validator = (value: unknown) => unknown;
 
@@ -40,6 +44,7 @@ async function getValidators(): Promise<
   ]);
 
   return {
+    'family-knowledge.local.json': validateFamilyKnowledgeEnvelope,
     'routines.local.json': routines.validateRoutineStore,
     'rewards.local.json': rewards.validateRewardStore,
     'redemptions.local.json':
@@ -51,7 +56,7 @@ async function getValidators(): Promise<
   };
 }
 
-export function assertRuntimeManifest(value: unknown): void {
+export function assertRuntimeManifest(value: unknown, version: RuntimeLayoutVersion = 3): void {
   if (
     typeof value !== 'object' ||
     value === null ||
@@ -61,7 +66,7 @@ export function assertRuntimeManifest(value: unknown): void {
     (value as Record<string, unknown>).kind !==
       EXPECTED_RUNTIME_MANIFEST.kind ||
     (value as Record<string, unknown>).dataLayoutVersion !==
-      EXPECTED_RUNTIME_MANIFEST.dataLayoutVersion ||
+      version ||
     Object.keys(value).some(key =>
       ![
         'schemaVersion',
@@ -91,11 +96,12 @@ async function readJson(filePath: string): Promise<unknown> {
 }
 
 export async function validateStoreSet(
-  dataPath: string
+  dataPath: string,
+  version: RuntimeLayoutVersion = 3,
 ): Promise<void> {
   const validators = await getValidators();
 
-  for (const fileName of RUNTIME_STORE_FILES) {
+  for (const fileName of runtimeStoreFiles(version)) {
     const filePath = join(dataPath, fileName);
     const value = await readJson(filePath);
 
@@ -111,7 +117,8 @@ export async function validateStoreSet(
 }
 
 export async function preflightRuntimeData(
-  configuration: RuntimeDataConfiguration
+  configuration: RuntimeDataConfiguration,
+  version: RuntimeLayoutVersion = 3,
 ): Promise<void> {
   if (configuration.policy !== 'required') {
     return;
@@ -173,11 +180,11 @@ export async function preflightRuntimeData(
         configuration.rootPath,
         RUNTIME_MANIFEST_NAME
       )
-    )
+    ), version
   );
 
   await Promise.all(
-    RUNTIME_STORE_FILES.map(async fileName => {
+    runtimeStoreFiles(version).map(async fileName => {
       const filePath = join(
         configuration.dataPath,
         fileName
@@ -210,5 +217,12 @@ export async function preflightRuntimeData(
       });
     })
   );
-  await validateStoreSet(configuration.dataPath);
+  await validateStoreSet(configuration.dataPath, version);
+  if (version === 3) await validateHouseholdScope(configuration.rootPath);
+}
+
+export async function validateHouseholdScope(root: string): Promise<void> {
+  const config = validateHouseholdConfig(await readJson(join(root, 'config', 'household.json')));
+  const envelope = validateFamilyKnowledgeEnvelope(await readJson(join(root, 'data', 'family-knowledge.local.json')));
+  if (config.household.householdId !== envelope.householdId) throw new Error('HOUSEHOLD_SCOPE_MISMATCH');
 }

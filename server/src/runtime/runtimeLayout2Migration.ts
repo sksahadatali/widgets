@@ -3,8 +3,8 @@ import { access, copyFile, lstat, mkdir, readFile, readdir, realpath, rename, rm
 import { constants } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
-import { validateHouseholdConfig } from '../config/householdConfig.js';
-import { assertExternalRuntimePath, EXPECTED_RUNTIME_MANIFEST, isPathWithin } from '../config/runtimeData.js';
+import { validateHouseholdConfigV1 as validateHouseholdConfig } from '../config/householdConfig.js';
+import { assertExternalRuntimePath, LEGACY_RUNTIME_MANIFEST as EXPECTED_RUNTIME_MANIFEST, isPathWithin } from '../config/runtimeData.js';
 import { validateFamilyListStore } from '../services/familyListStore.js';
 import { validateKumonStore } from '../services/kumonStore.js';
 import { validateMealPlanStore } from '../services/mealPlanStore.js';
@@ -106,7 +106,7 @@ export async function migrateRuntimeLayout1To2(options: {
     }
     await writeFile(join(staging, 'data', 'calendar-profile-assignments.local.json'), `${JSON.stringify(EMPTY_CALENDAR_PROFILE_ASSIGNMENT_STORE, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
     await writeFile(join(staging, 'runtime.json'), `${JSON.stringify(EXPECTED_RUNTIME_MANIFEST, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-    await preflightRuntimeData({ appMode: 'household', rootPath: staging, dataPath: join(staging, 'data'), policy: 'required', external: true });
+    await preflightRuntimeData({ appMode: 'household', rootPath: staging, dataPath: join(staging, 'data'), policy: 'required', external: true }, 2);
     validateHouseholdConfig(JSON.parse(await readFile(join(staging, 'config', 'household.json'), 'utf8')) as unknown);
     await rename(staging, target);
   } catch (error) {

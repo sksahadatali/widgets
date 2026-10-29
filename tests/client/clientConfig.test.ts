@@ -1,3 +1,4 @@
+import { canonicalConfig, legacyConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
@@ -7,9 +8,9 @@ import {
 } from '../../app/src/services/householdConfigService.ts';
 
 const valid = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   appMode: 'household',
-  household: { displayName: 'Synthetic Household', members: [{ id: 'adult', displayName: 'Adult', memberType: 'adult' }] },
+  household: canonicalConfig(legacyConfig).household,
   location: { timezone: 'Europe/London' },
   travel: { leaveBufferMinutes: 10 },
   calendar: { refreshMinutes: 15 },

@@ -1,3 +1,4 @@
+import { canonicalConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -8,10 +9,10 @@ import {
   createClientProjection,
   loadHouseholdConfig,
   setHouseholdConfigForTests,
-  validateHouseholdConfig,
-  type HouseholdConfig,
+  validateHouseholdConfigV1 as validateHouseholdConfig,
+  type HouseholdConfigV1 as HouseholdConfig,
 } from '../../server/src/config/householdConfig.js';
-import { EXPECTED_RUNTIME_MANIFEST, RUNTIME_STORE_FILES } from '../../server/src/config/runtimeData.js';
+import { LEGACY_RUNTIME_MANIFEST as EXPECTED_RUNTIME_MANIFEST, LEGACY_RUNTIME_STORE_FILES as RUNTIME_STORE_FILES } from '../../server/src/config/runtimeData.js';
 import { migrateHouseholdConfig } from '../../server/src/runtime/configMigration.js';
 import { SHOPPING_LIST_ID } from '../../server/src/services/familyListStore.js';
 
@@ -65,7 +66,7 @@ describe('external Household configuration', () => {
     const value = validConfig();
     value.calendar.sources[0].defaultProfileAssignment = { kind: 'members', profileIds: ['adult-1'] };
     assert.deepEqual(validateHouseholdConfig(value).calendar.sources[0].defaultProfileAssignment, { kind: 'members', profileIds: ['adult-1'] });
-    assert.equal(JSON.stringify(createClientProjection(value)).includes('defaultProfileAssignment'), false);
+    assert.equal(JSON.stringify(createClientProjection(canonicalConfig(value))).includes('defaultProfileAssignment'), false);
     value.calendar.sources[0].defaultProfileAssignment = { kind: 'members', profileIds: ['missing'] };
     assert.throws(() => validateHouseholdConfig(value), /defaultProfileAssignment/);
   });
@@ -74,7 +75,7 @@ describe('external Household configuration', () => {
     const value = validConfig();
     value.calendar.sources[0].writeAccess = 'edit-existing';
     assert.equal(validateHouseholdConfig(value).calendar.sources[0].writeAccess, 'edit-existing');
-    assert.equal(JSON.stringify(createClientProjection(value)).includes('writeAccess'), false);
+    assert.equal(JSON.stringify(createClientProjection(canonicalConfig(value))).includes('writeAccess'), false);
     const invalid = validConfig() as unknown as { calendar: { sources: Array<Record<string, unknown>> } };
     invalid.calendar.sources[0].writeAccess = 'write-all';
     assert.throws(() => validateHouseholdConfig(invalid), /writeAccess/);
@@ -89,10 +90,10 @@ describe('external Household configuration', () => {
   });
 
   it('constructs an exact privacy allowlist', () => {
-    const projection = createClientProjection(validConfig());
+    const projection = createClientProjection(canonicalConfig(validConfig()));
     assert.deepEqual(projection, {
-      schemaVersion: 1, appMode: 'household',
-      household: { displayName: 'Synthetic Household', members: [{ id: 'adult-1', displayName: 'Synthetic Adult', memberType: 'adult' }] },
+      schemaVersion: 2, appMode: 'household',
+      household: canonicalConfig(validConfig()).household,
       location: { timezone: 'Europe/London' }, travel: { leaveBufferMinutes: 10 }, calendar: { refreshMinutes: 15 },
     });
     const serialized = JSON.stringify(projection);
@@ -117,7 +118,7 @@ describe('external Household configuration', () => {
     const root = await runtimeRoot();
     await assert.rejects(() => loadHouseholdConfig({ appMode: 'household', rootPath: root, serverMode: 'production' }), /missing/);
     await mkdir(join(root, 'config'));
-    await writeFile(join(root, 'config', 'household.json'), `${JSON.stringify(validConfig())}\n`);
+    await writeFile(join(root, 'config', 'household.json'), `${JSON.stringify(canonicalConfig(validConfig()))}\n`);
     await loadHouseholdConfig({ appMode: 'household', rootPath: root, serverMode: 'production' });
     assert.equal(createClientProjection().household.displayName, 'Synthetic Household');
   });

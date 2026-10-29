@@ -1,3 +1,4 @@
+import { canonicalConfig, TEST_ENVELOPE } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, readdir, rename as fsRename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -26,16 +27,17 @@ import { verifyRuntimeSnapshot } from '../../server/src/runtime/runtimeSnapshotV
 
 const temporaryPaths: string[] = [];
 const timestamp = '2026-09-03T00:00:00.000Z';
-const config = {
+const config = canonicalConfig({
   schemaVersion: 1,
   household: { displayName: 'Synthetic Household', members: [{ id: 'adult', displayName: 'Synthetic Adult', memberType: 'adult' }] },
   location: { name: 'Synthetic Place', latitude: 51, longitude: -0.1, timezone: 'Europe/London' },
   travel: { homeAddress: '1 Synthetic Road', leaveBufferMinutes: 10, destinations: [] },
   calendar: { endpoint: 'https://example.invalid/calendar', refreshMinutes: 15, sources: [], semanticRules: [] },
-};
+});
 
 function stores(marker: string): Record<string, unknown> {
   return {
+    'family-knowledge.local.json': TEST_ENVELOPE,
     'routines.local.json': { schemaVersion: 3, routines: [], occurrences: [] },
     'rewards.local.json': { schemaVersion: 1, transactions: [] },
     'redemptions.local.json': { schemaVersion: 1, catalogue: [], requests: [] },
@@ -114,7 +116,7 @@ describe('HS3B whole-runtime restore', () => {
     assert.equal(await marker(result.displacedPath!), 'Shopping B');
     assert.equal(await assignmentCount(result.displacedPath!), 1);
     assert.equal((await readdir(join(runtimeRoot, 'data'))).includes('lists.local.json.bak'), false);
-    assert.equal((await verifyRuntimeSnapshot(join(backupRoot, 'snapshots', result.preRestoreSnapshotId!))).fileCount, 9);
+    assert.equal((await verifyRuntimeSnapshot(join(backupRoot, 'snapshots', result.preRestoreSnapshotId!))).fileCount, 10);
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
     assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
   });
@@ -148,7 +150,7 @@ describe('HS3B whole-runtime restore', () => {
     assert.ok(result.preRestoreSnapshotId);
     assert.equal((await verifyRuntimeSnapshot(
       join(backupRoot, 'snapshots', result.preRestoreSnapshotId),
-    )).fileCount, 9);
+    )).fileCount, 10);
   });
 
   it('flushes completed staging and each destructive rename boundary in order', async () => {

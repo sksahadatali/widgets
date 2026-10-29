@@ -305,7 +305,7 @@ export async function createRuntimeSnapshot(options: {
       createdAt: now.toISOString(),
       source: {
         runtimeManifest: EXPECTED_RUNTIME_MANIFEST,
-        householdConfigSchemaVersion: 1,
+        householdConfigSchemaVersion: 2,
       },
       consistency: { mode: 'offline', operationLockHeld: true },
       files,

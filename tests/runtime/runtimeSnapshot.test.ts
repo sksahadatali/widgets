@@ -1,3 +1,4 @@
+import { canonicalConfig, TEST_ENVELOPE } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
@@ -39,7 +40,8 @@ import { verifyRuntimeSnapshot } from '../../server/src/runtime/runtimeSnapshotV
 const temporaryPaths: string[] = [];
 const timestamp = '2026-09-02T00:00:00.000Z';
 const stores: Record<string, unknown> = {
-  'routines.local.json': { schemaVersion: 3, routines: [], occurrences: [] },
+  'family-knowledge.local.json': TEST_ENVELOPE,
+    'routines.local.json': { schemaVersion: 3, routines: [], occurrences: [] },
   'rewards.local.json': { schemaVersion: 1, transactions: [] },
   'redemptions.local.json': { schemaVersion: 1, catalogue: [], requests: [] },
   'lists.local.json': {
@@ -54,13 +56,13 @@ const stores: Record<string, unknown> = {
   'calendar-profile-assignments.local.json': { schemaVersion: 1, assignments: [] },
 };
 
-const config = {
+const config = canonicalConfig({
   schemaVersion: 1,
   household: { displayName: 'Synthetic Household', members: [{ id: 'adult', displayName: 'Synthetic Adult', memberType: 'adult' }] },
   location: { name: 'Synthetic Place', latitude: 51, longitude: -0.1, timezone: 'Europe/London' },
   travel: { homeAddress: '1 Synthetic Road', leaveBufferMinutes: 10, destinations: [] },
   calendar: { endpoint: 'https://example.invalid/calendar', refreshMinutes: 15, sources: [], semanticRules: [] },
-};
+});
 
 async function temporaryDirectory(prefix: string): Promise<string> {
   const path = await mkdtemp(join(tmpdir(), prefix));
@@ -276,7 +278,7 @@ describe('HS3A validated snapshots', () => {
     });
     assert.equal(attempts, 4);
     assert.ok(observedManifests.every(value => value.equals(observedManifests[0])));
-    assert.equal((await verifyRuntimeSnapshot(result.snapshotPath)).fileCount, 9);
+    assert.equal((await verifyRuntimeSnapshot(result.snapshotPath)).fileCount, 10);
   });
 
   it('still independently verifies the final published snapshot', async () => {
@@ -310,7 +312,7 @@ describe('HS3A validated snapshots', () => {
     assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
   });
 
-  it('publishes and independently verifies the exact nine-file inventory', async () => {
+  it('publishes and independently verifies the exact ten-file inventory', async () => {
     const runtimeRoot = await runtimeFixture();
     const backupRoot = await temporaryDirectory('eyos-hs3-backup-');
     await writeFile(join(runtimeRoot, 'data', 'rewards.local.json.bak'), 'private evidence');
@@ -328,7 +330,7 @@ describe('HS3A validated snapshots', () => {
     assert.deepEqual(await readdir(join(result.snapshotPath, 'payload')), ['config', 'data', 'runtime.json']);
     assert.deepEqual((await readdir(join(result.snapshotPath, 'payload', 'data'))).sort(), [...RUNTIME_STORE_FILES].sort());
     const verified = await verifyRuntimeSnapshot(result.snapshotPath);
-    assert.equal(verified.fileCount, 9);
+    assert.equal(verified.fileCount, 10);
     const after = await Promise.all([
       readFile(join(runtimeRoot, 'runtime.json')),
       ...RUNTIME_STORE_FILES.map(file => readFile(join(runtimeRoot, 'data', file))),

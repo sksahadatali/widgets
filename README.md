@@ -264,10 +264,14 @@ root with this fixed layout:
     meals.local.json
     kumon.local.json
     calendar-profile-assignments.local.json
+    family-knowledge.local.json
 ```
 
-The layout-2 manifest is versioned independently from the seven domain-store
-schemas. Production validates the manifest, directory access, and every
+The layout-3 manifest is versioned independently from the seven domain-store
+schemas and the empty Family Knowledge envelope. Household configuration uses
+schema v2 with permanent household/member identities. See the
+[AI-1A migration and recovery guide](docs/canonical-household-identity.md) before
+using this release with existing data. Production validates the manifest, directory access, and every
 primary store before the API routers or startup reconciliation are loaded.
 Missing, partial, malformed, relative, checkout-local, unreadable, or
 unwritable runtime data stops Household production. It never falls back to
@@ -275,12 +279,13 @@ unwritable runtime data stops Household production. It never falls back to
 does not override an invalid primary; restoration is deliberately outside
 Home Service 2A and all files remain untouched on failure.
 
-Migrate an existing initialized Household only while eY OS is stopped. The
-target path and its parent are explicit; the target itself must not exist:
+The following legacy commands construct layout 2 as input to the explicit
+[layout-3 migration](docs/canonical-household-identity.md). They do not produce a
+root usable directly by this release. Run them only while eY OS is stopped;
+the target must not exist:
 
 ```bash
 npm run runtime:migrate --prefix server -- --source "<absolute-server-data-path>" --target "<absolute-runtime-root>"
-npm run runtime:validate --prefix server -- --root "<absolute-runtime-root>"
 ```
 
 Migration is copy-only. It validates the complete source set, copies into a
@@ -295,7 +300,6 @@ and verify a layout-1 snapshot, choose a new absent sibling target, then run:
 
 ```bash
 npm run runtime:migrate:layout-2 --prefix server -- --source "<absolute-layout-1-runtime>" --target "<new-absolute-layout-2-runtime>" --confirm-layout-2-migration
-npm run runtime:validate --prefix server -- --root "<new-absolute-layout-2-runtime>"
 ```
 
 The command acquires the source runtime operation lock, rejects restore-state
@@ -320,7 +324,8 @@ configuration is missing or invalid.
 Development remains compatible with repository-local `server/data` and its
 existing first-use initialization when `EYOS_RUNTIME_DIR` is absent. If an
 external root is explicitly supplied during development it is strict and
-required. Demo production reads `eyos-build.json`, disables all seven server
+required. Household config must already be explicitly migrated to schema v2;
+startup never generates identity. Demo production reads `eyos-build.json`, disables all server
 datastores, and does not require or access an external runtime root.
 
 The local production service provides only explicitly enabled trusted private
@@ -347,7 +352,9 @@ npm run runtime:backup:list --prefix server -- --backup-root "<absolute-backup-r
 ```
 
 Each atomically published snapshot contains exactly `runtime.json`, external
-`config/household.json`, and the seven primary `data/*.local.json` stores. Its
+`config/household.json`, the seven operational primaries and the empty Family
+Knowledge envelope (ten files). Historical layout-2 snapshots remain independently
+verifiable; they require explicit identity migration before activation. Its
 strict manifest records byte sizes and SHA-256 checksums, and creation performs
 an independent verification before reporting success. Per-store `.bak` files,
 temporary files, secrets and repository migration evidence are deliberately
@@ -488,39 +495,20 @@ eY OS supports two configuration modes:
 
 Local development defaults to Household mode. Production builds default to Demo mode unless `VITE_EY_MODE` is explicitly set.
 
-For development without `EYOS_RUNTIME_DIR`, the ignored local file remains a
-server-side input only:
+For development, prefer an explicitly migrated external v3 runtime using
+`EYOS_RUNTIME_DIR`. Follow the [identity migration guide](docs/canonical-household-identity.md).
+The ignored local file remains server-only, but now requires schema v2 if used.
+`app/src/config/household.example.json` is retained as a legacy migration input;
+do not run it directly or copy a generated household identity to another household.
 
-1. Copy `app/src/config/household.example.json` to `app/src/config/household.local.json`.
-2. Add the real household members, address, location, destinations and calendar endpoint locally.
-3. Keep `household.local.json` private. It is ignored by Git and must never be committed.
-4. Restart the backend after changing configuration.
-
-Household members belong inside the existing `household` section:
-
-```json
-{
-  "household": {
-    "displayName": "Your household display name",
-    "members": [
-      {
-        "id": "adult-1",
-        "displayName": "Preferred adult name",
-        "memberType": "adult"
-      },
-      {
-        "id": "child-1",
-        "displayName": "Preferred child name",
-        "memberType": "child"
-      }
-    ]
-  }
-}
-```
+Household config v2 retains `household.members[].id` and adds `household.householdId`,
+member lifecycle, aliases, establishment timestamp and inactiveAt. Keep inactive
+records for historical resolution. IDs never change when labels/type change.
 
 Use stable, non-identifying IDs such as `adult-1` and `child-1`. In production,
 the real values live only in external `config/household.json`. React receives
-an explicit projection containing display names, member types, timezone,
+an explicit projection containing canonical identities, display names, member
+lifecycle/aliases/timestamps, member types, timezone,
 leave buffer and Calendar refresh interval. Addresses, coordinates, provider
 endpoints, raw Calendar identities and semantic matching rules remain on the
 server. Settings intentionally retrieves the home address through a separate

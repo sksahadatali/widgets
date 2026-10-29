@@ -4,7 +4,7 @@ import {
   type CalendarProviderTiming,
   type TimedCalendarData,
 } from '../services/calendarProvider.js';
-import { getHouseholdConfig, getRuntimeAppMode } from '../config/householdConfig.js';
+import { getHouseholdConfig, listActiveMembers, getRuntimeAppMode } from '../config/householdConfig.js';
 import {
   CalendarProfileAssignmentStoreCorruptError,
   CalendarProfileAssignmentStoreError,
@@ -102,7 +102,7 @@ router.put('/profile-assignments/:eventKey', async (request, response) => {
     if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body) || Object.keys(request.body).length !== 1 || !Object.hasOwn(request.body as object, 'target')) {
       throw new CalendarProfileAssignmentStoreError('Calendar profile assignment request is invalid.');
     }
-    const members = getHouseholdConfig().household.members.map(member => member.id);
+    const members = listActiveMembers().map(member => member.id);
     const assignment = await calendarProfileAssignmentStore.set(
       request.params.eventKey,
       request.body?.target as unknown,
@@ -158,7 +158,7 @@ export async function readCalendarRoute(
       ...calendar.data,
       events: calendar.data.events.map(event => ({
         ...event,
-        profileAssignment: resolveCalendarProfileAssignment(event.eventKey, event.source.id, store.assignments, sources),
+        profileAssignment: resolveCalendarProfileAssignment(event.eventKey, event.source.id, store.assignments, sources, listActiveMembers(config).map(member => member.id)),
       })),
     });
   } catch (error) {

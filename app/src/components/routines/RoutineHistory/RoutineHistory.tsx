@@ -171,9 +171,11 @@ function RoutineHistory({
   householdToday,
 }: RoutineHistoryProps) {
   const {
-    profiles,
+    profiles: activeProfiles,
+    canonicalProfiles = activeProfiles,
     selectedProfileId,
   } = useHouseholdProfile();
+  const profiles = canonicalProfiles;
   const {
     occurrences,
     loading,
