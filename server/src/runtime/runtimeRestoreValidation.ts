@@ -1,15 +1,16 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises';
 
-import { validateHouseholdConfig } from '../config/householdConfig.js';
+import { validateHouseholdConfig, validateHouseholdConfigV1 } from '../config/householdConfig.js';
 import {
-  RUNTIME_STORE_FILES,
+  runtimeStoreFiles,
+  type RuntimeLayoutVersion,
   assertExternalRuntimePath,
   getAbsolutePathStyle,
   isPathWithin,
 } from '../config/runtimeData.js';
-import { RUNTIME_SNAPSHOT_FILES } from './runtimeSnapshotInventory.js';
-import { assertRuntimeManifest, validateStoreSet } from './runtimeValidation.js';
+import { RUNTIME_SNAPSHOT_FILES, runtimeSnapshotFiles } from './runtimeSnapshotInventory.js';
+import { assertRuntimeManifest, validateStoreSet, validateHouseholdScope } from './runtimeValidation.js';
 import type { CurrentRuntimeState } from './runtimeRestoreJournal.js';
 
 async function exists(path: string): Promise<boolean> {
@@ -46,11 +47,11 @@ export async function validateRestoredRuntime(runtimeRoot: string): Promise<void
   await validateRuntime(runtimeRoot, false);
 }
 
-export async function validateProductionRuntime(runtimeRoot: string): Promise<void> {
-  await validateRuntime(runtimeRoot, true);
+export async function validateProductionRuntime(runtimeRoot: string, version: RuntimeLayoutVersion = 3): Promise<void> {
+  await validateRuntime(runtimeRoot, true, version);
 }
 
-async function validateRuntime(runtimeRoot: string, allowStoreBackups: boolean): Promise<void> {
+async function validateRuntime(runtimeRoot: string, allowStoreBackups: boolean, version: RuntimeLayoutVersion = 3): Promise<void> {
   const root = assertExternalRuntimePath(runtimeRoot);
   const style = getAbsolutePathStyle(root)!;
   const stats = await lstat(root);
@@ -58,7 +59,7 @@ async function validateRuntime(runtimeRoot: string, allowStoreBackups: boolean):
   const real = await realpath(root);
   exact(await readdir(root), ['runtime.json', 'config', 'data']);
   exact(await readdir(style.join(root, 'config')), ['household.json']);
-  const expectedDataFiles = [...RUNTIME_STORE_FILES];
+  const expectedDataFiles = [...runtimeStoreFiles(version)];
   const actualDataFiles = await readdir(style.join(root, 'data'));
   if (allowStoreBackups) {
     const allowedDataFiles = new Set([
@@ -81,7 +82,7 @@ async function validateRuntime(runtimeRoot: string, allowStoreBackups: boolean):
       throw new Error('RESTORE_RUNTIME_UNSAFE');
     }
   }
-  for (const relative of RUNTIME_SNAPSHOT_FILES) {
+  for (const relative of runtimeSnapshotFiles(version)) {
     const path = style.join(root, ...relative.split('/'));
     const value = await lstat(path);
     if (!value.isFile() || value.isSymbolicLink() || !isPathWithin(real, await realpath(path))) {
@@ -97,9 +98,10 @@ async function validateRuntime(runtimeRoot: string, allowStoreBackups: boolean):
       }
     }
   }
-  assertRuntimeManifest(JSON.parse(await readFile(style.join(root, 'runtime.json'), 'utf8')) as unknown);
-  validateHouseholdConfig(JSON.parse(await readFile(style.join(root, 'config', 'household.json'), 'utf8')) as unknown);
-  await validateStoreSet(style.join(root, 'data'));
+  assertRuntimeManifest(JSON.parse(await readFile(style.join(root, 'runtime.json'), 'utf8')) as unknown, version);
+  (version === 2 ? (value: unknown) => validateHouseholdConfigV1(value, { allowUnresolvedReferences: true }) : validateHouseholdConfig)(JSON.parse(await readFile(style.join(root, 'config', 'household.json'), 'utf8')) as unknown);
+  await validateStoreSet(style.join(root, 'data'), version);
+  if (version === 3) await validateHouseholdScope(root);
 }
 
 export async function runtimeMatchesSnapshot(runtimeRoot: string, snapshotPath: string): Promise<void> {

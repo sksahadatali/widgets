@@ -21,11 +21,11 @@ import {
 
 import {
   assertExternalRuntimePath,
-  EXPECTED_RUNTIME_MANIFEST,
+  LEGACY_RUNTIME_MANIFEST as EXPECTED_RUNTIME_MANIFEST,
   normalizeAbsolutePath,
   RUNTIME_DATA_DIRECTORY,
   RUNTIME_MANIFEST_NAME,
-  RUNTIME_STORE_FILES,
+  LEGACY_RUNTIME_STORE_FILES as RUNTIME_STORE_FILES,
 } from '../config/runtimeData.js';
 import { validateStoreSet } from './runtimeValidation.js';
 
@@ -90,7 +90,7 @@ export async function migrateRuntimeData(options: {
     );
   }
 
-  await validateStoreSet(sourceDataPath);
+  await validateStoreSet(sourceDataPath, 2);
 
   const targetParent = dirname(targetRuntimePath);
   await access(
@@ -140,7 +140,7 @@ export async function migrateRuntimeData(options: {
       }
     }
 
-    await validateStoreSet(stagingDataPath);
+    await validateStoreSet(stagingDataPath, 2);
     await writeFile(
       join(stagingPath, RUNTIME_MANIFEST_NAME),
       `${JSON.stringify(EXPECTED_RUNTIME_MANIFEST, null, 2)}\n`,

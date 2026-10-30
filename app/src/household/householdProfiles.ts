@@ -23,7 +23,7 @@ export type HouseholdProfile =
   | FamilyHouseholdProfile
   | MemberHouseholdProfile;
 
-export function buildHouseholdProfiles(
+export function buildCanonicalHouseholdProfiles(
   config: HouseholdConfig
 ): HouseholdProfile[] {
   return [
@@ -42,6 +42,12 @@ export function buildHouseholdProfiles(
       })
     ),
   ];
+}
+
+/** Ordinary selection/assignment choices exclude inactive canonical identities. */
+export function buildHouseholdProfiles(config: HouseholdConfig): HouseholdProfile[] {
+  const inactive = new Set(config.household.members.filter(member => member.lifecycle === 'INACTIVE').map(member => member.id));
+  return buildCanonicalHouseholdProfiles(config).filter(profile => !inactive.has(profile.id));
 }
 
 export function getProfileInitials(

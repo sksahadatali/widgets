@@ -1,3 +1,5 @@
+import { selectVisibleHistoryOccurrences } from '../../app/src/routines/routineHistory';
+import { canonicalConfig, legacyConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { before, after, describe, it } from 'node:test';
@@ -33,11 +35,11 @@ after(async () => { await vite.close(); });
 
 function config(mode: 'demo' | 'household'): HouseholdConfig {
   return {
-    schemaVersion: 1,
-    household: { displayName: 'Synthetic Household', members: [
+    schemaVersion: 2,
+    household: canonicalConfig({ ...legacyConfig, household: { displayName: 'Synthetic Household', members: [
       { id: 'adult-b', displayName: 'Taylor', memberType: 'adult' },
       { id: 'child-a', displayName: 'Robin', memberType: 'child' },
-    ] }, appMode: mode,
+    ] } }).household, appMode: mode,
     location: { timezone: 'Europe/London' },
     travel: { leaveBufferMinutes: 10 }, calendar: { refreshMinutes: 15 },
   };
@@ -80,6 +82,26 @@ describe('shared household profile navigation', () => {
       assert.match(html, /aria-label="Notifications"/);
     });
   }
+
+  it('excludes inactive members from active profile and assignment choices but resolves their history by ID', () => {
+    const value = config('household');
+    value.household.members[1].lifecycle = 'INACTIVE';
+    value.household.members[1].inactiveAt = '2026-10-30T00:00:00.000Z';
+    configuration.setClientConfigForTests(value);
+    assert.deepEqual(model.buildHouseholdProfiles(value).map(item => item.id), ['family', 'adult-b']);
+    assert.equal(configuration.resolveCanonicalMember('child-a')?.displayName, 'Robin');
+    const historyProfiles = model.buildCanonicalHouseholdProfiles(value);
+    assert.deepEqual(historyProfiles.map(item => item.id), ['family', 'adult-b', 'child-a']);
+    const record = { snapshot: { ownerProfileId: 'child-a' } } as import('../../app/src/types/routine').RoutineOccurrence;
+    assert.deepEqual(selectVisibleHistoryOccurrences({ occurrences: [record], profiles: historyProfiles, selectedProfileId: 'family' }), [record]);
+    assert.equal(configuration.resolveCanonicalMember('Robin'), null);
+    assert.equal(configuration.resolveCanonicalMember('family'), null);
+    const html = renderToStaticMarkup(createElement(provider.HouseholdProfileProvider, {
+      children: createElement(header.default, { isMenuOpen: false, onMenuToggle() {} }),
+    }));
+    assert.doesNotMatch(html, /aria-label="Robin"/);
+    assert.match(html, /aria-label="Taylor"/);
+  });
 
   it('exposes the selected member programmatically and preserves profile-aware greeting', () => {
     const html = renderHeader(profiles('household'), 'child-a');

@@ -15,7 +15,7 @@ export type RuntimeAppMode =
 
 export const RUNTIME_MANIFEST_NAME = 'runtime.json';
 export const RUNTIME_DATA_DIRECTORY = 'data';
-export const RUNTIME_STORE_FILES = [
+export const LEGACY_RUNTIME_STORE_FILES = [
   'routines.local.json',
   'rewards.local.json',
   'redemptions.local.json',
@@ -25,14 +25,22 @@ export const RUNTIME_STORE_FILES = [
   'calendar-profile-assignments.local.json',
 ] as const;
 
+export const RUNTIME_STORE_FILES = [...LEGACY_RUNTIME_STORE_FILES, 'family-knowledge.local.json'] as const;
+export type RuntimeLayoutVersion = 2 | 3;
+export function runtimeStoreFiles(version: RuntimeLayoutVersion = 3) {
+  return version === 2 ? LEGACY_RUNTIME_STORE_FILES : RUNTIME_STORE_FILES;
+}
+
 export type RuntimeStoreFile =
   typeof RUNTIME_STORE_FILES[number];
 
 export const EXPECTED_RUNTIME_MANIFEST = {
   schemaVersion: 1,
   kind: 'eyos-household-runtime',
-  dataLayoutVersion: 2,
+  dataLayoutVersion: 3,
 } as const;
+
+export const LEGACY_RUNTIME_MANIFEST = { ...EXPECTED_RUNTIME_MANIFEST, dataLayoutVersion: 2 } as const;
 
 const REPOSITORY_ROOT = fileURLToPath(
   new URL('../../../', import.meta.url)

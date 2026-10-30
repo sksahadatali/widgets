@@ -91,6 +91,7 @@ function sourceLabel(transaction: RewardTransaction): string {
 export default function Rewards() {
   const {
     profiles,
+    canonicalProfiles = profiles,
     selectedProfile,
   } = useHouseholdProfile();
   const {
@@ -123,10 +124,10 @@ export default function Rewards() {
   const visibleHistory = useMemo(
     () => selectVisibleRewardHistory({
       transactions,
-      profiles,
+      profiles: canonicalProfiles,
       selectedProfile,
     }),
-    [transactions, profiles, selectedProfile]
+    [transactions, canonicalProfiles, selectedProfile]
   );
   const reversedIds = useMemo(
     () => getReversedRewardIds(transactions),
@@ -143,12 +144,12 @@ export default function Rewards() {
   );
   const namesById = useMemo(
     () => new Map(
-      profiles.map(profile => [
+      canonicalProfiles.map(profile => [
         profile.id,
         profile.displayName,
       ])
     ),
-    [profiles]
+    [canonicalProfiles]
   );
   const [recipientId, setRecipientId] =
     useState(recipients[0]?.id ?? '');

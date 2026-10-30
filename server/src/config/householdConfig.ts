@@ -16,8 +16,8 @@ const SCHOOL_KINDS = new Set([
 const MEMBER_TYPES = new Set(['adult', 'child']);
 const SOURCE_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
-export type HouseholdMember = {
-  id: string;
+export type LegacyHouseholdMember = {
+  readonly id: string;
   displayName: string;
   memberType: 'adult' | 'child';
 };
@@ -42,11 +42,11 @@ export type CalendarSemanticRule = {
   label?: string;
 };
 
-export type HouseholdConfig = {
+export type HouseholdConfigV1 = {
   schemaVersion: 1;
   household: {
     displayName: string;
-    members: HouseholdMember[];
+    members: LegacyHouseholdMember[];
   };
   location: {
     name: string;
@@ -73,10 +73,21 @@ export type HouseholdConfig = {
   };
 };
 
-export type LegacyHouseholdConfig = Omit<HouseholdConfig, 'schemaVersion'>;
+export type HouseholdMember = LegacyHouseholdMember & {
+  lifecycle: 'ACTIVE' | 'INACTIVE';
+  aliases: string[];
+  createdAt: string;
+  inactiveAt: string | null;
+};
+export type HouseholdConfig = Omit<HouseholdConfigV1, 'schemaVersion' | 'household'> & {
+  schemaVersion: 2;
+  household: { readonly householdId: string; displayName: string; members: HouseholdMember[] };
+};
+export type LegacyHouseholdConfig = Omit<HouseholdConfigV1, 'schemaVersion'>;
+
 
 export type ClientHouseholdConfig = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   appMode: 'household';
   household: HouseholdConfig['household'];
   location: { timezone: string };
@@ -150,7 +161,7 @@ function validateTimeZone(value: unknown): string {
   return timeZone;
 }
 
-function validateMembers(value: unknown): HouseholdMember[] {
+function validateMembers(value: unknown): LegacyHouseholdMember[] {
   if (!Array.isArray(value) || value.length === 0 || value.length > 20) {
     throw new Error('household.members is invalid.');
   }
@@ -167,14 +178,14 @@ function validateMembers(value: unknown): HouseholdMember[] {
     return {
       id,
       displayName: text(member.displayName, `household.members[${index}].displayName`, 100),
-      memberType: memberType as HouseholdMember['memberType'],
+      memberType: memberType as LegacyHouseholdMember['memberType'],
     };
   });
 }
 
 function validateDefaultProfileAssignment(
   value: unknown,
-  memberIds: ReadonlySet<string>,
+  memberIds: ReadonlySet<string> | null,
   path: string,
 ): CalendarSourceConfig['defaultProfileAssignment'] {
   const assignment = object(value, path);
@@ -189,7 +200,7 @@ function validateDefaultProfileAssignment(
   }
   const profileIds = assignment.profileIds.map((profileId, index) =>
     text(profileId, `${path}.profileIds[${index}]`, 80));
-  if (new Set(profileIds).size !== profileIds.length || profileIds.some(id => id === 'family' || !memberIds.has(id))) {
+  if (new Set(profileIds).size !== profileIds.length || profileIds.some(id => id === 'family' || (memberIds !== null && !memberIds.has(id)))) {
     throw new Error(`${path}.profileIds is invalid.`);
   }
   return { kind: 'members', profileIds };
@@ -197,7 +208,7 @@ function validateDefaultProfileAssignment(
 
 function validateSources(
   value: unknown,
-  memberIds: ReadonlySet<string>,
+  memberIds: ReadonlySet<string> | null,
 ): CalendarSourceConfig[] {
   if (!Array.isArray(value) || value.length > 100) {
     throw new Error('calendar.sources is invalid.');
@@ -270,7 +281,7 @@ function validateRules(
   });
 }
 
-export function validateHouseholdConfig(value: unknown): HouseholdConfig {
+export function validateHouseholdConfigV1(value: unknown, options: { allowUnresolvedReferences?: boolean } = {}): HouseholdConfigV1 {
   const root = object(value, 'configuration');
   exactKeys(root, ['schemaVersion', 'household', 'location', 'travel', 'calendar'], 'configuration');
   if (root.schemaVersion !== 1) {
@@ -315,7 +326,7 @@ export function validateHouseholdConfig(value: unknown): HouseholdConfig {
     if (parsed.protocol !== 'https:') throw new Error('calendar.presentationUrl must use HTTPS.');
   }
   const members = validateMembers(household.members);
-  const sources = validateSources(calendar.sources, new Set(members.map(member => member.id)));
+  const sources = validateSources(calendar.sources, options.allowUnresolvedReferences ? null : new Set(members.map(member => member.id)));
   return {
     schemaVersion: 1,
     household: {
@@ -343,13 +354,92 @@ export function validateHouseholdConfig(value: unknown): HouseholdConfig {
   };
 }
 
+export const HOUSEHOLD_ID_PATTERN = /^hh_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+function timestamp(value: unknown): string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString() !== value) throw new Error('Identity timestamp is invalid.');
+  return value;
+}
+export function validateHouseholdConfig(value: unknown): HouseholdConfig {
+  const root = object(value, 'configuration');
+  if (root.schemaVersion !== 2) throw new Error('Household configuration requires schema v2; run explicit identity migration.');
+  const household = object(root.household, 'household');
+  exactKeys(household, ['householdId', 'displayName', 'members'], 'household');
+  if (typeof household.householdId !== 'string' || !HOUSEHOLD_ID_PATTERN.test(household.householdId)) throw new Error('Canonical householdId is invalid.');
+  if (!Array.isArray(household.members)) throw new Error('household.members is invalid.');
+  const members = household.members.map(value => {
+    const member = object(value, 'member');
+    exactKeys(member, ['id', 'displayName', 'memberType', 'lifecycle', 'aliases', 'createdAt', 'inactiveAt'], 'member');
+    if (!['ACTIVE', 'INACTIVE'].includes(String(member.lifecycle)) || !Array.isArray(member.aliases) || member.aliases.length > 30) throw new Error('Member identity metadata is invalid.');
+    const aliases = member.aliases.map(alias => text(alias, 'alias', 100));
+    if (new Set(aliases.map(alias => alias.toLocaleLowerCase('en-GB'))).size !== aliases.length) throw new Error('Duplicate member aliases.');
+    const createdAt = timestamp(member.createdAt);
+    const inactiveAt = member.inactiveAt === null ? null : timestamp(member.inactiveAt);
+    if ((member.lifecycle === 'ACTIVE') !== (inactiveAt === null) || (inactiveAt && inactiveAt < createdAt)) throw new Error('Member inactiveAt is invalid.');
+    if (typeof member.id !== 'string' || member.id !== member.id.trim()) throw new Error('Canonical member ID is invalid.');
+    return { id: member.id, displayName: member.displayName, memberType: member.memberType, lifecycle: member.lifecycle, aliases, createdAt, inactiveAt };
+  });
+  const legacy = validateHouseholdConfigV1({ ...root, schemaVersion: 1, household: {
+    displayName: household.displayName,
+    members: members.map(member => ({ id: member.id, displayName: member.displayName, memberType: member.memberType })),
+  } }, { allowUnresolvedReferences: true });
+  return { ...legacy, schemaVersion: 2, household: { householdId: household.householdId, displayName: legacy.household.displayName,
+    members: legacy.household.members.map((member, index) => ({ ...member,
+      lifecycle: members[index].lifecycle as HouseholdMember['lifecycle'], aliases: members[index].aliases,
+      createdAt: members[index].createdAt, inactiveAt: members[index].inactiveAt,
+    })),
+  } };
+}
+
+export function listActiveMembers(config = getHouseholdConfig()): HouseholdMember[] {
+  return config.household.members.filter(member => member.lifecycle === 'ACTIVE');
+}
+export function resolveCanonicalMember(id: string, config = getHouseholdConfig()): HouseholdMember | null {
+  return config.household.members.find(member => member.id === id) ?? null;
+}
+// Used by configuration maintenance: IDs cannot be removed/replaced, and timestamps
+// cannot be rewritten. There is deliberately no HTTP identity-edit endpoint.
+export function assertCanonicalIdentityPreserved(previous: HouseholdConfig, next: HouseholdConfig): void {
+  if (next.household.householdId !== previous.household.householdId) throw new Error('Canonical householdId is immutable.');
+  for (const old of previous.household.members) {
+    const member = resolveCanonicalMember(old.id, next);
+    if (!member || member.createdAt !== old.createdAt) throw new Error('Canonical member identity is immutable; retain inactive records.');
+  }
+}
+export function validateIdentityTransition(previous: HouseholdConfig, value: unknown): HouseholdConfig {
+  const next = validateHouseholdConfig(value);
+  assertCanonicalIdentityPreserved(previous, next);
+  for (const old of previous.household.members) {
+    const member = resolveCanonicalMember(old.id, next)!;
+    if (old.lifecycle === 'INACTIVE' && member.lifecycle === 'INACTIVE' && member.inactiveAt !== old.inactiveAt) throw new Error('Established inactiveAt is immutable.');
+  }
+  for (const source of next.calendar.sources) {
+    const old = previous.calendar.sources.find(item => item.sourceId === source.sourceId);
+    if (JSON.stringify(old?.defaultProfileAssignment) !== JSON.stringify(source.defaultProfileAssignment) && source.defaultProfileAssignment?.kind === 'members' &&
+      source.defaultProfileAssignment.profileIds.some(id => resolveCanonicalMember(id, next)?.lifecycle !== 'ACTIVE')) throw new Error('New source assignments require active canonical members.');
+  }
+  return next;
+}
+
+/** Identity metadata operation, not Profile CRUD or an authorisation decision. */
+export function updateMemberIdentityMetadata(config: HouseholdConfig, memberId: string, patch: unknown, now = new Date()): HouseholdConfig {
+  const changes = object(patch, 'identity metadata');
+  exactKeys(changes, ['displayName', 'aliases', 'memberType', 'lifecycle'], 'identity metadata');
+  const member = resolveCanonicalMember(memberId, config);
+  if (!member) throw new Error('Canonical member does not exist.');
+  const lifecycle = changes.lifecycle ?? member.lifecycle;
+  const nextMember = { ...member, ...changes, inactiveAt: lifecycle === member.lifecycle ? member.inactiveAt : lifecycle === 'INACTIVE' ? now.toISOString() : null };
+  return validateIdentityTransition(config, { ...config, household: { ...config.household,
+    members: config.household.members.map(item => item.id === memberId ? nextMember : item),
+  } });
+}
+
 export function validateLegacyHouseholdConfig(value: unknown): LegacyHouseholdConfig {
   const legacy = object(value, 'configuration');
   if ('schemaVersion' in legacy) {
     throw new Error('Legacy configuration must not contain schemaVersion.');
   }
   return (({ schemaVersion: _schemaVersion, ...config }) => config)(
-    validateHouseholdConfig({ schemaVersion: 1, ...legacy })
+    validateHouseholdConfigV1({ schemaVersion: 1, ...legacy })
   );
 }
 
@@ -358,9 +448,9 @@ export async function loadHouseholdConfig(options: {
   rootPath: string | null;
   serverMode: 'development' | 'production';
 }): Promise<void> {
+  const previous = activeConfig;
   activeMode = options.appMode;
-  activeConfig = null;
-  if (options.appMode === 'demo') return;
+  if (options.appMode === 'demo') { activeConfig = null; return; }
   const filePath = options.rootPath
     ? join(options.rootPath, RUNTIME_CONFIG_DIRECTORY, HOUSEHOLD_CONFIG_FILE)
     : fileURLToPath(new URL('../../../app/src/config/household.local.json', import.meta.url));
@@ -389,9 +479,11 @@ export async function loadHouseholdConfig(options: {
   try { value = JSON.parse(await readFile(filePath, 'utf8')) as unknown; }
   catch { throw new Error('Household configuration is missing or malformed.'); }
   try {
-    activeConfig = options.rootPath
-      ? validateHouseholdConfig(value)
-      : validateHouseholdConfig({ schemaVersion: 1, ...object(value, 'configuration') });
+    activeConfig = previous ? validateIdentityTransition(previous, value) : validateHouseholdConfig(value);
+    for (const member of activeConfig.household.members) { Object.freeze(member.aliases); Object.freeze(member); }
+    Object.freeze(activeConfig.household.members);
+    Object.freeze(activeConfig.household);
+    Object.freeze(activeConfig);
   } catch (error) {
     throw new Error('Household configuration is invalid.', { cause: error });
   }
@@ -415,14 +507,17 @@ export function getRuntimeAppMode(): RuntimeAppMode {
 
 export function createClientProjection(config = getHouseholdConfig()): ClientHouseholdConfig {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     appMode: 'household',
     household: {
+      householdId: config.household.householdId,
       displayName: config.household.displayName,
       members: config.household.members.map(member => ({
         id: member.id,
         displayName: member.displayName,
         memberType: member.memberType,
+        lifecycle: member.lifecycle, aliases: [...member.aliases],
+        createdAt: member.createdAt, inactiveAt: member.inactiveAt,
       })),
     },
     location: { timezone: config.location.timezone },

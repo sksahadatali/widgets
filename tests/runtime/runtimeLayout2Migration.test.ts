@@ -34,7 +34,7 @@ describe('runtime layout-1 to layout-2 migration', () => {
     const { source, target } = await fixture();
     const before = await Promise.all(['runtime.json', 'config/household.json', ...Object.keys(oldStores).map(file => `data/${file}`)].map(path => readFile(join(source, ...path.split('/')))));
     await migrateRuntimeLayout1To2({ sourceRuntimePath: source, targetRuntimePath: target, confirmed: true });
-    await validateProductionRuntime(target);
+    await validateProductionRuntime(target, 2);
     assert.deepEqual(JSON.parse(await readFile(join(target, 'data', 'calendar-profile-assignments.local.json'), 'utf8')), { schemaVersion: 1, assignments: [] });
     const after = await Promise.all(['runtime.json', 'config/household.json', ...Object.keys(oldStores).map(file => `data/${file}`)].map(path => readFile(join(source, ...path.split('/')))));
     assert.deepEqual(after, before);

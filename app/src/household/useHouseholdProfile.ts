@@ -9,6 +9,7 @@ import type {
 
 export type HouseholdProfileContextValue = {
   profiles: HouseholdProfile[];
+  canonicalProfiles?: HouseholdProfile[];
   selectedProfile: HouseholdProfile;
   selectedProfileId: string;
   isFamilySelected: boolean;

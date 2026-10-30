@@ -70,3 +70,11 @@ describe('Calendar profile assignment store', () => {
     assert.deepEqual(resolveCalendarProfileAssignment(key('b'), 'unknown', [], sources), { target: { kind: 'unassigned' }, basis: 'none' });
   });
 });
+
+
+it('does not automatically assign an inactive or unresolved source default, while retaining explicit history', () => {
+  const eventKey = `calendar-event-v1-${'a'.repeat(64)}`;
+  const sources = [{ sourceId: 'personal', label: 'Personal', kind: 'personal', calendarName: 'Synthetic', defaultProfileAssignment: { kind: 'members' as const, profileIds: ['inactive'] } }];
+  assert.deepEqual(resolveCalendarProfileAssignment(eventKey, 'personal', [], sources, ['active']), { target: { kind: 'unassigned' }, basis: 'none' });
+  assert.deepEqual(resolveCalendarProfileAssignment(eventKey, 'personal', [{ eventKey, target: { kind: 'members', profileIds: ['inactive'] }, updatedAt: '2026-10-29T00:00:00.000Z' }], sources, ['active']), { target: { kind: 'members', profileIds: ['inactive'] }, basis: 'explicit' });
+});

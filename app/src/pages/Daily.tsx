@@ -809,6 +809,7 @@ function Daily({
 }: DailyProps) {
   const {
     profiles,
+    canonicalProfiles = profiles,
     selectedProfile,
     isFamilySelected,
   } = useHouseholdProfile();
@@ -917,12 +918,12 @@ function Daily({
 
   const profileById = useMemo(
     () => new Map(
-      profiles.map(profile => [
+      canonicalProfiles.map(profile => [
         profile.id,
         profile,
       ])
     ),
-    [profiles]
+    [canonicalProfiles]
   );
 
   const groupedToday = useMemo(() => {

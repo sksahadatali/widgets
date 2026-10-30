@@ -5,7 +5,7 @@ import { basename, dirname, join } from 'node:path';
 import {
   HOUSEHOLD_CONFIG_FILE,
   RUNTIME_CONFIG_DIRECTORY,
-  validateHouseholdConfig,
+  validateHouseholdConfigV1 as validateHouseholdConfig,
   validateLegacyHouseholdConfig,
 } from '../config/householdConfig.js';
 import { assertExternalRuntimePath, configureRuntimeData, normalizeAbsolutePath } from '../config/runtimeData.js';
@@ -30,7 +30,7 @@ export async function migrateHouseholdConfig(options: { sourcePath: string; runt
   const sourceStats = await stat(sourcePath).catch(error => { throw new Error('Configuration migration source does not exist.', { cause: error }); });
   if (!sourceStats.isFile()) throw new Error('Configuration migration source must be a file.');
   const runtime = configureRuntimeData({ serverMode: 'production', appMode: 'household', runtimeDirectory: runtimeRoot });
-  await preflightRuntimeData(runtime);
+  await preflightRuntimeData(runtime, 2);
   let sourceValue: unknown;
   try { sourceValue = JSON.parse(await readFile(sourcePath, 'utf8')) as unknown; } catch { throw new Error('Configuration migration source is malformed.'); }
   const legacy = validateLegacyHouseholdConfig(sourceValue);
