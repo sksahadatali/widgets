@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { constants } from 'node:fs';
 import {
   access,
@@ -1253,4 +1254,4 @@ export class RoutineFileStore {
 }
 
 export const routineStore =
-  new RoutineFileStore();
+  guardedLiveService(() => new RoutineFileStore());

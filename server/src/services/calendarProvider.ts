@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { createHash } from 'node:crypto';
 import { getHouseholdConfig, type CalendarSemanticRule, type CalendarSourceConfig } from '../config/householdConfig.js';
 import {
@@ -326,6 +327,7 @@ export async function getTimedSafeCalendarData(
     requestedWindow: CalendarWindowRequest = {},
     options: CalendarProviderReadOptions = {},
 ): Promise<TimedCalendarData> {
+  requireHouseholdAccess();
     const config = getHouseholdConfig();
     const requestedStartDate = requestedWindow.startDate;
     const requestedDays = requestedWindow.days;

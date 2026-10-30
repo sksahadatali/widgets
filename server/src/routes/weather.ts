@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { getWeather } from '../services/weatherProvider.js';
-import { getRuntimeAppMode } from '../config/householdConfig.js';
-const router = Router();
-router.get('/', async (_request, response) => {
-  const demoLocation = { name: 'Example Town', latitude: 51.5074, longitude: -0.1278, timezone: 'Europe/London' };
-  try { response.json(await getWeather(fetch, getRuntimeAppMode() === 'demo' ? demoLocation : undefined)); } catch { response.status(502).json({ error: 'Weather unavailable' }); }
+import { classifiedRouter } from '../access/classifiedRouter.js';
+import { getWeather, getWeatherDemo } from '../services/weatherProvider.js';
+const router = classifiedRouter('weather');
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
+  try { response.json(await getWeather()); } catch { response.status(502).json({ error: 'Provider unavailable' }); }
+}, async (_request, response) => {
+  try { response.json(await getWeatherDemo()); } catch { response.status(502).json({ error: 'Provider unavailable' }); }
 });
-export default router;
+export default router.router;

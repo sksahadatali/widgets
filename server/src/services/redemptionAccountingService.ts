@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { randomUUID } from 'node:crypto';
 
 import type {
@@ -474,4 +475,4 @@ export class RedemptionAccountingService {
 }
 
 export const redemptionAccountingService =
-  new RedemptionAccountingService();
+  guardedLiveService(() => new RedemptionAccountingService());

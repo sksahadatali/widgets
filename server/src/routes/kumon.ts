@@ -1,5 +1,6 @@
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import { randomUUID } from 'node:crypto';
-import { Router, type Response } from 'express';
+import type { Response } from 'express';
 
 import {
   KumonConflictError,
@@ -9,7 +10,7 @@ import {
   kumonStore,
 } from '../services/kumonStore.js';
 
-const router = Router();
+const router = classifiedRouter('kumon');
 
 function sendError(error: unknown, response: Response): void {
   if (error instanceof KumonStoreCorruptError) {
@@ -27,7 +28,7 @@ function sendError(error: unknown, response: Response): void {
   }
 }
 
-router.get('/', async (request, response) => {
+router.get('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const from = typeof request.query.from === 'string' ? request.query.from : null;
     const to = typeof request.query.to === 'string' ? request.query.to : null;
@@ -40,7 +41,7 @@ router.get('/', async (request, response) => {
   }
 });
 
-router.post('/', async (request, response) => {
+router.post('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await kumonStore.createAssignment(randomUUID(), request.body as unknown);
     response.status(201).json({ success: true, ...result });
@@ -49,7 +50,7 @@ router.post('/', async (request, response) => {
   }
 });
 
-router.patch('/:id', async (request, response) => {
+router.patch('/:id', 'HOUSEHOLD', async (request, response) => {
   try {
     const assignment = await kumonStore.updateAssignment(request.params.id, request.body as unknown);
     response.json({ success: true, assignment });
@@ -58,7 +59,7 @@ router.patch('/:id', async (request, response) => {
   }
 });
 
-router.patch('/:id/progress', async (request, response) => {
+router.patch('/:id/progress', 'HOUSEHOLD', async (request, response) => {
   try {
     const assignment = await kumonStore.setProgress(request.params.id, request.body as unknown);
     response.json({ success: true, assignment });
@@ -67,7 +68,7 @@ router.patch('/:id/progress', async (request, response) => {
   }
 });
 
-router.delete('/:id', async (request, response) => {
+router.delete('/:id', 'HOUSEHOLD', async (request, response) => {
   try {
     const timeZone = typeof request.body === 'object' && request.body !== null
       ? (request.body as Record<string, unknown>).timeZone
@@ -79,4 +80,4 @@ router.delete('/:id', async (request, response) => {
   }
 });
 
-export default router;
+export default router.router;

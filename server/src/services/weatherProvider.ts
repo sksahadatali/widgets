@@ -1,4 +1,5 @@
-import { getHouseholdConfig } from '../config/householdConfig.js';
+import { AccessError, requireHouseholdAccess } from '../access/householdAccess.js';
+import { getHouseholdConfig, getRuntimeAppMode } from '../config/householdConfig.js';
 
 type OpenMeteoResponse = {
   current: { temperature_2m: number; apparent_temperature: number; relative_humidity_2m: number; weather_code: number };
@@ -8,9 +9,9 @@ type OpenMeteoResponse = {
 const conditions: Record<number, string> = { 0: 'Clear', 1: 'Mostly Clear', 2: 'Partly Cloudy', 3: 'Cloudy', 45: 'Fog', 48: 'Freezing Fog', 51: 'Light Drizzle', 53: 'Drizzle', 55: 'Heavy Drizzle', 61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain', 71: 'Light Snow', 73: 'Snow', 75: 'Heavy Snow', 80: 'Rain Showers', 81: 'Heavy Showers', 95: 'Thunderstorm' };
 const icon = (code: number) => [0, 1].includes(code) ? 'sun' : code === 2 ? 'partly-cloudy' : code === 3 ? 'cloud' : [45, 48].includes(code) ? 'fog' : [51, 53, 55, 61, 63, 65, 80, 81].includes(code) ? 'rain' : [71, 73, 75].includes(code) ? 'snow' : code === 95 ? 'storm' : 'cloud';
 
-export async function getWeather(
+async function readProvider(
   fetcher: typeof fetch = fetch,
-  location = getHouseholdConfig().location
+  location: { name: string; latitude: number; longitude: number; timezone: string }
 ) {
   const parameters = new URLSearchParams({
     latitude: String(location.latitude), longitude: String(location.longitude),
@@ -30,4 +31,13 @@ export async function getWeather(
       high: Math.round(data.daily.temperature_2m_max[index + 1]), low: Math.round(data.daily.temperature_2m_min[index + 1]),
     })),
   };
+}
+
+export function getWeather(fetcher: typeof fetch = fetch) {
+  requireHouseholdAccess();
+  return readProvider(fetcher, getHouseholdConfig().location);
+}
+export function getWeatherDemo(fetcher: typeof fetch = fetch) {
+  if (getRuntimeAppMode() !== 'demo') throw new AccessError('DEMO_HOUSEHOLD_CROSSOVER');
+  return readProvider(fetcher, { name: 'Example Town', latitude: 51.5074, longitude: -0.1278, timezone: 'Europe/London' });
 }

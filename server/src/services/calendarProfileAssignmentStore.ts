@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import crypto from 'node:crypto';
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
@@ -194,7 +195,7 @@ export class CalendarProfileAssignmentFileStore {
   }
 }
 
-export const calendarProfileAssignmentStore = new CalendarProfileAssignmentFileStore();
+export const calendarProfileAssignmentStore = guardedLiveService(() => new CalendarProfileAssignmentFileStore());
 
 export function resolveCalendarProfileAssignment(
   eventKey: string,

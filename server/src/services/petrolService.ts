@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import axios from 'axios';
 
 const BASE_URL = 'https://www.fuel-finder.service.gov.uk';
@@ -175,6 +176,7 @@ async function fetchAllBatches(
 }
 
 export async function getPetrolPrice() {
+  requireHouseholdAccess();
   const stationConfig =
     getPetrolStationConfig();
   const now = Date.now();

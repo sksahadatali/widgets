@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { randomUUID } from 'node:crypto';
 
 import type { RewardTransaction } from '../types/reward.js';
@@ -84,6 +85,7 @@ export async function reconcileRoutineRewards(
   rewards: RewardFileStore = rewardStore,
   now = new Date()
 ): Promise<RoutineRewardReconciliationResult> {
+  if (routines === routineStore || rewards === rewardStore) requireHouseholdAccess();
   const routineData = await routines.read();
   let rewardData = await rewards.read();
   let awardsCreated = 0;

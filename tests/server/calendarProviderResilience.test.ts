@@ -1,3 +1,4 @@
+import { accessCall } from './helpers/householdAccess.js';
 import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import express from 'express';
@@ -172,13 +173,13 @@ describe('Calendar backend in-flight coordination', () => {
 describe('Calendar provider timeout', () => {
   it('allows a provider response that completes before the deadline', async () => {
     setHouseholdConfigForTests(config);
-    const result = await getTimedSafeCalendarData(
+    const result = await accessCall(() => getTimedSafeCalendarData(
       { startDate: householdToday },
       {
         timeoutMs: 100,
         fetcher: async () => new Response(JSON.stringify(v2Response())),
       },
-    );
+    ));
     assert.deepEqual(result.data, calendarData);
     assert.ok(result.timing.providerMs >= 0);
     assert.ok(result.timing.processingMs >= 0);
@@ -188,7 +189,7 @@ describe('Calendar provider timeout', () => {
     setHouseholdConfigForTests(config);
     let calls = 0;
     const coordinator = new CalendarReadCoordinator({
-      read: request => getTimedSafeCalendarData(request, {
+      read: request => accessCall(() => getTimedSafeCalendarData(request, {
         timeoutMs: 10,
         fetcher: async (_input, init) => {
           calls += 1;
@@ -196,7 +197,7 @@ describe('Calendar provider timeout', () => {
             init?.signal?.addEventListener('abort', () => reject(new Error('private provider aborted')), { once: true });
           });
         },
-      }),
+      })),
       now: () => now,
       timeZone: () => 'Europe/London',
     });
@@ -225,7 +226,7 @@ describe('Calendar API timing metadata', () => {
     setHouseholdConfigForTests(config);
     const app = express();
     app.get('/api/calendar', (request, response) => {
-      void readCalendarRoute(request, response, {
+      void accessCall(() => readCalendarRoute(request, response, {
         readCalendar,
         readAssignments: async () => ({ schemaVersion: 1, assignments: [] }),
         now: () => now,
@@ -233,7 +234,7 @@ describe('Calendar API timing metadata', () => {
           let value = 100;
           return () => value += 5;
         })(),
-      });
+      }));
     });
     server = app.listen(0, '127.0.0.1');
     await new Promise<void>(resolve => server!.once('listening', resolve));
@@ -263,13 +264,13 @@ describe('Calendar API timing metadata', () => {
   });
 
   it('returns a controlled timed-out response with non-sensitive timing', async () => {
-    const response = await fetch(await start(() => getTimedSafeCalendarData(
+    const response = await fetch(await start(() => accessCall(() => getTimedSafeCalendarData(
       { startDate: householdToday },
       {
         timeoutMs: 10,
         fetcher: async () => new Promise<Response>(() => undefined),
       },
-    )));
+    ))));
     assert.equal(response.status, 502);
     assert.deepEqual(await response.json(), { error: 'Calendar unavailable' });
     const timing = response.headers.get('server-timing') ?? '';

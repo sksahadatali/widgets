@@ -1,3 +1,7 @@
+import './helpers/providerEnvironment.js';
+import { createApp } from '../../server/src/app.js';
+import * as configuration from '../../server/src/config/householdConfig.js';
+import { testRuntime } from './helpers/householdAccess.js';
 import { canonicalConfig } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
@@ -22,13 +26,11 @@ async function start() {
   process.env.NEST_DEVICE_NAME ??= 'test';
   process.env.NOTION_TOKEN ??= 'test';
   process.env.NOTION_TASKS_DATA_SOURCE_ID ??= 'test';
-  const [{ createApp }, configuration] = await Promise.all([
-    import('../../server/src/app.js'),
-    import('../../server/src/config/householdConfig.js'),
-  ]);
+
   configuration.setHouseholdConfigForTests(config);
   resetConfig = () => configuration.setHouseholdConfigForTests(null, 'demo');
-  server = createApp({ mode: 'development', appMode: 'household' }).listen(0);
+  const { context } = await testRuntime(config);
+  server = createApp({ mode: 'development', appMode: 'household', accessBoundary: { mode: 'household', context, audit: () => {} } }).listen(0);
   await new Promise<void>(resolve => server!.once('listening', resolve));
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Test server failed.');
@@ -81,10 +83,7 @@ describe('Household browser privacy APIs', { concurrency: false }, () => {
     process.env.NEST_DEVICE_NAME ??= 'test';
     process.env.NOTION_TOKEN ??= 'test';
     process.env.NOTION_TASKS_DATA_SOURCE_ID ??= 'test';
-    const [{ createApp }, configuration] = await Promise.all([
-      import('../../server/src/app.js'),
-      import('../../server/src/config/householdConfig.js'),
-    ]);
+
     configuration.setHouseholdConfigForTests(null, 'demo');
     server = createApp({ mode: 'development', appMode: 'demo' }).listen(0);
     await new Promise<void>(resolve => server!.once('listening', resolve));

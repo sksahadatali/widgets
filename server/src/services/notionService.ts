@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { Client } from '@notionhq/client';
 
 import { env } from '../config/env.js';
@@ -193,6 +194,7 @@ function formatDueDate(
 export async function getDueSoonTasks(): Promise<
   DueSoonTask[]
 > {
+  requireHouseholdAccess();
   const response =
     await notion.dataSources.query({
       data_source_id:
@@ -312,6 +314,7 @@ export async function getDueSoonTasks(): Promise<
 export async function getTasks(): Promise<
   TaskItem[]
 > {
+  requireHouseholdAccess();
   const response =
     await notion.dataSources.query({
       data_source_id:
@@ -416,6 +419,7 @@ export async function updateTaskStatus(
   pageId: string,
   status: string
 ): Promise<void> {
+  requireHouseholdAccess();
   await notion.pages.update({
     page_id: pageId,
 
@@ -432,6 +436,7 @@ export async function updateTaskStatus(
 export async function createTask(
   input: CreateTaskInput
 ): Promise<string> {
+  requireHouseholdAccess();
   const properties: Record<string, any> = {
     Task: {
       title: [
@@ -492,6 +497,7 @@ export async function updateTask(
   pageId: string,
   input: UpdateTaskInput
 ): Promise<void> {
+  requireHouseholdAccess();
   const properties: Record<string, any> = {
     Task: {
       title: [

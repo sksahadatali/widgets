@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import type { Response } from 'express';
 
 import {
@@ -20,7 +20,7 @@ import {
   RewardStoreError,
 } from '../services/rewardStore.js';
 
-const router = Router();
+const router = classifiedRouter('redemptions');
 
 function sendRedemptionError(
   error: unknown,
@@ -92,7 +92,7 @@ function sendRedemptionError(
   });
 }
 
-router.get('/', async (_request, response) => {
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
   try {
     const store = await redemptionStore.read();
     response.json({ success: true, store });
@@ -101,7 +101,7 @@ router.get('/', async (_request, response) => {
   }
 });
 
-router.post('/catalogue', async (request, response) => {
+router.post('/catalogue', 'HOUSEHOLD', async (request, response) => {
   try {
     const result =
       await redemptionStore.createCatalogueItem(
@@ -116,7 +116,7 @@ router.post('/catalogue', async (request, response) => {
   }
 });
 
-router.put('/catalogue/order', async (request, response) => {
+router.put('/catalogue/order', 'HOUSEHOLD', async (request, response) => {
   try {
     const store = await redemptionStore.reorderCatalogue(
       request.body?.orderedIds as unknown
@@ -127,7 +127,7 @@ router.put('/catalogue/order', async (request, response) => {
   }
 });
 
-router.patch('/catalogue/:id', async (request, response) => {
+router.patch('/catalogue/:id', 'HOUSEHOLD', async (request, response) => {
   try {
     const result =
       await redemptionStore.updateCatalogueItem(
@@ -141,7 +141,7 @@ router.patch('/catalogue/:id', async (request, response) => {
 });
 
 router.patch(
-  '/catalogue/:id/active',
+  '/catalogue/:id/active', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result =
@@ -156,7 +156,7 @@ router.patch(
   }
 );
 
-router.post('/requests', async (request, response) => {
+router.post('/requests', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await redemptionAccountingService.request(
       request.body as unknown
@@ -171,7 +171,7 @@ router.post('/requests', async (request, response) => {
 });
 
 router.post(
-  '/requests/:id/cancel',
+  '/requests/:id/cancel', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result = await redemptionAccountingService.cancel(
@@ -189,7 +189,7 @@ router.post(
 );
 
 router.post(
-  '/requests/:id/decline',
+  '/requests/:id/decline', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result = await redemptionAccountingService.decline(
@@ -207,7 +207,7 @@ router.post(
 );
 
 router.post(
-  '/requests/:id/approve',
+  '/requests/:id/approve', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result =
@@ -226,7 +226,7 @@ router.post(
 );
 
 router.post(
-  '/requests/:id/refund',
+  '/requests/:id/refund', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result =
@@ -244,4 +244,4 @@ router.post(
   }
 );
 
-export default router;
+export default router.router;

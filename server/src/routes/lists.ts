@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import type { Response } from 'express';
 
 import {
@@ -9,7 +9,7 @@ import {
   familyListStore,
 } from '../services/familyListStore.js';
 
-const router = Router();
+const router = classifiedRouter('lists');
 
 function sendListError(error: unknown, response: Response): void {
   if (error instanceof FamilyListStoreCorruptError) {
@@ -39,7 +39,7 @@ function sendListError(error: unknown, response: Response): void {
   });
 }
 
-router.get('/', async (_request, response) => {
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
   try {
     response.json({ success: true, store: await familyListStore.read() });
   } catch (error) {
@@ -47,7 +47,7 @@ router.get('/', async (_request, response) => {
   }
 });
 
-router.post('/', async (request, response) => {
+router.post('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.createList(request.body as unknown);
     response.status(result.created ? 201 : 200).json({ success: true, ...result });
@@ -56,7 +56,7 @@ router.post('/', async (request, response) => {
   }
 });
 
-router.patch('/order', async (request, response) => {
+router.patch('/order', 'HOUSEHOLD', async (request, response) => {
   try {
     const store = await familyListStore.reorderLists(
       request.body?.orderedIds as unknown
@@ -67,7 +67,7 @@ router.patch('/order', async (request, response) => {
   }
 });
 
-router.patch('/:listId', async (request, response) => {
+router.patch('/:listId', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.renameList(
       request.params.listId,
@@ -79,7 +79,7 @@ router.patch('/:listId', async (request, response) => {
   }
 });
 
-router.patch('/:listId/active', async (request, response) => {
+router.patch('/:listId/active', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.setListActive(
       request.params.listId,
@@ -91,7 +91,7 @@ router.patch('/:listId/active', async (request, response) => {
   }
 });
 
-router.post('/:listId/items', async (request, response) => {
+router.post('/:listId/items', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.createItem(
       request.params.listId,
@@ -103,7 +103,7 @@ router.post('/:listId/items', async (request, response) => {
   }
 });
 
-router.patch('/:listId/items/order', async (request, response) => {
+router.patch('/:listId/items/order', 'HOUSEHOLD', async (request, response) => {
   try {
     const store = await familyListStore.reorderItems(
       request.params.listId,
@@ -115,7 +115,7 @@ router.patch('/:listId/items/order', async (request, response) => {
   }
 });
 
-router.patch('/:listId/items/:itemId', async (request, response) => {
+router.patch('/:listId/items/:itemId', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.editItem(
       request.params.listId,
@@ -128,7 +128,7 @@ router.patch('/:listId/items/:itemId', async (request, response) => {
   }
 });
 
-router.patch('/:listId/items/:itemId/checked', async (request, response) => {
+router.patch('/:listId/items/:itemId/checked', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.setItemChecked(
       request.params.listId,
@@ -141,7 +141,7 @@ router.patch('/:listId/items/:itemId/checked', async (request, response) => {
   }
 });
 
-router.delete('/:listId/items/checked', async (request, response) => {
+router.delete('/:listId/items/checked', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.clearChecked(request.params.listId);
     response.json({ success: true, ...result });
@@ -150,7 +150,7 @@ router.delete('/:listId/items/checked', async (request, response) => {
   }
 });
 
-router.delete('/:listId/items/:itemId', async (request, response) => {
+router.delete('/:listId/items/:itemId', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await familyListStore.removeItem(
       request.params.listId,
@@ -162,4 +162,4 @@ router.delete('/:listId/items/:itemId', async (request, response) => {
   }
 });
 
-export default router;
+export default router.router;
