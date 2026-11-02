@@ -1,3 +1,4 @@
+import { establishHouseholdAccess, withHouseholdAccess } from './access/householdAccess.js';
 import { env } from './config/env.js';
 import {
   configureRuntimeData,
@@ -71,6 +72,8 @@ async function start(): Promise<void> {
       serverMode,
     });
 
+    const householdAccess = appMode === 'household' ? await establishHouseholdAccess() : undefined;
+
     const [
       { createApp },
       { reconcileRoutineRewards },
@@ -81,6 +84,7 @@ async function start(): Promise<void> {
     const app = createApp({
       mode: serverMode,
       appMode,
+      accessBoundary: { mode: appMode, context: householdAccess },
       frontendOrigin: env.frontendOrigin,
     });
 
@@ -111,8 +115,8 @@ async function start(): Promise<void> {
           );
         }
 
-        if (runtime.policy !== 'disabled') {
-          void reconcileRoutineRewards().catch(() => {
+        if (householdAccess) {
+          void withHouseholdAccess(householdAccess, () => reconcileRoutineRewards()).catch(() => {
             console.error(
               'Automatic Routine reward startup reconciliation is pending.'
             );

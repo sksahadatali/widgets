@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { getHouseholdConfig } from '../config/householdConfig.js';
 import {
   getTimedSafeCalendarData,
@@ -48,4 +49,6 @@ export class CalendarReadCoordinator {
   }
 }
 
-export const calendarReadCoordinator = new CalendarReadCoordinator();
+export const calendarReadCoordinator = guardedLiveService(() => new CalendarReadCoordinator({
+  read: request => getTimedSafeCalendarData(request),
+}));

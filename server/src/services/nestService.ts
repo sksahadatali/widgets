@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { env } from '../config/env.js';
 
 import {
@@ -105,6 +106,7 @@ async function readNestApiError(
 }
 
 export async function getNestStatus(): Promise<NestStatus> {
+  requireHouseholdAccess();
   
   if (
     cachedNestStatus &&

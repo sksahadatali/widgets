@@ -1,10 +1,8 @@
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import {
   randomUUID,
 } from 'node:crypto';
 
-import {
-  Router,
-} from 'express';
 import type {
   Response,
 } from 'express';
@@ -18,7 +16,7 @@ import {
 import {
   reconcileRoutineRewards,
 } from '../services/routineRewardReconciler.js';
-const router = Router();
+const router = classifiedRouter('routines');
 
 function sendRoutineError(
   error: unknown,
@@ -64,7 +62,7 @@ function sendRoutineError(
   });
 }
 
-router.get('/', async (request, response) => {
+router.get('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const store = await routineStore.read();
     const localDate =
@@ -87,7 +85,7 @@ router.get('/', async (request, response) => {
   }
 });
 
-router.post('/', async (request, response) => {
+router.post('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const routine =
       await routineStore.createRoutine(
@@ -105,7 +103,7 @@ router.post('/', async (request, response) => {
 });
 
 router.post(
-  '/occurrences/today',
+  '/occurrences/today', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const result =
@@ -123,7 +121,7 @@ router.post(
   }
 );
 
-router.post('/rewards/reconcile', async (_request, response) => {
+router.post('/rewards/reconcile', 'HOUSEHOLD', async (_request, response) => {
   try {
     const result = await reconcileRoutineRewards();
     response.json({ success: true, ...result });
@@ -136,7 +134,7 @@ router.post('/rewards/reconcile', async (_request, response) => {
   }
 });
 
-router.patch('/:id', async (request, response) => {
+router.patch('/:id', 'HOUSEHOLD', async (request, response) => {
   try {
     const routine =
       await routineStore.updateRoutine(
@@ -153,7 +151,7 @@ router.patch('/:id', async (request, response) => {
   }
 });
 
-router.delete('/:id', async (request, response) => {
+router.delete('/:id', 'HOUSEHOLD', async (request, response) => {
   try {
     await routineStore.deleteRoutine(
       request.params.id
@@ -168,7 +166,7 @@ router.delete('/:id', async (request, response) => {
 });
 
 router.patch(
-  '/:id/occurrence',
+  '/:id/occurrence', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const occurrence =
@@ -199,4 +197,4 @@ router.patch(
   }
 );
 
-export default router;
+export default router.router;

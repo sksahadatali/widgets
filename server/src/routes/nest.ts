@@ -1,25 +1,20 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import { getNestStatus } from '../services/nestService.js';
 
-const router = Router();
+const router = classifiedRouter('nest');
 
-router.get('/status', async (_request, response) => {
+router.get('/status', 'HOUSEHOLD', async (_request, response) => {
   try {
     const status = await getNestStatus();
 
     response.json(status);
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown Nest service error';
-
-    console.error('Nest status request failed:', message);
+    console.error('Nest provider request failed.');
 
     response.status(502).json({
-      error: message,
+      error: 'Nest unavailable',
     });
   }
 });
 
-export default router;
+export default router.router;

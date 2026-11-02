@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { getPrayerTimes } from '../services/prayerProvider.js';
-import { getRuntimeAppMode } from '../config/householdConfig.js';
-const router = Router();
-router.get('/', async (_request, response) => {
-  const demoAddress = 'Trafalgar Square, London, UK';
-  try { response.json(await getPrayerTimes(fetch, getRuntimeAppMode() === 'demo' ? demoAddress : undefined)); } catch { response.status(502).json({ error: 'Prayer times unavailable' }); }
+import { classifiedRouter } from '../access/classifiedRouter.js';
+import { getPrayerTimes, getPrayerTimesDemo } from '../services/prayerProvider.js';
+const router = classifiedRouter('prayerTimes');
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
+  try { response.json(await getPrayerTimes()); } catch { response.status(502).json({ error: 'Provider unavailable' }); }
+}, async (_request, response) => {
+  try { response.json(await getPrayerTimesDemo()); } catch { response.status(502).json({ error: 'Provider unavailable' }); }
 });
-export default router;
+export default router.router;

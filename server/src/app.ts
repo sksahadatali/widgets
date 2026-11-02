@@ -1,3 +1,5 @@
+import { AccessError } from './access/householdAccess.js';
+import { accessErrorResponse, assertClassifiedRoutes, publicGet, infrastructureUse, inspectIdentityJson, type AccessBoundary } from './access/classifiedRouter.js';
 import {
   accessSync,
   constants,
@@ -42,6 +44,7 @@ export type ServerMode =
 
 export type CreateAppOptions = {
   mode: ServerMode;
+  accessBoundary?: AccessBoundary;
   appMode?: RuntimeAppMode;
   frontendOrigin?: string;
   frontendDistPath?: string;
@@ -116,7 +119,7 @@ export function createApp(
   app.disable('x-powered-by');
 
   if (!isProduction) {
-    app.use(
+    infrastructureUse(app,
       cors({
         origin:
           options.frontendOrigin ??
@@ -132,9 +135,9 @@ export function createApp(
     );
   }
 
-  app.use(express.json());
+  infrastructureUse(app, express.json({ verify: inspectIdentityJson }));
 
-  app.use('/api', (_request, response, next) => {
+  infrastructureUse(app, '/api', (_request, response, next) => {
     response.setHeader(
       'Cache-Control',
       'no-store'
@@ -142,31 +145,36 @@ export function createApp(
     next();
   });
 
-  app.use('/api/petrol', petrolRouter);
-  app.use('/api/nest', nestRouter);
-  app.use('/api/tasks', tasksRouter);
-  app.use('/api/routines', routinesRouter);
-  app.use('/api/rewards', rewardsRouter);
-  app.use('/api/redemptions', redemptionsRouter);
-  app.use('/api/lists', listsRouter);
-  app.use('/api/meals', mealsRouter);
-  app.use('/api/kumon', kumonRouter);
+  infrastructureUse(app, '/api', (_request, response, next) => {
+    response.locals.accessBoundary = options.accessBoundary ?? { mode: options.appMode ?? getRuntimeAppMode() };
+    next();
+  });
+
+  infrastructureUse(app, '/api/petrol', petrolRouter);
+  infrastructureUse(app, '/api/nest', nestRouter);
+  infrastructureUse(app, '/api/tasks', tasksRouter);
+  infrastructureUse(app, '/api/routines', routinesRouter);
+  infrastructureUse(app, '/api/rewards', rewardsRouter);
+  infrastructureUse(app, '/api/redemptions', redemptionsRouter);
+  infrastructureUse(app, '/api/lists', listsRouter);
+  infrastructureUse(app, '/api/meals', mealsRouter);
+  infrastructureUse(app, '/api/kumon', kumonRouter);
   const appMode = options.appMode ?? getRuntimeAppMode();
-  app.use('/api/calendar', calendarRouter);
-  app.use('/api/weather', weatherRouter);
-  app.use('/api/prayer-times', prayerTimesRouter);
+  infrastructureUse(app, '/api/calendar', calendarRouter);
+  infrastructureUse(app, '/api/weather', weatherRouter);
+  infrastructureUse(app, '/api/prayer-times', prayerTimesRouter);
   if (appMode === 'household') {
-    app.use('/api/config', clientConfigRouter);
-    app.use('/api/travel', travelRouter);
+    infrastructureUse(app, '/api/config', clientConfigRouter);
+    infrastructureUse(app, '/api/travel', travelRouter);
   }
 
-  app.use('/api', (_request, response) => {
+  infrastructureUse(app, '/api', (_request, response) => {
     response.status(404).json({
       error: 'Route not found',
     });
   });
 
-  app.get('/health', (_request, response) => {
+  publicGet(app, '/health', (_request, response) => {
     response.setHeader(
       'Cache-Control',
       'no-store'
@@ -189,7 +197,7 @@ export function createApp(
       'assets'
     );
 
-    app.use(
+    infrastructureUse(app,
       '/assets',
       express.static(assetsPath, {
         fallthrough: true,
@@ -205,7 +213,7 @@ export function createApp(
       })
     );
 
-    app.use('/assets', (_request, response) => {
+    infrastructureUse(app, '/assets', (_request, response) => {
       response.status(404).json({
         error: 'Route not found',
       });
@@ -227,14 +235,14 @@ export function createApp(
       );
     };
 
-    app.get(
+    publicGet(app,
       '/index.html',
       (_request, response, next) => {
         sendApplicationShell(response, next);
       }
     );
 
-    app.use(
+    infrastructureUse(app,
       express.static(frontendDistPath, {
         fallthrough: true,
         index: false,
@@ -247,7 +255,7 @@ export function createApp(
       })
     );
 
-    app.use((request, response, next) => {
+    infrastructureUse(app, (request, response, next) => {
       if (
         (
           request.method !== 'GET' &&
@@ -264,13 +272,13 @@ export function createApp(
     });
   }
 
-  app.use((_request, response) => {
+  infrastructureUse(app, (_request, response) => {
     response.status(404).json({
       error: 'Route not found',
     });
   });
 
-  app.use(
+  infrastructureUse(app,
     (
       error: unknown,
       request: Request,
@@ -281,6 +289,8 @@ export function createApp(
         next(error);
         return;
       }
+
+      if (error instanceof AccessError) { accessErrorResponse(error, response); return; }
 
       console.error(
         'eY OS request failed.',
@@ -305,5 +315,6 @@ export function createApp(
     }
   );
 
+  assertClassifiedRoutes(app);
   return app;
 }

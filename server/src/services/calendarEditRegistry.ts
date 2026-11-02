@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { randomBytes } from 'node:crypto';
 
 export const CALENDAR_EVENT_KEY_PATTERN = /^calendar-event-v1-[a-f0-9]{64}$/;
@@ -83,4 +84,4 @@ export class CalendarEditRegistry {
   }
 }
 
-export const calendarEditRegistry = new CalendarEditRegistry();
+export const calendarEditRegistry = guardedLiveService(() => new CalendarEditRegistry());

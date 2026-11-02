@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 
 import { getPetrolPrice } from '../services/petrolService.js';
 
-const router = Router();
+const router = classifiedRouter('petrol');
 
-router.get('/', async (_request, response) => {
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
   console.log(
     `[API] Petrol endpoint called: ${new Date().toLocaleTimeString()}`
   );
@@ -14,13 +14,12 @@ router.get('/', async (_request, response) => {
 
     response.json(petrol);
   } catch (error: any) {
-    console.error('[API] Petrol endpoint error:', error.message);
+    console.error('Petrol provider request failed.');
 
     response.status(500).json({
-      error: error.message,
-      details: error.response?.data ?? null,
+      error: 'Petrol unavailable',
     });
   }
 });
 
-export default router;
+export default router.router;

@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { constants } from 'node:fs';
 import {
   access,
@@ -1082,4 +1083,4 @@ export class RedemptionFileStore {
 }
 
 export const redemptionStore =
-  new RedemptionFileStore();
+  guardedLiveService(() => new RedemptionFileStore());

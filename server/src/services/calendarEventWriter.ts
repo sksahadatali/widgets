@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { createHmac, randomUUID } from 'node:crypto';
 
 import { getHouseholdConfig, getRuntimeAppMode } from '../config/householdConfig.js';
@@ -149,6 +150,7 @@ function contextFrom(event: NormalizedProviderEvent, revision: string): SafeEdit
 }
 
 export async function getCalendarEditContext(eventKey: string, fetcher: typeof fetch = fetch): Promise<SafeEditContext> {
+  requireHouseholdAccess();
   const locator = assertEligible(eventKey);
   const event = await callProducer('inspect-event', locator, {}, fetcher);
   if (!event.writable || !event.etag || event.allDay !== locator.allDay || Boolean(event.recurringEventId) !== Boolean(locator.recurringEventId)) throw new CalendarWriteError(403, 'Calendar event is not editable.');
@@ -168,6 +170,7 @@ function updateBody(revision: CalendarEditRevision, request: CalendarEditRequest
 }
 
 export async function updateCalendarEvent(eventKey: string, rawRequest: unknown, fetcher: typeof fetch = fetch, now = new Date()): Promise<SafeEditContext> {
+  requireHouseholdAccess();
   const locator = assertEligible(eventKey);
   if (!isRecord(rawRequest) || typeof rawRequest.revision !== 'string') throw new CalendarWriteError(400, 'Calendar edit request is invalid.');
   const revision = calendarEditRegistry.consume(rawRequest.revision, eventKey);

@@ -370,7 +370,7 @@ describe('API and health precedence', () => {
       },
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 403);
     assert.match(
       response.headers.get('content-type') ?? '',
       /^application\/json/

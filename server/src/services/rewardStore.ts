@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { constants } from 'node:fs';
 import {
   access,
@@ -1555,4 +1556,4 @@ export class RewardFileStore {
   }
 }
 
-export const rewardStore = new RewardFileStore();
+export const rewardStore = guardedLiveService(() => new RewardFileStore());

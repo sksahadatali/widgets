@@ -1,8 +1,9 @@
-import { getHouseholdConfig } from '../config/householdConfig.js';
+import { AccessError, requireHouseholdAccess } from '../access/householdAccess.js';
+import { getHouseholdConfig, getRuntimeAppMode } from '../config/householdConfig.js';
 
-export async function getPrayerTimes(
+async function readProvider(
   fetcher: typeof fetch = fetch,
-  address = getHouseholdConfig().travel.homeAddress
+  address: string
 ) {
   const parameters = new URLSearchParams({ address, method: '15', school: '1', shafaq: 'general' });
   const response = await fetcher(`https://api.aladhan.com/v1/timingsByAddress?${parameters}`);
@@ -15,4 +16,13 @@ export async function getPrayerTimes(
     timings: { Fajr: timings.Fajr, Sunrise: timings.Sunrise, Dhuhr: timings.Dhuhr, Asr: timings.Asr, Maghrib: timings.Maghrib, Isha: timings.Isha },
     hijriDate: `${hijri.month.en} ${hijri.day}, ${hijri.year}`,
   };
+}
+
+export function getPrayerTimes(fetcher: typeof fetch = fetch) {
+  requireHouseholdAccess();
+  return readProvider(fetcher, getHouseholdConfig().travel.homeAddress);
+}
+export function getPrayerTimesDemo(fetcher: typeof fetch = fetch) {
+  if (getRuntimeAppMode() !== 'demo') throw new AccessError('DEMO_HOUSEHOLD_CROSSOVER');
+  return readProvider(fetcher, 'Trafalgar Square, London, UK');
 }

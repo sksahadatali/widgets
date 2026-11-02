@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import type { Response } from 'express';
 
 import {
@@ -9,7 +9,7 @@ import {
   mealPlanStore,
 } from '../services/mealPlanStore.js';
 
-const router = Router();
+const router = classifiedRouter('meals');
 
 function sendMealError(
   error: unknown,
@@ -57,7 +57,7 @@ function sendMealError(
   });
 }
 
-router.get('/', async (request, response) => {
+router.get('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const startDate = request.query.startDate;
 
@@ -77,7 +77,7 @@ router.get('/', async (request, response) => {
   }
 });
 
-router.post('/', async (request, response) => {
+router.post('/', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await mealPlanStore.createEntry(
       request.body as unknown
@@ -91,7 +91,7 @@ router.post('/', async (request, response) => {
   }
 });
 
-router.patch('/:entryId', async (request, response) => {
+router.patch('/:entryId', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await mealPlanStore.updateEntry(
       request.params.entryId,
@@ -104,7 +104,7 @@ router.patch('/:entryId', async (request, response) => {
   }
 });
 
-router.delete('/:entryId', async (request, response) => {
+router.delete('/:entryId', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await mealPlanStore.removeEntry(
       request.params.entryId
@@ -116,4 +116,4 @@ router.delete('/:entryId', async (request, response) => {
   }
 });
 
-export default router;
+export default router.router;

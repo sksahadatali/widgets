@@ -1,3 +1,4 @@
+import { accessCall } from './helpers/householdAccess.js';
 import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
@@ -36,10 +37,10 @@ describe('purpose-specific provider privacy', () => {
   it('normalizes Weather without returning coordinates', async () => {
     setHouseholdConfigForTests(config);
     let requested = '';
-    const result = await getWeather(async input => {
+    const result = await accessCall(() => getWeather(async input => {
       requested = String(input);
       return new Response(JSON.stringify({ current: { temperature_2m: 16.2, apparent_temperature: 15.6, relative_humidity_2m: 70, weather_code: 2 }, daily: { time: ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04'], weather_code: [2, 0, 3, 61], temperature_2m_max: [18, 19, 17, 16], temperature_2m_min: [10, 11, 9, 8] } }));
-    });
+    }));
     assert.match(requested, /51\.234567/);
     assert.equal(result.location, 'Provider Town');
     assert.doesNotMatch(JSON.stringify(result), /51\.234567|-0\.765432/);
@@ -48,20 +49,20 @@ describe('purpose-specific provider privacy', () => {
   it('uses the private Prayer address without returning it', async () => {
     setHouseholdConfigForTests(config);
     let requested = '';
-    const result = await getPrayerTimes(async input => {
+    const result = await accessCall(() => getPrayerTimes(async input => {
       requested = String(input);
       return new Response(JSON.stringify({ data: { timings: { Fajr: '05:00', Sunrise: '06:30', Dhuhr: '13:00', Asr: '17:00', Maghrib: '20:00', Isha: '21:30' }, date: { hijri: { day: '18', month: { en: 'Rabi al-Awwal' }, year: '1448' } } } }));
-    });
+    }));
     assert.match(requested, /Private\+Origin\+Address/);
     assert.doesNotMatch(JSON.stringify(result), /Private Origin Address/);
   });
 
   it('returns safe Calendar identities and server-derived semantics', async () => {
     setHouseholdConfigForTests(config);
-    const result = await getSafeCalendarData({}, async input => {
+    const result = await accessCall(() => getSafeCalendarData({}, async input => {
       assert.equal(String(input), config.calendar.endpoint);
       return new Response(JSON.stringify({ success: true, timeZone: 'Europe/London', events: [{ id: 'provider-event-id', title: 'Private matching title', start: '2026-10-26', end: '2026-10-31', allDay: true, description: 'private provider description', calendarId: 'raw-private-calendar-id', calendarName: 'Raw Private Name' }] }));
-    });
+    }));
     assert.equal(result.events[0].semantic?.kind, 'school.holiday');
     assert.equal(result.events[0].endLocalDateExclusive, '2026-10-31');
     const serialized = JSON.stringify(result);
@@ -72,7 +73,7 @@ describe('purpose-specific provider privacy', () => {
     setHouseholdConfigForTests(config);
     process.env.GOOGLE_MAPS_API_KEY = 'synthetic-server-key';
     const addresses: string[] = [];
-    const result = await getRoute('Requested Destination', async (input, init) => {
+    const result = await accessCall(() => getRoute('Requested Destination', async (input, init) => {
       const url = String(input);
       if (url.includes('geocode')) {
         addresses.push(new URL(url).searchParams.get('address') ?? '');
@@ -80,7 +81,7 @@ describe('purpose-specific provider privacy', () => {
       }
       assert.doesNotMatch(String(init?.body), /Private Origin Address|Requested Destination/);
       return new Response(JSON.stringify({ routes: [{ duration: '1200s', distanceMeters: 5000 }] }));
-    });
+    }));
     assert.deepEqual(addresses, ['Private Origin Address', 'Requested Destination']);
     assert.deepEqual(result, { travelMinutes: 20, distanceKm: 5 });
   });
@@ -90,7 +91,7 @@ describe('purpose-specific provider privacy', () => {
     process.env.GOOGLE_MAPS_API_KEY = 'synthetic-server-key';
     let providerRequests = 0;
 
-    const result = await getRoute(
+    const result = await accessCall(() => getRoute(
       'Known Venue, Example Road',
       async () => {
         providerRequests += 1;
@@ -99,7 +100,7 @@ describe('purpose-specific provider privacy', () => {
           { status: 503 },
         );
       },
-    );
+    ));
 
     assert.equal(providerRequests, 2);
     assert.deepEqual(result, { travelMinutes: 17 });
@@ -110,10 +111,10 @@ describe('purpose-specific provider privacy', () => {
     process.env.GOOGLE_MAPS_API_KEY = 'synthetic-server-key';
 
     await assert.rejects(
-      getRoute(
+      accessCall(() => getRoute(
         'Unknown destination',
         async () => new Response(null, { status: 503 }),
-      ),
+      )),
       /Travel geocoding failed/,
     );
   });

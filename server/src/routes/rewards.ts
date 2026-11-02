@@ -1,8 +1,8 @@
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import {
   randomUUID,
 } from 'node:crypto';
 
-import { Router } from 'express';
 import type { Response } from 'express';
 
 import {
@@ -16,7 +16,7 @@ import {
   rewardStore,
 } from '../services/rewardStore.js';
 
-const router = Router();
+const router = classifiedRouter('rewards');
 
 function sendRewardError(
   error: unknown,
@@ -70,7 +70,7 @@ function sendRewardError(
   });
 }
 
-router.get('/', async (_request, response) => {
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
   try {
     const store = await rewardStore.read();
 
@@ -86,7 +86,7 @@ router.get('/', async (_request, response) => {
   }
 });
 
-router.post('/awards', async (request, response) => {
+router.post('/awards', 'HOUSEHOLD', async (request, response) => {
   try {
     const result = await rewardStore.appendManualAward(
       randomUUID(),
@@ -103,7 +103,7 @@ router.post('/awards', async (request, response) => {
 });
 
 router.post(
-  '/transactions/:id/reversal',
+  '/transactions/:id/reversal', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const current = await rewardStore.read();
@@ -137,4 +137,4 @@ router.post(
   }
 );
 
-export default router;
+export default router.router;

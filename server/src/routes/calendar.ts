@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { requireHouseholdAccess } from '../access/householdAccess.js';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 import {
   getCalendarProviderErrorTiming,
   type CalendarProviderTiming,
@@ -21,7 +22,7 @@ import {
   updateCalendarEvent,
 } from '../services/calendarEventWriter.js';
 import { calendarReadCoordinator } from '../services/calendarReadCoordinator.js';
-const router = Router();
+const router = classifiedRouter('calendar');
 
 type CalendarReadRouteDependencies = {
   readCalendar: (request: import('../services/calendarWindow.js').CalendarWindowRequest) => Promise<TimedCalendarData>;
@@ -63,14 +64,14 @@ function sendWriteError(error: unknown, response: import('express').Response): v
   }
 }
 
-router.get('/events/:eventKey/edit-context', async (request, response) => {
+router.get('/events/:eventKey/edit-context', 'HOUSEHOLD', async (request, response) => {
   response.set('Cache-Control', 'no-store');
   try {
     response.json({ success: true, context: await getCalendarEditContext(request.params.eventKey) });
   } catch (error) { sendWriteError(error, response); }
 });
 
-router.patch('/events/:eventKey', async (request, response) => {
+router.patch('/events/:eventKey', 'HOUSEHOLD', async (request, response) => {
   response.set('Cache-Control', 'no-store');
   if (request.get('X-EYOS-Calendar-Write') !== '1') {
     response.status(400).json({ success: false, error: 'Calendar write confirmation header is required.' });
@@ -93,7 +94,7 @@ function sendAssignmentError(error: unknown, response: import('express').Respons
   }
 }
 
-router.put('/profile-assignments/:eventKey', async (request, response) => {
+router.put('/profile-assignments/:eventKey', 'HOUSEHOLD', async (request, response) => {
   if (getRuntimeAppMode() === 'demo') {
     response.status(403).json({ success: false, error: 'Calendar profile assignments are disabled in Demo mode.' });
     return;
@@ -112,7 +113,7 @@ router.put('/profile-assignments/:eventKey', async (request, response) => {
   } catch (error) { sendAssignmentError(error, response); }
 });
 
-router.delete('/profile-assignments/:eventKey', async (request, response) => {
+router.delete('/profile-assignments/:eventKey', 'HOUSEHOLD', async (request, response) => {
   if (getRuntimeAppMode() === 'demo') {
     response.status(403).json({ success: false, error: 'Calendar profile assignments are disabled in Demo mode.' });
     return;
@@ -127,6 +128,7 @@ export async function readCalendarRoute(
   response: import('express').Response,
   dependencies: CalendarReadRouteDependencies = defaultReadDependencies,
 ): Promise<void> {
+  if (getRuntimeAppMode() === 'household') requireHouseholdAccess();
   const started = dependencies.clock();
   try {
     if (getRuntimeAppMode() === 'demo') {
@@ -173,7 +175,8 @@ export async function readCalendarRoute(
   }
 }
 
-router.get('/', (request, response) => {
+const readHandler: import('express').RequestHandler<Record<string, string>> = (request, response) => {
   void readCalendarRoute(request, response);
-});
-export default router;
+};
+router.get('/', 'HOUSEHOLD', readHandler, readHandler);
+export default router.router;

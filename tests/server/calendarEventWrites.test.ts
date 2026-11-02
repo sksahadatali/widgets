@@ -1,3 +1,5 @@
+import { AccessError } from '../../server/src/access/householdAccess.js';
+import { accessCall } from './helpers/householdAccess.js';
 import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -46,24 +48,24 @@ function decodeRequest(init?: RequestInit) {
 beforeEach(async () => {
   process.env.EYOS_CALENDAR_WRITE_HMAC_SECRET = 'synthetic-test-secret-that-is-at-least-32-characters';
   setHouseholdConfigForTests(config);
-  calendarEditRegistry.clear();
+  await accessCall(() => calendarEditRegistry.clear());
 });
-afterEach(() => { delete process.env.EYOS_CALENDAR_WRITE_HMAC_SECRET; setHouseholdConfigForTests(null, 'demo'); calendarEditRegistry.clear(); });
+afterEach(() => { delete process.env.EYOS_CALENDAR_WRITE_HMAC_SECRET; setHouseholdConfigForTests(null, 'demo'); });
 
 async function load() {
-  return (await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse())))).events[0];
+  return (await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse()))))).events[0];
 }
 
 describe('Calendar provider write boundary', () => {
   it('derives editability from every gate and exposes no provider locator or ETag', async () => {
     const safe = await load();
     assert.equal(safe.writable, true);
-    const context = await getCalendarEditContext(safe.eventKey, async (_url, init) => {
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async (_url, init) => {
       const request = decodeRequest(init);
       assert.equal(request.payload.operation, 'inspect-event');
       assert.match(request.envelope.signature, /^[A-Za-z0-9_-]+$/);
       return producer();
-    });
+    }));
     assert.match(context.revision, /^calendar-edit-revision-v1-[a-f0-9]{64}$/);
     assert.equal(context.scope, 'event');
     const serialized = JSON.stringify(context);
@@ -79,9 +81,9 @@ describe('Calendar provider write boundary', () => {
       return producer();
     };
 
-    await assert.rejects(() => getCalendarEditContext(safe.eventKey, fetcher), (error: unknown) => error instanceof CalendarWriteError && error.status === 502);
+    await assert.rejects(() => accessCall(() => getCalendarEditContext(safe.eventKey, fetcher)), (error: unknown) => error instanceof CalendarWriteError && error.status === 502);
     await new Promise(resolve => setTimeout(resolve, 2));
-    const context = await getCalendarEditContext(safe.eventKey, fetcher);
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, fetcher));
 
     assert.equal(context.eventKey, safe.eventKey);
     assert.equal(attempts.length, 2);
@@ -95,31 +97,31 @@ describe('Calendar provider write boundary', () => {
 
   it('sends the fresh ETag privately and makes revisions single-use', async () => {
     const safe = await load();
-    const context = await getCalendarEditContext(safe.eventKey, async () => producer());
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer()));
     const request = { scope: 'event' as const, revision: context.revision, title: 'Renamed', location: '', timing: { kind: 'dateTime' as const, start: '2026-09-20T11:00:00+01:00', end: '2026-09-20T12:00:00+01:00', timeZone: 'Europe/London' as const } };
     const changed = { ...event, title: 'Renamed', location: '', start: { ...event.start, value: request.timing.start }, end: { ...event.end, value: request.timing.end }, etag: 'etag-private-2' };
-    const confirmed = await updateCalendarEvent(safe.eventKey, request, async (_url, init) => {
+    const confirmed = await accessCall(() => updateCalendarEvent(safe.eventKey, request, async (_url, init) => {
       const signed = decodeRequest(init);
       assert.equal((signed.payload.body as Record<string, unknown>).etag, 'etag-private-1');
       assert.equal(signed.payload.operation, 'update-event');
       return producer(changed);
-    }, new Date('2026-09-20T08:00:00Z'));
+    }, new Date('2026-09-20T08:00:00Z')));
     assert.equal(confirmed.title, 'Renamed');
-    await assert.rejects(() => updateCalendarEvent(safe.eventKey, request, async () => producer(changed)), (error: unknown) => error instanceof CalendarWriteError && error.status === 409);
+    await assert.rejects(() => accessCall(() => updateCalendarEvent(safe.eventKey, request, async () => producer(changed))), (error: unknown) => error instanceof CalendarWriteError && error.status === 409);
   });
 
   it('maps provider precondition failures to a closed 409 without optimistic success', async () => {
     const safe = await load();
-    const context = await getCalendarEditContext(safe.eventKey, async () => producer());
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer()));
     await assert.rejects(
-      () => updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'No overwrite', location: 'Home', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => new Response(JSON.stringify({ success: false, code: 'PRECONDITION_FAILED' })), new Date('2026-09-20T07:00:00Z')),
+      () => accessCall(() => updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'No overwrite', location: 'Home', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => new Response(JSON.stringify({ success: false, code: 'PRECONDITION_FAILED' })), new Date('2026-09-20T07:00:00Z'))),
       (error: unknown) => error instanceof CalendarWriteError && error.status === 409,
     );
   });
 
   it('never automatically retries an ambiguous update or permits reuse of its consumed revision', async () => {
     const safe = await load();
-    const context = await getCalendarEditContext(safe.eventKey, async () => producer());
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer()));
     const request = { scope: 'event' as const, revision: context.revision, title: 'Ambiguous', location: 'Home', timing: { kind: 'dateTime' as const, start: event.start.value, end: event.end.value, timeZone: 'Europe/London' as const } };
     let providerAttempts = 0;
     let signedAttempt: ReturnType<typeof decodeRequest> | null = null;
@@ -129,11 +131,11 @@ describe('Calendar provider write boundary', () => {
       throw new Error('synthetic connection loss after request dispatch');
     };
 
-    await assert.rejects(() => updateCalendarEvent(safe.eventKey, request, ambiguousFetcher, new Date('2026-09-20T07:00:00Z')), (error: unknown) => error instanceof CalendarWriteError && error.status === 502);
+    await assert.rejects(() => accessCall(() => updateCalendarEvent(safe.eventKey, request, ambiguousFetcher, new Date('2026-09-20T07:00:00Z'))), (error: unknown) => error instanceof CalendarWriteError && error.status === 502);
     assert.equal(providerAttempts, 1);
     assert.equal(signedAttempt?.payload.operation, 'update-event');
 
-    await assert.rejects(() => updateCalendarEvent(safe.eventKey, request, ambiguousFetcher, new Date('2026-09-20T07:00:00Z')), (error: unknown) => error instanceof CalendarWriteError && error.status === 409);
+    await assert.rejects(() => accessCall(() => updateCalendarEvent(safe.eventKey, request, ambiguousFetcher, new Date('2026-09-20T07:00:00Z'))), (error: unknown) => error instanceof CalendarWriteError && error.status === 409);
     assert.equal(providerAttempts, 1);
   });
 
@@ -145,9 +147,9 @@ describe('Calendar provider write boundary', () => {
       { code: 'UPSTREAM_FAILURE', status: 502 },
     ] as const;
     for (const item of cases) {
-      const context = await getCalendarEditContext(safe.eventKey, async () => producer());
+      const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer()));
       await assert.rejects(
-        () => updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'X', location: '', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => new Response(JSON.stringify({ success: false, code: item.code, privateProviderBody: 'must-not-leak' })), new Date('2026-09-20T07:00:00Z')),
+        () => accessCall(() => updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'X', location: '', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => new Response(JSON.stringify({ success: false, code: item.code, privateProviderBody: 'must-not-leak' })), new Date('2026-09-20T07:00:00Z'))),
         (error: unknown) => error instanceof CalendarWriteError && error.status === item.status && !error.message.includes('must-not-leak'),
       );
     }
@@ -155,13 +157,13 @@ describe('Calendar provider write boundary', () => {
 
   it('keeps a moved recurring occurrence identity stable and rejects series scope', async () => {
     const recurring = { ...event, providerEventId: 'occurrence-private', recurringEventId: 'series-private', originalStartTime: { kind: 'dateTime', value: '2026-09-20T09:00:00+01:00', timeZone: 'Europe/London' } };
-    const safe = (await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse(recurring))))).events[0];
-    const context = await getCalendarEditContext(safe.eventKey, async () => producer(recurring));
+    const safe = (await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse(recurring)))))).events[0];
+    const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer(recurring)));
     assert.equal(context.scope, 'occurrence');
-    await assert.rejects(() => updateCalendarEvent(safe.eventKey, { scope: 'series', revision: context.revision } as never, async () => producer(recurring)), (error: unknown) => error instanceof CalendarWriteError && error.status === 400);
-    const fresh = await getCalendarEditContext(safe.eventKey, async () => producer(recurring));
+    await assert.rejects(() => accessCall(() => updateCalendarEvent(safe.eventKey, { scope: 'series', revision: context.revision } as never, async () => producer(recurring))), (error: unknown) => error instanceof CalendarWriteError && error.status === 400);
+    const fresh = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer(recurring)));
     const moved = { ...recurring, start: { ...recurring.start, value: '2026-09-21T09:00:00+01:00' }, end: { ...recurring.end, value: '2026-09-21T10:00:00+01:00' }, etag: 'etag-private-2' };
-    const confirmed = await updateCalendarEvent(safe.eventKey, { scope: 'occurrence', revision: fresh.revision, title: 'Lesson', location: 'Home', timing: { kind: 'dateTime', start: moved.start.value, end: moved.end.value, timeZone: 'Europe/London' } }, async () => producer(moved), new Date('2026-09-20T07:00:00Z'));
+    const confirmed = await accessCall(() => updateCalendarEvent(safe.eventKey, { scope: 'occurrence', revision: fresh.revision, title: 'Lesson', location: 'Home', timing: { kind: 'dateTime', start: moved.start.value, end: moved.end.value, timeZone: 'Europe/London' } }, async () => producer(moved), new Date('2026-09-20T07:00:00Z')));
     assert.equal(confirmed.eventKey, safe.eventKey);
   });
 
@@ -171,9 +173,9 @@ describe('Calendar provider write boundary', () => {
     try {
       const store = new CalendarProfileAssignmentFileStore(join(root, 'assignments.json'), 'initialize');
       await store.set(safe.eventKey, { kind: 'members', profileIds: ['adult'] }, ['adult']);
-      const context = await getCalendarEditContext(safe.eventKey, async () => producer());
+      const context = await accessCall(() => getCalendarEditContext(safe.eventKey, async () => producer()));
       const changed = { ...event, title: 'Updated', etag: 'etag-private-2' };
-      const confirmed = await updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'Updated', location: 'Home', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => producer(changed), new Date('2026-09-20T07:00:00Z'));
+      const confirmed = await accessCall(() => updateCalendarEvent(safe.eventKey, { scope: 'event', revision: context.revision, title: 'Updated', location: 'Home', timing: { kind: 'dateTime', start: event.start.value, end: event.end.value, timeZone: 'Europe/London' } }, async () => producer(changed), new Date('2026-09-20T07:00:00Z')));
       assert.equal(confirmed.eventKey, safe.eventKey);
       assert.deepEqual((await store.read()).assignments[0].target, { kind: 'members', profileIds: ['adult'] });
     } finally { await rm(root, { recursive: true, force: true }); }
@@ -182,33 +184,33 @@ describe('Calendar provider write boundary', () => {
   it('rejects Demo, v1/read-only configuration and browser-supplied provider authority', async () => {
     const safe = await load();
     setHouseholdConfigForTests(null, 'demo');
-    await assert.rejects(() => getCalendarEditContext(safe.eventKey, async () => producer()), (error: unknown) => error instanceof CalendarWriteError && error.status === 403);
+    await assert.rejects(() => getCalendarEditContext(safe.eventKey, async () => producer()), (error: unknown) => error instanceof AccessError);
     setHouseholdConfigForTests({ ...config, calendar: { ...config.calendar, sources: [{ ...config.calendar.sources[0], writeAccess: undefined }] } });
-    calendarEditRegistry.clear();
-    const readonly = (await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse())))).events[0];
+    await accessCall(() => calendarEditRegistry.clear());
+    const readonly = (await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse()))))).events[0];
     assert.equal(readonly.writable, false);
-    await assert.rejects(() => getCalendarEditContext(readonly.eventKey, async () => producer()), /reloaded/);
+    await assert.rejects(() => accessCall(() => getCalendarEditContext(readonly.eventKey, async () => producer())), /reloaded/);
     setHouseholdConfigForTests(config);
     const v1 = { success: true, generatedAt: '2026-09-20T07:00:00Z', timeZone: 'Europe/London', events: [{ id: 'legacy-private', title: 'Legacy', start: '2026-09-20', end: '2026-09-21', allDay: true, writable: true, calendarId: 'provider-calendar-private' }] };
-    const legacy = (await getSafeCalendarData({}, async () => new Response(JSON.stringify(v1)))).events[0];
+    const legacy = (await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(v1))))).events[0];
     assert.equal(legacy.writable, false);
-    await assert.rejects(() => getCalendarEditContext(legacy.eventKey, async () => producer()), (error: unknown) => error instanceof CalendarWriteError && error.status === 403);
+    await assert.rejects(() => accessCall(() => getCalendarEditContext(legacy.eventKey, async () => producer())), (error: unknown) => error instanceof CalendarWriteError && error.status === 403);
     assert.throws(() => parseCalendarEditRequest({ scope: 'event', revision: `calendar-edit-revision-v1-${'a'.repeat(64)}`, title: 'X', location: '', timing: { kind: 'date', startDate: '2026-09-20', endDateExclusive: '2026-09-21' }, calendarId: 'attacker' }, true), /invalid/);
   });
 
   it('keeps producer read-only, cancelled, missing-ETag, school and unknown sources non-editable', async () => {
     for (const candidate of [{ ...event, writable: false }, { ...event, status: 'cancelled' }, { ...event, etag: null }]) {
-      calendarEditRegistry.clear();
-      const safe = (await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse(candidate))))).events[0];
+      await accessCall(() => calendarEditRegistry.clear());
+      const safe = (await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse(candidate)))))).events[0];
       assert.equal(safe.writable, false);
     }
     const schoolConfig: HouseholdConfig = { ...config, calendar: { ...config.calendar, sources: [{ sourceId: 'school', label: 'School', kind: 'school', calendarId: 'provider-calendar-private' }] } };
     setHouseholdConfigForTests(schoolConfig);
-    calendarEditRegistry.clear();
-    assert.equal((await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse())))).events[0].writable, false);
+    await accessCall(() => calendarEditRegistry.clear());
+    assert.equal((await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse()))))).events[0].writable, false);
     setHouseholdConfigForTests({ ...config, calendar: { ...config.calendar, sources: [] } });
-    calendarEditRegistry.clear();
-    assert.equal((await getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse())))).events[0].writable, false);
+    await accessCall(() => calendarEditRegistry.clear());
+    assert.equal((await accessCall(() => getSafeCalendarData({}, async () => new Response(JSON.stringify(readResponse()))))).events[0].writable, false);
   });
 
   it('validates London civil time across BST, GMT, gaps, repeats, all-day and Today', () => {

@@ -1,3 +1,4 @@
+import { guardedLiveService } from '../access/householdAccess.js';
 import { constants } from 'node:fs';
 import {
   access,
@@ -473,4 +474,4 @@ export class KumonFileStore {
   }
 }
 
-export const kumonStore = new KumonFileStore();
+export const kumonStore = guardedLiveService(() => new KumonFileStore());

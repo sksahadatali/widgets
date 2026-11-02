@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { classifiedRouter } from '../access/classifiedRouter.js';
 
 import {
   createTask,
@@ -8,13 +8,13 @@ import {
   updateTaskStatus,
 } from '../services/notionService.js';
 
-const router = Router();
+const router = classifiedRouter('tasks');
 
 /* -----------------------------------
    Tasks
 ----------------------------------- */
 
-router.get('/', async (_request, response) => {
+router.get('/', 'HOUSEHOLD', async (_request, response) => {
   try {
     const tasks = await getTasks();
 
@@ -37,7 +37,7 @@ router.get('/', async (_request, response) => {
 });
 
 router.post(
-  '/',
+  '/', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const {
@@ -114,7 +114,7 @@ router.post(
 ----------------------------------- */
 
 router.get(
-  '/due-soon',
+  '/due-soon', 'HOUSEHOLD',
   async (_request, response) => {
     try {
       const tasks =
@@ -145,7 +145,7 @@ router.get(
 ----------------------------------- */
 
 router.patch(
-  '/:id',
+  '/:id', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const { id } = request.params;
@@ -221,7 +221,7 @@ router.patch(
 );
 
 router.patch(
-  '/:id/status',
+  '/:id/status', 'HOUSEHOLD',
   async (request, response) => {
     try {
       const { id } = request.params;
@@ -260,4 +260,4 @@ router.patch(
   }
 );
 
-export default router;
+export default router.router;

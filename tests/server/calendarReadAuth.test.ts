@@ -1,3 +1,4 @@
+import { accessCall } from './helpers/householdAccess.js';
 import assert from 'node:assert/strict';
 import { createHmac, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -290,13 +291,13 @@ describe('Calendar read backend transport', () => {
     setHouseholdConfigForTests({ schemaVersion: 1, household: { displayName: 'Test', members: [{ id: 'adult', displayName: 'Adult', memberType: 'adult' }] }, location: { name: 'Test', latitude: 51, longitude: -1, timezone: 'Europe/London' }, travel: { homeAddress: 'Synthetic', leaveBufferMinutes: 10, destinations: [] }, calendar: { endpoint: 'https://synthetic.example.test/provider', refreshMinutes: 15, sources: [], semanticRules: [] } });
     let calls = 0;
     try {
-      await assert.rejects(getSafeCalendarData({}, async (input, init) => {
+      await assert.rejects(accessCall(() => getSafeCalendarData({}, async (input, init) => {
         calls += 1;
         assert.equal(input, 'https://synthetic.example.test/provider');
         assert.equal(init?.method, 'POST');
         assert.equal(init?.redirect, 'follow');
         return new Response(JSON.stringify({ success: false, code: 'CALENDAR_READ_DENIED', events: [] }));
-      }), /invalid response/);
+      })), /invalid response/);
       assert.equal(calls, 1);
     } finally { setHouseholdConfigForTests(null, 'demo'); }
   });
@@ -305,7 +306,7 @@ describe('Calendar read backend transport', () => {
     delete process.env.EYOS_CALENDAR_READ_HMAC_SECRET;
     let calls = 0;
     try {
-      await assert.rejects(getSafeCalendarData({}, async () => { calls += 1; return new Response('{}'); }), /not configured/);
+      await assert.rejects(accessCall(() => getSafeCalendarData({}, async () => { calls += 1; return new Response('{}'); })), /not configured/);
       assert.equal(calls, 0);
     } finally { setHouseholdConfigForTests(null, 'demo'); }
   });

@@ -1,3 +1,4 @@
+import { requireHouseholdAccess } from '../access/householdAccess.js';
 import { getHouseholdConfig } from '../config/householdConfig.js';
 
 type Coordinates = { latitude: number; longitude: number };
@@ -63,6 +64,7 @@ export async function getRoute(
   destination: string,
   fetcher: typeof fetch = fetch,
 ): Promise<TravelRoute> {
+  requireHouseholdAccess();
   try {
     return await getLiveRoute(destination, fetcher);
   } catch (error) {

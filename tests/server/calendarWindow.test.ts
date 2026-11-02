@@ -1,3 +1,4 @@
+import { accessCall } from './helpers/householdAccess.js';
 import { installCalendarReadTestSecret } from './helpers/calendarReadSecret.js';
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
@@ -160,7 +161,7 @@ describe('Calendar requested-window boundary', () => {
     setHouseholdConfigForTests(config);
     let requestedUrl = '';
     let requestedWindow: unknown;
-    const result = await getSafeCalendarData(
+    const result = await accessCall(() => getSafeCalendarData(
       { startDate: '2026-10-01', days: 42 },
       async (input, init) => {
         requestedUrl = String(input);
@@ -169,7 +170,7 @@ describe('Calendar requested-window boundary', () => {
         requestedWindow = JSON.parse(Buffer.from(envelope.payload, 'base64url').toString()).window;
         return new Response(JSON.stringify(v2Response(FORTY_TWO_DAY_WINDOW)));
       },
-    );
+    ));
 
     const url = new URL(requestedUrl);
     assert.equal(url.searchParams.get('deployment'), 'one');
@@ -185,23 +186,23 @@ describe('Calendar requested-window boundary', () => {
     setHouseholdConfigForTests(config);
     const fetcher = (window: ResponseWindow) => async () =>
       new Response(JSON.stringify(v2Response(window)));
-    const seven = await getSafeCalendarData(
+    const seven = await accessCall(() => getSafeCalendarData(
       { startDate: '2026-10-24' }, fetcher(SEVEN_DAY_WINDOW)
-    );
-    const month = await getSafeCalendarData(
+    ));
+    const month = await accessCall(() => getSafeCalendarData(
       { startDate: '2026-10-01', days: 42 },
       fetcher(FORTY_TWO_DAY_WINDOW),
-    );
+    ));
     assert.equal(seven.events[0].eventKey, month.events[0].eventKey);
   });
 
   it('fails closed when the producer interval differs from the request', async () => {
     setHouseholdConfigForTests(config);
     await assert.rejects(
-      getSafeCalendarData(
+      accessCall(() => getSafeCalendarData(
         { startDate: '2026-10-01', days: 42 },
         async () => new Response(JSON.stringify(v2Response(SEVEN_DAY_WINDOW))),
-      ),
+      )),
       /window is invalid/,
     );
   });
@@ -216,15 +217,15 @@ describe('Calendar requested-window boundary', () => {
       }],
     };
     const fetcher = async () => new Response(JSON.stringify(legacy));
-    assert.equal((await getSafeCalendarData({}, fetcher)).events.length, 1);
+    assert.equal((await accessCall(() => getSafeCalendarData({}, fetcher))).events.length, 1);
     await assert.rejects(
-      getSafeCalendarData({ startDate: '2026-10-24' }, fetcher),
+      accessCall(() => getSafeCalendarData({ startDate: '2026-10-24' }, fetcher)),
       /does not support requested windows/,
     );
     await assert.rejects(
-      getSafeCalendarData(
+      accessCall(() => getSafeCalendarData(
         { startDate: '2026-10-24', days: 35 }, fetcher
-      ),
+      )),
       /does not support requested windows/,
     );
   });
