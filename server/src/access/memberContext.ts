@@ -40,6 +40,11 @@ export function validateRouteMembers(domain: string, method: string, path: strin
     }
     const provenance = ((body.fact as { provenance?: unknown } | undefined)?.provenance ?? relation?.provenance) as { suppliedByMemberId?: unknown } | undefined;
     if (provenance && provenance.suppliedByMemberId !== null) validateMemberContext(provenance.suppliedByMemberId);
+    const memory = body.memory as { subject?: {kind?:unknown;memberId?:unknown}; provenance?: {suppliedByMemberId?:unknown} } | undefined;
+    const memorySubject = path === '/memories/query' ? body.subject as {kind?:unknown;memberId?:unknown} | undefined : memory?.subject;
+    if (memorySubject?.kind === 'MEMBER') validateMemberContext(memorySubject.memberId, { historical: true });
+    if (memory?.provenance && memory.provenance.suppliedByMemberId !== null) validateMemberContext(memory.provenance.suppliedByMemberId);
+
   }
 
 }

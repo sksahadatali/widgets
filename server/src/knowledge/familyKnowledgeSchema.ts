@@ -1,3 +1,4 @@
+import { validateMemories, type FamilyMemory } from './familyMemorySchema.js';
 import type { HouseholdConfig } from '../config/householdConfig.js';
 import { HOUSEHOLD_ID_PATTERN } from '../config/householdConfig.js';
 
@@ -37,8 +38,9 @@ export type Relationship = {
   createdAt: string; updatedAt: string; endedAt: string | null; provenance: Provenance;
 };
 export type KnowledgeV2 = { schemaVersion: 2; householdId: string; revision: number; profiles: Profile[]; relationships: Relationship[]; memories: never[] };
+export type KnowledgeV3 = Omit<KnowledgeV2, 'schemaVersion' | 'memories'> & { schemaVersion: 3; memories: FamilyMemory[] };
 export type LegacyKnowledge = { schemaVersion: 1; householdId: string; revision: 0; profiles: never[]; relationships: never[]; memories: never[] };
-export type Knowledge = KnowledgeV2 | LegacyKnowledge;
+export type Knowledge = KnowledgeV2 | KnowledgeV3 | LegacyKnowledge;
 export const RELATIONSHIP_TYPES = ['PARENT_OF', 'GUARDIAN_OF', 'SPOUSE_OF'] as const;
 export const MAX_KNOWLEDGE_BYTES = 2 * 1024 * 1024;
 export const MAX_PROFILES = 100;
@@ -115,12 +117,12 @@ export function factKey(f: Pick<Fact, 'kind' | 'value'>): string { return `${f.k
 export function validateKnowledge(value: unknown, config?: HouseholdConfig): Knowledge {
   const v = record(value, ['schemaVersion','householdId','revision','profiles','relationships','memories']) as unknown as Knowledge;
   if (typeof v.householdId !== 'string' || !HOUSEHOLD_ID_PATTERN.test(v.householdId) || (config && v.householdId !== config.household.householdId)) throw new KnowledgeError('HOUSEHOLD_SCOPE_MISMATCH', 503);
-  if (![v.profiles,v.relationships,v.memories].every(Array.isArray) || v.memories.length !== 0) throw new KnowledgeError();
+  if (![v.profiles,v.relationships,v.memories].every(Array.isArray) || (v.schemaVersion !== 3 && v.memories.length !== 0)) throw new KnowledgeError();
   if (v.schemaVersion === 1) {
     if (v.revision !== 0 || v.profiles.length || v.relationships.length) throw new KnowledgeError();
     return v;
   }
-  if (v.schemaVersion !== 2 || !Number.isSafeInteger(v.revision) || v.revision < 0 || v.revision >= Number.MAX_SAFE_INTEGER || ((v.profiles.length || v.relationships.length) && v.revision === 0) || v.profiles.length > MAX_PROFILES || v.relationships.length > MAX_RELATIONSHIPS) throw new KnowledgeError();
+  if ((v.schemaVersion !== 2 && v.schemaVersion !== 3) || !Number.isSafeInteger(v.revision) || v.revision < 0 || v.revision >= Number.MAX_SAFE_INTEGER || ((v.profiles.length || v.relationships.length || v.memories.length) && v.revision === 0) || v.profiles.length > MAX_PROFILES || v.relationships.length > MAX_RELATIONSHIPS) throw new KnowledgeError();
   for (const profile of v.profiles) {
     record(profile, ['id','subject','createdAt','updatedAt','facts']); id(profile.id); validateSubject(profile.subject, config);
     timestamp(profile.createdAt); timestamp(profile.updatedAt);
@@ -167,5 +169,6 @@ export function validateKnowledge(value: unknown, config?: HouseholdConfig): Kno
     visiting.delete(node); completed.add(node);
   };
   for (const start of new Set(parents.map(r => r.fromMemberId))) visit(start);
+  if (v.schemaVersion === 3) validateMemories(v.memories, config);
   return v;
 }

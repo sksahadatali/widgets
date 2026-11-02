@@ -9,7 +9,7 @@ export function validateGraphQuery(input: unknown, config: HouseholdConfig): Gra
   return v as GraphQuery;
 }
 /** Pure bounded projection. Canonical membership is derived, never stored as an edge. */
-export function queryGraph(store: KnowledgeV2, query: GraphQuery, config: HouseholdConfig) {
+export function queryGraph(store: Pick<KnowledgeV2, 'revision' | 'relationships'>, query: GraphQuery, config: HouseholdConfig) {
   query = validateGraphQuery(query, config);
   const visited = new Set([query.memberId]);
   let frontier = [query.memberId];
