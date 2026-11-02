@@ -29,4 +29,17 @@ export function validateRouteMembers(domain: string, method: string, path: strin
   if (domain === 'redemptions') { check('profileId'); check('requestedByProfileId'); check('actorProfileId'); }
   if (domain === 'lists') check('addedByProfileId', { family: true });
   if (domain === 'kumon') check('childProfileId');
+  if (domain === 'family-knowledge') {
+    if (path === '/graph/query') check('memberId', { historical: true });
+    const subject = body.subject as { kind?: unknown; memberId?: unknown } | undefined;
+    if (path === '/profiles' && subject?.kind === 'MEMBER') validateMemberContext(subject.memberId, { historical: true });
+    const relation = body.relationship as { fromMemberId?: unknown; toMemberId?: unknown; provenance?: unknown } | undefined;
+    if (path === '/relationships' && relation) {
+      validateMemberContext(relation.fromMemberId, { historical: true });
+      validateMemberContext(relation.toMemberId, { historical: true });
+    }
+    const provenance = ((body.fact as { provenance?: unknown } | undefined)?.provenance ?? relation?.provenance) as { suppliedByMemberId?: unknown } | undefined;
+    if (provenance && provenance.suppliedByMemberId !== null) validateMemberContext(provenance.suppliedByMemberId);
+  }
+
 }

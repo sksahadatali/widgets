@@ -1,3 +1,4 @@
+import { MAX_KNOWLEDGE_BYTES } from '../knowledge/familyKnowledgeSchema.js';
 import {
   access,
   readFile,
@@ -82,11 +83,11 @@ export function assertRuntimeManifest(value: unknown, version: RuntimeLayoutVers
   }
 }
 
-async function readJson(filePath: string): Promise<unknown> {
+async function readJson(filePath: string, maxBytes = Number.POSITIVE_INFINITY): Promise<unknown> {
   try {
-    return JSON.parse(
-      await readFile(filePath, 'utf8')
-    ) as unknown;
+    const raw = await readFile(filePath, 'utf8');
+    if (Buffer.byteLength(raw) > maxBytes) throw new Error('Runtime file exceeds its bound.');
+    return JSON.parse(raw) as unknown;
   } catch (error) {
     throw new Error(
       `Required runtime file is missing or malformed: ${filePath}`,
@@ -103,7 +104,7 @@ export async function validateStoreSet(
 
   for (const fileName of runtimeStoreFiles(version)) {
     const filePath = join(dataPath, fileName);
-    const value = await readJson(filePath);
+    const value = await readJson(filePath, fileName === 'family-knowledge.local.json' ? MAX_KNOWLEDGE_BYTES : undefined);
 
     try {
       validators[fileName](value);
@@ -223,6 +224,7 @@ export async function preflightRuntimeData(
 
 export async function validateHouseholdScope(root: string): Promise<void> {
   const config = validateHouseholdConfig(await readJson(join(root, 'config', 'household.json')));
-  const envelope = validateFamilyKnowledgeEnvelope(await readJson(join(root, 'data', 'family-knowledge.local.json')));
+  const envelope = validateFamilyKnowledgeEnvelope(await readJson(join(root, 'data', 'family-knowledge.local.json'), MAX_KNOWLEDGE_BYTES));
   if (config.household.householdId !== envelope.householdId) throw new Error('HOUSEHOLD_SCOPE_MISMATCH');
+  validateFamilyKnowledgeEnvelope(envelope, config);
 }
