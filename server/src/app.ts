@@ -21,6 +21,7 @@ import {
   DEFAULT_FRONTEND_DIST_PATH,
 } from './config/frontendBuild.js';
 
+import familyKnowledgeRouter from './routes/familyKnowledge.js';
 import kumonRouter from './routes/kumon.js';
 import listsRouter from './routes/lists.js';
 import mealsRouter from './routes/meals.js';
@@ -150,6 +151,7 @@ export function createApp(
     next();
   });
 
+  infrastructureUse(app, '/api/family-knowledge', familyKnowledgeRouter);
   infrastructureUse(app, '/api/petrol', petrolRouter);
   infrastructureUse(app, '/api/nest', nestRouter);
   infrastructureUse(app, '/api/tasks', tasksRouter);

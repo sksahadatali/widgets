@@ -145,8 +145,8 @@ describe('AI-1B classified HTTP boundary',()=>{
     const response = await fetch(`${base}/api/lists`, json({ id:'00000000-0000-4000-8000-000000000002', name:'householdId: unrelated text' }));
     assert.equal(response.status,201);
   });
-  it('classifies all 57 endpoints and refuses unclassified direct/nested routes',async()=>{
-    await testRuntime();await start({mode:'household'});assert.equal(routeManifest().length,57);assert.equal(routeManifest().filter(item=>item.demo).length,3);
+  it('classifies all 65 endpoints and refuses unclassified direct/nested routes',async()=>{
+    await testRuntime();await start({mode:'household'});assert.equal(routeManifest().length,65);assert.equal(routeManifest().filter(item=>item.demo).length,3);
     assert.throws(()=>classifiedRouter('bad').get('/',undefined as never,()=>{}),/UNCLASSIFIED/);
     const app=express();app.get('/api/bypass',()=>{});assert.throws(()=>assertClassifiedRoutes(app),/UNCLASSIFIED/);
     const middleware=express();middleware.use('/api/bypass',(_req,res)=>{res.json({private:true});});assert.throws(()=>assertClassifiedRoutes(middleware),/UNCLASSIFIED/);
