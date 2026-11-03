@@ -24,4 +24,10 @@ router.post('/profiles/:profileId/facts/:factId/retract', 'HOUSEHOLD', handle(as
 router.post('/relationships', 'HOUSEHOLD', handle(async (request,response) => { response.status(201).json(await familyKnowledgeStore.createRelationship(request.body)); }));
 router.post('/relationships/:relationshipId/retract', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.retractRelationship(request.params.relationshipId, request.body)); }));
 router.post('/graph/query', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.graph(request.body)); }));
+router.post('/memories/query', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.memories(request.body)); }));
+router.get('/memories/:memoryId', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.memory(request.params.memoryId)); }));
+router.post('/memories', 'HOUSEHOLD', handle(async (request,response) => { response.status(201).json(await familyKnowledgeStore.createMemory(request.body)); }));
+router.post('/memories/:memoryId/supersede', 'HOUSEHOLD', handle(async (request,response) => { response.status(201).json(await familyKnowledgeStore.createMemory(request.body, request.params.memoryId)); }));
+router.post('/memories/:memoryId/retract', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.endMemory(request.params.memoryId, request.body, 'RETRACTED')); }));
+router.post('/memories/:memoryId/expire', 'HOUSEHOLD', handle(async (request,response) => { response.json(await familyKnowledgeStore.endMemory(request.params.memoryId, request.body, 'EXPIRED')); }));
 export default router.router;
