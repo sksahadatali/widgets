@@ -1,3 +1,6 @@
+import { ContextError, validateContextRequest } from '../context/contextContract.js';
+import { purposeSources } from '../context/contextPolicies.js';
+import { projectFamilyKnowledge } from './familyKnowledgeContext.js';
 import { validateMemories, validateMemoryQuery, memoryApplicability, sameMemoryFamily, canonicalMemoryValue, type FamilyMemory } from './familyMemorySchema.js';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
@@ -38,6 +41,23 @@ class FamilyKnowledgeStore {
       // Pure in-memory normalization. Reading legacy snapshots/runtime never rewrites them.
       return structuredClone(value.schemaVersion === 1 ? { ...value, schemaVersion: 2 } : value) as KnowledgeV2 | KnowledgeV3;
     } catch { throw new KnowledgeError('FAMILY_KNOWLEDGE_UNAVAILABLE', 503); }
+  }
+  async contextProjection(input: unknown, asOf: string) {
+    requireHouseholdAccess();
+    const config = getHouseholdConfig();
+    const request = validateContextRequest(input, config);
+    if (typeof asOf !== 'string' || !Number.isFinite(Date.parse(asOf)) || new Date(asOf).toISOString() !== asOf) throw new ContextError('CONTEXT_REQUEST_INVALID',400);
+    let store: KnowledgeV2 | KnowledgeV3;
+    try { store = await this.load(); }
+    catch {
+      requireHouseholdAccess();
+      throw new ContextError('CONTEXT_UNAVAILABLE',503,purposeSources(request.purpose).filter(source=>source!=='IDENTITY').map(source=>({source,states:['UNAVAILABLE']})));
+    }
+    requireHouseholdAccess();
+    if (request.requireKnowledgeRevision !== undefined && request.requireKnowledgeRevision !== store.revision) {
+      throw new ContextError('CONTEXT_REVISION_CONFLICT',409,purposeSources(request.purpose).filter(source=>source!=='IDENTITY').map(source=>({source,states:['CONFLICTED']})));
+    }
+    return projectFamilyKnowledge(store, request, config, asOf);
   }
   async profile(memberId?: unknown): Promise<{ revision: number; profile: Profile | null }> {
     requireHouseholdAccess();
