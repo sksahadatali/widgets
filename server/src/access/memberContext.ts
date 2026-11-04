@@ -29,6 +29,11 @@ export function validateRouteMembers(domain: string, method: string, path: strin
   if (domain === 'redemptions') { check('profileId'); check('requestedByProfileId'); check('actorProfileId'); }
   if (domain === 'lists') check('addedByProfileId', { family: true });
   if (domain === 'kumon') check('childProfileId');
+  if (domain === 'context') {
+    const subject = body.subject as { kind?: unknown; memberId?: unknown } | undefined;
+    if (subject?.kind === 'MEMBER') validateMemberContext(subject.memberId, { historical: body.subjectMode === 'RETAINED_IDENTITY' });
+    if (Object.hasOwn(body, 'activeProfile') && body.activeProfile !== null) validateMemberContext(body.activeProfile, { family: true });
+  }
   if (domain === 'family-knowledge') {
     if (path === '/graph/query') check('memberId', { historical: true });
     const subject = body.subject as { kind?: unknown; memberId?: unknown } | undefined;
