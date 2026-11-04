@@ -1,6 +1,6 @@
 import { canonicalConfig, TEST_ENVELOPE } from '../fixtures/canonicalIdentity.js';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, rename as fsRename, rm, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, readdir, rename as fsRename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { afterEach, describe, it } from 'node:test';
@@ -23,6 +23,7 @@ import {
   createRuntimeSnapshot,
   RuntimeSnapshotCleanupError,
 } from '../../server/src/runtime/runtimeSnapshot.js';
+import { flushDirectory } from '../../server/src/runtime/runtimeDurability.js';
 import { verifyRuntimeSnapshot } from '../../server/src/runtime/runtimeSnapshotValidation.js';
 
 const temporaryPaths: string[] = [];
@@ -152,6 +153,179 @@ describe('HS3B whole-runtime restore', () => {
       join(backupRoot, 'snapshots', result.preRestoreSnapshotId),
     )).fileCount, 10);
   });
+
+  for (const phase of ['prepare:intent', 'stage:intent', 'displace:complete', 'publish:complete', 'finalize:intent']) {
+    it(`retries transient journal publication at ${phase} without replaying restore actions`, async () => {
+      const runtimeRoot = await runtimeFixture('A');
+      const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+      const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+      await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+      let attempts = 0;
+      const phases: string[] = [], faults: string[] = [], waits: number[] = [];
+      const result = await restoreRuntime({
+        runtimeRoot, backupRoot, snapshotId: snapshot.snapshotId, confirmRestore: snapshot.snapshotId,
+        journalWriter: (root, journal) => {
+          const current = `${journal.transition}:${journal.transitionState}`;
+          phases.push(current);
+          return writeRuntimeRestoreJournal(root, journal, flushDirectory, {
+            platform: 'win32',
+            renamer: async (source, target) => {
+              if (current === phase && ++attempts === 1) {
+                if (phase === 'prepare:intent') await assert.rejects(() => readFile(target), { code: 'ENOENT' });
+                else {
+                  const previous = JSON.parse(await readFile(target, 'utf8'));
+                  assert.notEqual(`${previous.transition}:${previous.transitionState}`, phase);
+                }
+                throw Object.assign(new Error('synthetic journal sharing failure'), { code: 'EPERM' });
+              }
+              await fsRename(source, target);
+            },
+            sleeper: async delay => { waits.push(delay); },
+          });
+        },
+        faultHook: async point => { faults.push(point); },
+      });
+      assert.equal(attempts, 2); assert.deepEqual(waits, [25]);
+      assert.equal(phases.filter(value => value === phase).length, 1);
+      assert.equal(new Set(faults).size, faults.length);
+      assert.equal(await marker(runtimeRoot), 'Shopping A');
+      assert.equal(await marker(result.displacedPath!), 'Shopping B');
+      assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
+      assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+      assert.equal((await verifyRuntimeSnapshot(join(backupRoot, 'snapshots', result.preRestoreSnapshotId!))).fileCount, 10);
+    });
+  }
+
+  it('retains the last durable intent on post-displacement exhaustion and completes through normal recovery', async () => {
+    const runtimeRoot = await runtimeFixture('A');
+    const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+    const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+    await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    const failure = Object.assign(new Error('persistent journal sharing failure'), { code: 'EPERM' });
+    let attempts = 0; const waits: number[] = [];
+    await assert.rejects(() => restoreRuntime({
+      runtimeRoot, backupRoot, snapshotId: snapshot.snapshotId, confirmRestore: snapshot.snapshotId,
+      journalWriter: (root, journal) => writeRuntimeRestoreJournal(root, journal, flushDirectory, {
+        platform: 'win32',
+        renamer: async (source, target) => {
+          if (journal.transition === 'displace' && journal.transitionState === 'complete') { attempts++; throw failure; }
+          await fsRename(source, target);
+        },
+        sleeper: async delay => { waits.push(delay); },
+      }),
+    }), error => error === failure);
+    assert.equal(attempts, 8); assert.deepEqual(waits, [25, 50, 100, 200, 400, 800, 1600]);
+    const state = await inspectRuntimeRestore(runtimeRoot);
+    assert.equal(state.journal?.transition, 'displace'); assert.equal(state.journal?.transitionState, 'intent');
+    assert.equal(state.runtimeExists, false); assert.equal(state.displacedExists, true);
+    assert.equal(state.lockOperationId, state.journal?.operationId);
+    await recoverRuntimeRestore({ runtimeRoot, backupRoot, action: 'complete', operationId: state.journal!.operationId, confirmRecover: true });
+    assert.equal(await marker(runtimeRoot), 'Shopping A');
+    assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
+    assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+  });
+
+  for (const releaseBeforeRecovery of [false, true]) {
+    it(`reaches finalisation interruption after a retried journal and recovers with lock ${releaseBeforeRecovery ? 'released' : 'present'}`, async () => {
+      const runtimeRoot = await runtimeFixture('A');
+      const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+      const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+      await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+      let attempts = 0, finalisations = 0;
+      await assert.rejects(() => restoreRuntime({
+        runtimeRoot, backupRoot, snapshotId: snapshot.snapshotId, confirmRestore: snapshot.snapshotId,
+        journalWriter: (root, journal) => writeRuntimeRestoreJournal(root, journal, flushDirectory, {
+          platform: 'win32', renamer: async (source, target) => {
+            if (journal.transition === 'finalize' && ++attempts === 1) throw Object.assign(new Error('synthetic finalisation sharing failure'), { code: 'EBUSY' });
+            await fsRename(source, target);
+          }, sleeper: async () => {},
+        }),
+        faultHook: async point => { if (point === 'finalizing') { finalisations++; throw new Error('synthetic finalization interruption after retry'); } },
+      }), /synthetic finalization interruption after retry/);
+      assert.equal(attempts, 2); assert.equal(finalisations, 1);
+      const state = await inspectRuntimeRestore(runtimeRoot);
+      assert.equal(state.journal?.transition, 'finalize'); assert.equal(state.journal?.outcome, 'restored');
+      if (releaseBeforeRecovery) {
+        const lock = await inspectRuntimeOperationLock(runtimeRoot); assert.ok(lock?.owner);
+        await releaseRuntimeOperationLock({ lockPath: lock.lockPath, owner: lock.owner });
+      }
+      await recoverRuntimeRestore({ runtimeRoot, backupRoot, action: 'complete', operationId: state.journal!.operationId, confirmRecover: true });
+      assert.equal(await marker(runtimeRoot), 'Shopping A');
+      assert.equal((await inspectRuntimeRestore(runtimeRoot)).journal, null);
+      assert.equal(await inspectRuntimeOperationLock(runtimeRoot), null);
+    });
+  }
+
+  it('preserves a foreign journal rejected by publication instead of deleting it during pre-destructive cleanup', async () => {
+    const runtimeRoot = await runtimeFixture('A');
+    const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+    const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+    await writeFile(join(runtimeRoot, 'data', 'lists.local.json'), `${JSON.stringify(stores('B')['lists.local.json'])}\n`);
+    let foreignBytes = '', attempts = 0;
+    await assert.rejects(() => restoreRuntime({
+      runtimeRoot, backupRoot, snapshotId: snapshot.snapshotId, confirmRestore: snapshot.snapshotId,
+      journalWriter: (root, journal) => writeRuntimeRestoreJournal(root, journal, flushDirectory, {
+        platform: 'win32',
+        renamer: async () => { attempts++; throw Object.assign(new Error('synthetic publication sharing failure'), { code: 'EPERM' }); },
+        sleeper: async () => {
+          foreignBytes = `${JSON.stringify({ ...journal, operationId: '00000000-0000-4000-8000-000000009999' })}\n`;
+          await writeFile(getRuntimeRestoreJournalPath(root), foreignBytes);
+        },
+      }),
+    }), error => {
+      assert.ok(error instanceof RuntimeRestoreCleanupError);
+      assert.match(String(error.operationError), /RESTORE_JOURNAL_CHANGED/);
+      assert.equal(error.cleanupFailures[0]?.step, 'restore-journal');
+      return true;
+    });
+    assert.equal(attempts, 1);
+    assert.equal(await marker(runtimeRoot), 'Shopping B');
+    const retained = await readFile(getRuntimeRestoreJournalPath(runtimeRoot), 'utf8').catch(error => {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw error;
+    });
+    assert.equal(retained, foreignBytes, 'foreign transaction evidence must survive rejected publication');
+  });
+
+  for (const replacement of ['foreign', 'changed', 'malformed', 'directory', 'missing'] as const) {
+    it(`preserves ${replacement} journal evidence during pre-destructive cleanup`, async () => {
+      const runtimeRoot = await runtimeFixture('A');
+      const backupRoot = await temporaryDirectory('eyos-hs3b-backup-');
+      const snapshot = await createRuntimeSnapshot({ runtimeRoot, backupRoot });
+      const path = getRuntimeRestoreJournalPath(runtimeRoot);
+      const originalError = new Error('synthetic failure before destructive work');
+      let retained = '';
+      let destructiveReached = false;
+      await assert.rejects(() => restoreRuntime({
+        runtimeRoot, backupRoot, snapshotId: snapshot.snapshotId, confirmRestore: snapshot.snapshotId,
+        faultHook: async point => {
+          if (point === 'displacing-current') destructiveReached = true;
+          if (point !== 'locked') return;
+          const journal = JSON.parse(await readFile(path, 'utf8'));
+          if (replacement === 'directory' || replacement === 'missing') {
+            await rm(path);
+            if (replacement === 'directory') await mkdir(path);
+          } else {
+            retained = replacement === 'malformed' ? '{invalid' : JSON.stringify({ ...journal,
+              ...(replacement === 'foreign' ? { operationId: 'foreign-operation' } : { transitionState: 'complete' }),
+            });
+            await writeFile(path, retained);
+          }
+          throw originalError;
+        },
+      }), error => {
+        assert.ok(error instanceof RuntimeRestoreCleanupError);
+        assert.equal(error.operationError, originalError);
+        assert.equal(error.cleanupFailures[0]?.step, 'restore-journal');
+        return true;
+      });
+      assert.equal(destructiveReached, false);
+      assert.equal(await marker(runtimeRoot), 'Shopping A');
+      if (replacement === 'directory') assert.equal((await lstat(path)).isDirectory(), true);
+      else if (replacement === 'missing') await assert.rejects(() => readFile(path), { code: 'ENOENT' });
+      else assert.equal(await readFile(path, 'utf8'), retained);
+    });
+  }
 
   it('flushes completed staging and each destructive rename boundary in order', async () => {
     const runtimeRoot = await runtimeFixture('A');

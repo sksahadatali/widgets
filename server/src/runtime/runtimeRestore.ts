@@ -14,8 +14,8 @@ import { RUNTIME_SNAPSHOT_FILES } from './runtimeSnapshotInventory.js';
 import { SNAPSHOT_ID_PATTERN } from './runtimeSnapshotManifest.js';
 import { verifyRuntimeSnapshot } from './runtimeSnapshotValidation.js';
 import {
-  getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, removeRuntimeRestoreJournal,
-  writeRuntimeRestoreJournal, type CurrentRuntimeState, type RestoreTransition, type RuntimeRestoreJournal,
+  cleanupOwnedRuntimeRestoreJournal, getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, removeRuntimeRestoreJournal,
+  writeRuntimeRestoreJournal, type CurrentRuntimeState, type RestoreTransition, type RuntimeRestoreJournal, type JournalOwnership,
 } from './runtimeRestoreJournal.js';
 import { classifyCurrentRuntime, estimateRuntimeBytes, runtimeMatchesSnapshot, validateRestoredRuntime } from './runtimeRestoreValidation.js';
 import { flushDirectory } from './runtimeDurability.js';
@@ -150,6 +150,7 @@ export async function restoreRuntime(options: {
   restoreStagingRemover?: (path: string) => Promise<void>;
   lockReleaser?: typeof releaseRuntimeOperationLock;
   journalRemover?: typeof removeRuntimeRestoreJournal;
+  journalWriter?: typeof writeRuntimeRestoreJournal;
   runtimeRenamer?: RuntimeDirectoryRenamer;
   directoryFlusher?: typeof flushDirectory;
 }): Promise<RestoreResult> {
@@ -198,6 +199,7 @@ export async function restoreRuntime(options: {
     },
     decision: 'undecided', transition: 'prepare', transitionState: 'intent',
   };
+  let journalOwnership: JournalOwnership | undefined;
   let destructive = false;
   let finalized = false;
   const update = async (
@@ -207,11 +209,11 @@ export async function restoreRuntime(options: {
     faultPoint?: RestoreFaultPoint,
   ) => {
     journal = { ...journal, ...additions, transition, transitionState };
-    await writeRuntimeRestoreJournal(resolved.runtimeRoot, journal);
+    journalOwnership = await (options.journalWriter ?? writeRuntimeRestoreJournal)(resolved.runtimeRoot, journal);
     if (faultPoint) await options.faultHook?.(faultPoint);
   };
   try {
-    await writeRuntimeRestoreJournal(resolved.runtimeRoot, journal);
+    journalOwnership = await (options.journalWriter ?? writeRuntimeRestoreJournal)(resolved.runtimeRoot, journal);
     await options.faultHook?.('locked');
     let preRestoreSnapshotId: string | undefined;
     if (sourceState === 'valid') {
@@ -271,7 +273,7 @@ export async function restoreRuntime(options: {
       });
     } catch { audit = 'degraded'; }
     await releaseRuntimeOperationLock(lock);
-    await removeRuntimeRestoreJournal(resolved.runtimeRoot);
+    await cleanupOwnedRuntimeRestoreJournal(resolved.runtimeRoot, journalOwnership);
     finalized = true;
     return {
       operationId, snapshotId: options.snapshotId, sourceState, preRestoreSnapshotId,
@@ -303,7 +305,7 @@ export async function restoreRuntime(options: {
       }
       if (lockReleased && cleanupFailures.length === 0) {
         try {
-          await (options.journalRemover ?? removeRuntimeRestoreJournal)(resolved.runtimeRoot);
+          await cleanupOwnedRuntimeRestoreJournal(resolved.runtimeRoot, journalOwnership, options.journalRemover);
         } catch (cleanupError) {
           cleanupFailures.push({ step: 'restore-journal', error: cleanupError });
         }
