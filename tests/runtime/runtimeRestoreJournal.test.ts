@@ -5,13 +5,88 @@ import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { publishAtomicRename } from '../../server/src/runtime/runtimeAtomicPublication.js';
-import { cleanupOwnedRuntimeRestoreJournal, getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, writeRuntimeRestoreJournal, type RuntimeRestoreJournal } from '../../server/src/runtime/runtimeRestoreJournal.js';
+import { RuntimeRestoreJournalPublicationError, captureRuntimeRestoreJournal, cleanupOwnedRuntimeRestoreJournal, getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, writeRuntimeRestoreJournal, type RuntimeRestoreJournal } from '../../server/src/runtime/runtimeRestoreJournal.js';
 
 const delays = [25, 50, 100, 200, 400, 800, 1600];
 const roots: string[] = [];
 afterEach(async () => {
   mock.restoreAll(); syncBuiltinESMExports();
   for (const root of roots.splice(0)) await fs.rm(root, { recursive: true, force: true });
+});
+
+describe('stable journal identity and publication uncertainty', () => {
+  it('accepts metadata-only changes through observations, replacement and receipt removal', async () => {
+    const f = await fixture();
+    const original = fs.lstat;
+    let tick = 0n;
+    mock.method(fs, 'lstat', async (path: any, options: any) => {
+      const stat = await original(path, options);
+      if (!options?.bigint) return stat;
+      const offset = ++tick;
+      return new Proxy(stat, { get: (value, key) => ['birthtimeNs','mtimeNs','ctimeNs'].includes(String(key)) ? (value[key as keyof typeof value] as bigint) + offset : Reflect.get(value, key) });
+    });
+    syncBuiltinESMExports();
+    let owned = await writeRuntimeRestoreJournal(f.root, initial());
+    owned = await writeRuntimeRestoreJournal(f.root, next(), undefined, { expected: owned, platform: 'win32' });
+    await owned.assertCurrent();
+    await owned.remove();
+    await assert.rejects(() => fs.lstat(f.path), { code: 'ENOENT' });
+  });
+
+  it('pins a prior receipt and rejects valid changed bytes even with the same operation ID', async () => {
+    const f = await fixture();
+    const owned = await writeRuntimeRestoreJournal(f.root, initial());
+    const changed = JSON.stringify({ ...initial(), transitionState: 'complete' });
+    await fs.writeFile(f.path, changed);
+    await assert.rejects(() => writeRuntimeRestoreJournal(f.root, next(), undefined, { expected: owned }), /RESTORE_JOURNAL_CHANGED/);
+    assert.equal(await f.bytes(), changed);
+  });
+
+  it('rejects content changes across an anchored observation without relying on timestamps', async () => {
+    const f = await fixture(true);
+    const original = fs.readFile;
+    mock.method(fs, 'readFile', async (path: any, ...args: any[]) => {
+      if (path === f.path) await fs.writeFile(f.path, JSON.stringify({ ...initial(), transitionState: 'complete' }));
+      return (original as any)(path, ...args);
+    });
+    syncBuiltinESMExports();
+    await assert.rejects(() => captureRuntimeRestoreJournal(f.root), /RESTORE_JOURNAL_CHANGED/);
+  });
+
+  for (const kind of ['flush', 'observation', 'foreign-replacement']) it(`marks rename success followed by ${kind} failure uncertain and never hands off the prior receipt`, async () => {
+    const f = await fixture();
+    const previous = await writeRuntimeRestoreJournal(f.root, initial());
+    const error = failure('EIO');
+    const original = fs.lstat;
+    let rejectObservation = false;
+    if (kind === 'observation') {
+      mock.method(fs, 'lstat', async (path: any, ...args: any[]) => {
+        if (path === f.path && rejectObservation) { rejectObservation = false; throw error; }
+        return (original as any)(path, ...args);
+      });
+      syncBuiltinESMExports();
+    }
+    await assert.rejects(() => writeRuntimeRestoreJournal(f.root, next(), async () => {
+      if (kind === 'flush') throw error;
+      if (kind === 'observation') rejectObservation = true;
+      if (kind === 'foreign-replacement') {
+        await fs.rename(f.path, f.path + '.published-evidence');
+        await fs.writeFile(f.path, JSON.stringify({ ...next(), operationId: '00000000-0000-4000-8000-000000000099' }));
+      }
+    }, { expected: previous }), candidate => candidate instanceof RuntimeRestoreJournalPublicationError &&
+      (kind === 'foreign-replacement' ? String(candidate.operationError).includes('RESTORE_JOURNAL_CHANGED') : candidate.operationError === error));
+    await assert.rejects(() => previous.remove(), /RESTORE_JOURNAL_CHANGED/);
+    assert.ok(await fs.lstat(f.path));
+    assert.equal((await readRuntimeRestoreJournal(f.root))?.transition, 'stage');
+  });
+
+  for (const patch of [{ operationId: '../foreign' }, { selectedSnapshotId: '../foreign' }, { source: { state: 'valid', protection: { kind: 'snapshot', snapshotId: '../foreign' } } }]) {
+    it(`rejects unsafe journal-owned path identifiers ${Object.keys(patch)[0]}`, async () => {
+      const f = await fixture();
+      await assert.rejects(() => writeRuntimeRestoreJournal(f.root, { ...initial(), ...patch } as any), /RESTORE_JOURNAL_INVALID/);
+      await assert.rejects(() => fs.lstat(f.path), { code: 'ENOENT' });
+    });
+  }
 });
 const failure = (code: string) => Object.assign(new Error(`synthetic ${code}`), { code });
 const base: RuntimeRestoreJournal = {
@@ -166,7 +241,7 @@ describe('restore-journal atomic file publication', () => {
   });
   for(const code of ['EIO','EPERM'])it(`does not retry parent sync ${code} after a successful atomic publication`,async()=>{
     const f=await fixture(true);let attempts=0;const error=failure(code);
-    await assert.rejects(()=>writeRuntimeRestoreJournal(f.root,next(),async()=>{throw error;},{platform:'win32',renamer:async(source,target)=>{attempts++;await fs.rename(source,target);},sleeper:async()=>assert.fail('flush retried')}),candidate=>candidate===error);
+    await assert.rejects(()=>writeRuntimeRestoreJournal(f.root,next(),async()=>{throw error;},{platform:'win32',renamer:async(source,target)=>{attempts++;await fs.rename(source,target);},sleeper:async()=>assert.fail('flush retried')}),candidate=>candidate instanceof RuntimeRestoreJournalPublicationError && candidate.operationError===error);
     assert.equal(attempts,1);assert.deepEqual(await readRuntimeRestoreJournal(f.root),next());
   });
 });
