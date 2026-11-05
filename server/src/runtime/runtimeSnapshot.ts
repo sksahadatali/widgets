@@ -1,3 +1,4 @@
+import { publishAtomicRename } from './runtimeAtomicPublication.js';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   access,
@@ -9,7 +10,6 @@ import {
   readFile,
   readdir,
   realpath,
-  rename,
   rm,
   stat,
 } from 'node:fs/promises';
@@ -76,15 +76,8 @@ type SyncFileOpener = (
   flags: 'r+',
 ) => Promise<SyncFileHandle>;
 
-const WINDOWS_PUBLICATION_RETRY_DELAYS_MS = [25, 50, 100, 200, 400, 800, 1600] as const;
-const WINDOWS_PUBLICATION_RETRYABLE_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
-
 type SnapshotDirectoryRenamer = (source: string, target: string) => Promise<void>;
 type SnapshotPublicationSleeper = (delayMs: number) => Promise<void>;
-
-async function sleep(delayMs: number): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, delayMs));
-}
 
 async function assertStagingDirectorySafe(
   stagingPath: string,
@@ -122,28 +115,17 @@ export async function publishSnapshotDirectory(options: {
   renamer?: SnapshotDirectoryRenamer;
   sleeper?: SnapshotPublicationSleeper;
 }): Promise<void> {
-  const platform = options.platform ?? process.platform;
-  const renamer = options.renamer ?? rename;
-  const sleeper = options.sleeper ?? sleep;
-  const maximumAttempts = platform === 'win32'
-    ? WINDOWS_PUBLICATION_RETRY_DELAYS_MS.length + 1
-    : 1;
-
-  for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
-    if (await exists(options.finalPath)) throw new Error('SNAPSHOT_ALREADY_EXISTS');
-    await assertStagingDirectorySafe(options.stagingPath, options.expectedStagingRealPath);
-    try {
-      await renamer(options.stagingPath, options.finalPath);
-      return;
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code ?? '';
-      const canRetry = platform === 'win32' &&
-        WINDOWS_PUBLICATION_RETRYABLE_CODES.has(code) &&
-        attempt < WINDOWS_PUBLICATION_RETRY_DELAYS_MS.length;
-      if (!canRetry) throw error;
-      await sleeper(WINDOWS_PUBLICATION_RETRY_DELAYS_MS[attempt]);
-    }
-  }
+  await publishAtomicRename({
+    source: options.stagingPath,
+    target: options.finalPath,
+    platform: options.platform,
+    renamer: options.renamer,
+    sleeper: options.sleeper,
+    beforeAttempt: async () => {
+      if (await exists(options.finalPath)) throw new Error('SNAPSHOT_ALREADY_EXISTS');
+      await assertStagingDirectorySafe(options.stagingPath, options.expectedStagingRealPath);
+    },
+  });
 }
 
 export async function flushCopiedFile(

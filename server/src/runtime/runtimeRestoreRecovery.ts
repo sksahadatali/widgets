@@ -1,12 +1,13 @@
-import { lstat, realpath, rename, rm } from 'node:fs/promises';
+import { lstat, readFile, realpath, rename, rm } from 'node:fs/promises';
 
 import { assertExternalPath, assertExternalRuntimePath, getAbsolutePathStyle, isPathWithin } from '../config/runtimeData.js';
-import { inspectRuntimeOperationLock, releaseRuntimeOperationLock, type RuntimeOperationLock } from './runtimeOperationLock.js';
+import { acquireRuntimeRestoreRecoveryLock, inspectRuntimeOperationLock, releaseRuntimeOperationLock, type RuntimeOperationLock } from './runtimeOperationLock.js';
 import { appendSnapshotAudit } from './runtimeSnapshotAudit.js';
 import { verifyRuntimeSnapshot } from './runtimeSnapshotValidation.js';
-import { readRuntimeRestoreJournal, removeRuntimeRestoreJournal, writeRuntimeRestoreJournal, type RuntimeRestoreJournal } from './runtimeRestoreJournal.js';
+import { captureRuntimeRestoreJournal, readRuntimeRestoreJournal, removeRuntimeRestoreJournal, writeRuntimeRestoreJournal, type RuntimeRestoreJournal, type JournalOwnership } from './runtimeRestoreJournal.js';
 import { getRestorePaths } from './runtimeRestore.js';
 import { runtimeMatchesSnapshot, validateProductionRuntime, validateRestoredRuntime } from './runtimeRestoreValidation.js';
+import { assertCanonicalIdentityPreserved, validateHouseholdConfig } from '../config/householdConfig.js';
 import { flushDirectory } from './runtimeDurability.js';
 
 type RuntimeDirectoryRenamer = (source: string, target: string) => Promise<void>;
@@ -127,11 +128,6 @@ async function observe(runtimeRoot: string, backupRoot: string, snapshotPath: st
   } satisfies RestoreFilesystemObservation };
 }
 
-async function persist(runtimeRoot: string, journal: RuntimeRestoreJournal, changes: Partial<RuntimeRestoreJournal>): Promise<RuntimeRestoreJournal> {
-  const next = { ...journal, ...changes } as RuntimeRestoreJournal;
-  await writeRuntimeRestoreJournal(runtimeRoot, next);
-  return next;
-}
 
 export async function recoverRuntimeRestore(options: {
   runtimeRoot: string;
@@ -142,16 +138,34 @@ export async function recoverRuntimeRestore(options: {
   auditAppender?: typeof appendSnapshotAudit;
   runtimeRenamer?: RuntimeDirectoryRenamer;
   directoryFlusher?: typeof flushDirectory;
+  confirmPreDisplacementAbort?: boolean;
+  expectedJournalSha256?: string;
+  expectedJournal?: JournalOwnership;
+  restoreStagingRemover?: (path: string) => Promise<void>;
+  lockReleaser?: typeof releaseRuntimeOperationLock;
+  journalRemover?: typeof removeRuntimeRestoreJournal;
 }): Promise<{ action: 'abort' | 'rollback' | 'complete'; audit: 'recorded' | 'degraded' }> {
   if (!options.confirmRecover) throw new Error('RESTORE_RECOVERY_CONFIRMATION_REQUIRED');
+  if (options.confirmPreDisplacementAbort && (options.action !== 'abort' || !options.expectedJournalSha256 || !/^[0-9a-f]{64}$/.test(options.expectedJournalSha256))) throw new Error('RESTORE_STATE_AMBIGUOUS');
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
   const backupRoot = assertExternalPath(options.backupRoot, 'Backup root');
   const backupStats = await lstat(backupRoot).catch(() => { throw new Error('RESTORE_BACKUP_ROOT_MISSING'); });
   if (!backupStats.isDirectory() || backupStats.isSymbolicLink()) throw new Error('RESTORE_BACKUP_ROOT_UNSAFE');
   const backupReal = await realpath(backupRoot);
   if (isPathWithin(runtimeRoot, backupReal) || isPathWithin(backupReal, runtimeRoot)) throw new Error('RESTORE_PATH_CONTAINMENT');
-  let journal = await readRuntimeRestoreJournal(runtimeRoot);
-  if (!journal || journal.operationId !== options.operationId) throw new Error('RESTORE_STATE_AMBIGUOUS');
+  let ownership = await captureRuntimeRestoreJournal(runtimeRoot);
+  let journal = ownership?.journal;
+  if (!journal || !ownership || journal.operationId !== options.operationId) throw new Error('RESTORE_STATE_AMBIGUOUS');
+  await options.expectedJournal?.assertCurrent();
+  if (options.expectedJournal && ownership.sha256 !== options.expectedJournal.sha256) throw new Error('RESTORE_JOURNAL_CHANGED');
+  if (options.expectedJournalSha256 !== undefined && (!/^[0-9a-f]{64}$/.test(options.expectedJournalSha256) || ownership.sha256 !== options.expectedJournalSha256)) throw new Error('RESTORE_JOURNAL_CHANGED');
+  const persist = async (_root: string, _previous: RuntimeRestoreJournal, changes: Partial<RuntimeRestoreJournal>) => {
+    const next = { ..._previous, ...changes };
+    const expected = ownership!;
+    ownership = null; // A failed publication never inherits the previous receipt.
+    ownership = await writeRuntimeRestoreJournal(runtimeRoot, next, undefined, { expected });
+    return next;
+  };
   const style = getAbsolutePathStyle(runtimeRoot)!;
   const runtimeParent = style.dirname(runtimeRoot);
   const runtimeRenamer = options.runtimeRenamer ?? rename;
@@ -167,9 +181,34 @@ export async function recoverRuntimeRestore(options: {
   if (journal.decision !== 'undecided' && journal.decision !== expectedDecision) throw new Error('RESTORE_STATE_AMBIGUOUS');
   let lockInspection = await inspectRuntimeOperationLock(runtimeRoot);
   let lock: RuntimeOperationLock | null = null;
+  if (!lockInspection && journal.transition !== 'finalize') {
+    // A deliberately explicit compatibility path for pre-displacement journals
+    // stranded by older cleanup. It never steals/adopts an existing lock.
+    if (!options.confirmPreDisplacementAbort || options.action !== 'abort' || !options.expectedJournalSha256 ||
+      journal.decision !== 'undecided' || journal.source.state !== 'valid' || journal.source.protection.kind !== 'snapshot' ||
+      journal.source.protection.snapshotId === 'pending' || !['prepare', 'stage'].includes(journal.transition) ||
+      (journal.transitionState !== 'intent' && journal.transition !== 'prepare')) throw new Error('RESTORE_STATE_AMBIGUOUS');
+    const proveAbortable = async () => {
+      await ownership!.assertCurrent();
+      await verifyRuntimeSnapshot(snapshotPath);
+      const current = await observe(runtimeRoot, backupRoot, snapshotPath, journal!);
+      if (!current.observation.runtime || current.observation.staging || current.observation.displaced || current.observation.failed ||
+        current.observation.runtimeIsProtected !== true) throw new Error('RESTORE_STATE_AMBIGUOUS');
+      const selectedConfig = validateHouseholdConfig(JSON.parse(await readFile(style.join(snapshotPath, 'payload', 'config', 'household.json'), 'utf8')));
+      const currentConfig = validateHouseholdConfig(JSON.parse(await readFile(style.join(runtimeRoot, 'config', 'household.json'), 'utf8')));
+      assertCanonicalIdentityPreserved(currentConfig, selectedConfig);
+      return current;
+    };
+    await proveAbortable();
+    lock = await acquireRuntimeRestoreRecoveryLock(runtimeRoot, journal.operationId);
+    try { await proveAbortable(); }
+    catch (error) { await releaseRuntimeOperationLock(lock); throw error; }
+    lockInspection = await inspectRuntimeOperationLock(runtimeRoot);
+  }
   if (journal.transition !== 'finalize') lock = ownedLock(journal.operationId, lockInspection);
   else if (lockInspection) lock = ownedLock(journal.operationId, lockInspection);
 
+  await ownership.assertCurrent();
   let state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
   let classification = classifyRestoreRecoveryState(journal, state.observation);
   if (classification === 'AMBIGUOUS') throw new Error('RESTORE_STATE_AMBIGUOUS');
@@ -177,19 +216,21 @@ export async function recoverRuntimeRestore(options: {
   if (journal.transition === 'finalize') {
     if (classification !== 'TERMINAL' || journal.decision !== expectedDecision) throw new Error('RESTORE_STATE_AMBIGUOUS');
     if (!lock && journal.outcome !== 'restored' && journal.source.state !== 'absent' &&
-      !(journal.source.state === 'valid' && state.observation.runtimeIsProtected === true)) {
+      !(journal.source.state === 'valid' && state.observation.runtimeIsProtected === true) &&
+      !(journal.outcome === 'aborted' && journal.source.state === 'valid' && journal.source.protection.kind === 'snapshot' && journal.source.protection.snapshotId === 'pending' && await isValidRuntime(runtimeRoot))) {
       throw new Error('RESTORE_STATE_AMBIGUOUS');
     }
   } else if (options.action === 'abort') {
-    if (!['prepare', 'stage', 'abort-cleanup'].includes(journal.transition)) throw new Error('RESTORE_STATE_AMBIGUOUS');
+    if (!['prepare', 'stage', 'abort-cleanup'].includes(journal.transition) && !(journal.transition === 'displace' && journal.transitionState === 'intent' && classification === 'BEFORE')) throw new Error('RESTORE_STATE_AMBIGUOUS');
     if (journal.transition !== 'abort-cleanup') journal = await persist(runtimeRoot, journal, { decision: 'abort', transition: 'abort-cleanup', transitionState: 'intent' });
     state = await observe(runtimeRoot, backupRoot, snapshotPath, journal);
     classification = classifyRestoreRecoveryState(journal, state.observation);
     if (classification === 'BEFORE') {
-      await rm(state.paths.staging, { recursive: true, force: false });
+      await (options.restoreStagingRemover ?? (path => rm(path, { recursive: true, force: false })))(state.paths.staging);
       await directoryFlusher(runtimeParent);
     }
     else if (classification !== 'AFTER') throw new Error('RESTORE_STATE_AMBIGUOUS');
+    else await options.restoreStagingRemover?.(state.paths.staging);
     journal = await persist(runtimeRoot, journal, { transitionState: 'complete' });
     journal = await persist(runtimeRoot, journal, { transition: 'finalize', transitionState: 'intent', outcome: 'aborted' });
   } else if (options.action === 'complete') {
@@ -239,7 +280,12 @@ export async function recoverRuntimeRestore(options: {
   if (classifyRestoreRecoveryState(journal, state.observation) !== 'TERMINAL') throw new Error('RESTORE_STATE_AMBIGUOUS');
   let audit: 'recorded' | 'degraded' = 'recorded';
   try { await (options.auditAppender ?? appendSnapshotAudit)(backupRoot, { schemaVersion: 1, kind: 'eyos-snapshot-operation', operationId: journal.operationId, operation: 'restore-recover', recoveryAction: options.action, snapshotId: journal.selectedSnapshotId, sourceState: journal.source.state, startedAt: journal.startedAt, finishedAt: new Date().toISOString(), status: 'succeeded' }); } catch { audit = 'degraded'; }
-  if (lock) await releaseRuntimeOperationLock(lock);
-  await removeRuntimeRestoreJournal(runtimeRoot);
+  await ownership!.assertCurrent();
+  if (lock) await (options.lockReleaser ?? releaseRuntimeOperationLock)(lock);
+  await ownership!.remove(options.journalRemover);
   return { action: options.action, audit };
+}
+
+async function isValidRuntime(runtimeRoot: string): Promise<boolean> {
+  try { await validateProductionRuntime(runtimeRoot); return true; } catch { return false; }
 }

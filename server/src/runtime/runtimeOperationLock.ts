@@ -83,12 +83,22 @@ export function getRuntimeOperationLockPath(runtimeRoot: string): string {
   );
 }
 
-export async function acquireRuntimeOperationLock(options: {
+type AcquireOptions = {
   runtimeRoot: string;
   operation: RuntimeOperation;
   bootId?: string | null;
   processIdentity?: string | null;
-}): Promise<RuntimeOperationLock> {
+};
+
+export function acquireRuntimeOperationLock(options: AcquireOptions): Promise<RuntimeOperationLock> {
+  return acquireLock(options);
+}
+/** Only guarded offline recovery may bind a fresh exclusive lock to a retained journal. */
+export function acquireRuntimeRestoreRecoveryLock(runtimeRoot: string, operationId: string): Promise<RuntimeOperationLock> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(operationId)) throw new Error('RESTORE_STATE_AMBIGUOUS');
+  return acquireLock({ runtimeRoot, operation: 'restore' }, operationId);
+}
+async function acquireLock(options: AcquireOptions, recoveryOperationId?: string): Promise<RuntimeOperationLock> {
   const runtimeRoot = assertExternalRuntimePath(options.runtimeRoot);
   const style = getAbsolutePathStyle(runtimeRoot)!;
   const parent = style.dirname(runtimeRoot);
@@ -108,7 +118,7 @@ export async function acquireRuntimeOperationLock(options: {
   const owner: RuntimeOperationOwner = {
     schemaVersion: processIdentity ? 3 : bootId ? 2 : 1,
     kind: 'eyos-runtime-operation-lock',
-    operationId: randomUUID(),
+    operationId: recoveryOperationId ?? randomUUID(),
     operation: options.operation,
     pid: process.pid,
     createdAt: new Date().toISOString(),

@@ -14,8 +14,8 @@ import { RUNTIME_SNAPSHOT_FILES } from './runtimeSnapshotInventory.js';
 import { SNAPSHOT_ID_PATTERN } from './runtimeSnapshotManifest.js';
 import { verifyRuntimeSnapshot } from './runtimeSnapshotValidation.js';
 import {
-  getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, removeRuntimeRestoreJournal,
-  writeRuntimeRestoreJournal, type CurrentRuntimeState, type RestoreTransition, type RuntimeRestoreJournal,
+  captureRuntimeRestoreJournal, cleanupOwnedRuntimeRestoreJournal, RuntimeRestoreJournalPublicationError, getRuntimeRestoreJournalPath, readRuntimeRestoreJournal, removeRuntimeRestoreJournal,
+  writeRuntimeRestoreJournal, type CurrentRuntimeState, type RestoreTransition, type RuntimeRestoreJournal, type JournalOwnership,
 } from './runtimeRestoreJournal.js';
 import { classifyCurrentRuntime, estimateRuntimeBytes, runtimeMatchesSnapshot, validateRestoredRuntime } from './runtimeRestoreValidation.js';
 import { flushDirectory } from './runtimeDurability.js';
@@ -150,6 +150,7 @@ export async function restoreRuntime(options: {
   restoreStagingRemover?: (path: string) => Promise<void>;
   lockReleaser?: typeof releaseRuntimeOperationLock;
   journalRemover?: typeof removeRuntimeRestoreJournal;
+  journalWriter?: typeof writeRuntimeRestoreJournal;
   runtimeRenamer?: RuntimeDirectoryRenamer;
   directoryFlusher?: typeof flushDirectory;
 }): Promise<RestoreResult> {
@@ -198,8 +199,17 @@ export async function restoreRuntime(options: {
     },
     decision: 'undecided', transition: 'prepare', transitionState: 'intent',
   };
+  let journalOwnership: JournalOwnership | undefined;
   let destructive = false;
   let finalized = false;
+  const publishJournal = async () => {
+    try {
+      journalOwnership = await (options.journalWriter ?? writeRuntimeRestoreJournal)(resolved.runtimeRoot, journal, undefined, { expected: journalOwnership });
+    } catch (error) {
+      if (error instanceof RuntimeRestoreJournalPublicationError) journalOwnership = undefined;
+      throw error;
+    }
+  };
   const update = async (
     transition: RestoreTransition,
     transitionState: 'intent' | 'complete',
@@ -207,11 +217,11 @@ export async function restoreRuntime(options: {
     faultPoint?: RestoreFaultPoint,
   ) => {
     journal = { ...journal, ...additions, transition, transitionState };
-    await writeRuntimeRestoreJournal(resolved.runtimeRoot, journal);
+    await publishJournal();
     if (faultPoint) await options.faultHook?.(faultPoint);
   };
   try {
-    await writeRuntimeRestoreJournal(resolved.runtimeRoot, journal);
+    await publishJournal();
     await options.faultHook?.('locked');
     let preRestoreSnapshotId: string | undefined;
     if (sourceState === 'valid') {
@@ -271,7 +281,7 @@ export async function restoreRuntime(options: {
       });
     } catch { audit = 'degraded'; }
     await releaseRuntimeOperationLock(lock);
-    await removeRuntimeRestoreJournal(resolved.runtimeRoot);
+    await cleanupOwnedRuntimeRestoreJournal(resolved.runtimeRoot, journalOwnership);
     finalized = true;
     return {
       operationId, snapshotId: options.snapshotId, sourceState, preRestoreSnapshotId,
@@ -283,29 +293,37 @@ export async function restoreRuntime(options: {
         step: RestoreCleanupStep;
         error: unknown;
       }> = [];
+      let cleanupStep: RestoreCleanupStep = 'restore-journal';
       if (error instanceof RuntimeSnapshotCleanupError) {
-        cleanupFailures.push({
-          step: 'mandatory-snapshot-staging',
-          error: error.cleanupError,
-        });
-      }
-      try {
-        await (options.restoreStagingRemover ?? (path => rm(path, { recursive: true, force: true })))(restorePaths.staging);
-      } catch (cleanupError) {
-        cleanupFailures.push({ step: 'restore-staging', error: cleanupError });
-      }
-      let lockReleased = false;
-      try {
-        await (options.lockReleaser ?? releaseRuntimeOperationLock)(lock);
-        lockReleased = true;
-      } catch (cleanupError) {
-        cleanupFailures.push({ step: 'operation-lock', error: cleanupError });
-      }
-      if (lockReleased && cleanupFailures.length === 0) {
+        // An unproven cleanup retains its lock and evidence for explicit recovery.
+        cleanupFailures.push({ step: 'mandatory-snapshot-staging', error: error.cleanupError });
+      } else if (error instanceof RuntimeRestoreJournalPublicationError) {
+        cleanupFailures.push({ step: 'restore-journal', error });
+      } else {
         try {
-          await (options.journalRemover ?? removeRuntimeRestoreJournal)(resolved.runtimeRoot);
+          if (!journalOwnership) {
+            if (await captureRuntimeRestoreJournal(resolved.runtimeRoot)) throw new Error('RESTORE_JOURNAL_CHANGED');
+            cleanupStep = 'operation-lock';
+            await (options.lockReleaser ?? releaseRuntimeOperationLock)(lock);
+          } else {
+            await journalOwnership.assertCurrent();
+            // Reuse the durable abort-cleanup/finalize protocol. Never release a
+            // non-final journal's lock before its cleanup decision is durable.
+            const { recoverRuntimeRestore } = await import('./runtimeRestoreRecovery.js');
+            await recoverRuntimeRestore({
+              runtimeRoot: resolved.runtimeRoot, backupRoot: resolved.backupRoot,
+              operationId, action: 'abort', confirmRecover: true, expectedJournal: journalOwnership,
+              restoreStagingRemover: options.restoreStagingRemover ? async path => {
+                cleanupStep = 'restore-staging'; await options.restoreStagingRemover!(path); cleanupStep = 'restore-journal';
+              } : undefined,
+              lockReleaser: async owned => {
+                cleanupStep = 'operation-lock'; await (options.lockReleaser ?? releaseRuntimeOperationLock)(owned); cleanupStep = 'restore-journal';
+              },
+              journalRemover: options.journalRemover,
+            });
+          }
         } catch (cleanupError) {
-          cleanupFailures.push({ step: 'restore-journal', error: cleanupError });
+          cleanupFailures.push({ step: cleanupStep, error: cleanupError });
         }
       }
       const reportedError = cleanupFailures.length > 0
