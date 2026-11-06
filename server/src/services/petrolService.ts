@@ -61,6 +61,8 @@ async function getAccessToken(): Promise<string> {
     `${BASE_URL}/api/v1/oauth/generate_access_token`,
     params.toString(),
     {
+      // Never replay the OAuth client secret at a redirect destination.
+      maxRedirects: 0,
       headers: {
         Accept: 'application/json',
         'Content-Type':
